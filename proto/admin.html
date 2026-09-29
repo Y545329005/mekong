@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Mekong Admin：运营后台，与对客端 proto/index.html 同源联动（共享 localStorage），运营侧对双边市场的看见/干预/对账。">
+<title>Mekong Admin</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230f172a'/><text x='32' y='44' font-family='ui-sans-serif,system-ui,sans-serif' font-size='30' font-weight='700' fill='%233b82f6' text-anchor='middle'>N</text></svg>">
+<!-- CDN 与 index.html 严格同域同版本（走查环境仅 jsdelivr 可达；版本漂移是行为差异源【对抗审查坑9】） -->
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+<script>
+window.addEventListener('error',function(e){
+  var d=document.getElementById('boot-error');
+  if(d){ d.style.display='block'; d.textContent+=' | '+(e.message||e.type); }
+});
+</script>
+<style>
+  @custom-variant dark (&:where(.dark, .dark *));
+  /* 同 index.html 的 zinc/slate 暗色变量——两边同一种工作台语言 */
+  :root {
+    --color-bg: #f8fafc; --color-surface: #ffffff; --color-surface-alt: #f1f5f9;
+    --color-text: #0f172a; --color-text-secondary: #334155; --color-text-muted: #475569; --color-text-faint: #64748b;
+    --color-border: #e2e8f0; --color-border-strong: #cbd5e1;
+    --color-accent: #2563eb; --color-accent-hover: #1d4ed8; --color-accent-strong: #1d4ed8;
+    --color-focus: #2563eb; --color-selection: rgba(37,99,235,.2);
+    --color-scrollbar: #cbd5e1; --color-scrollbar-border: #f8fafc;
+    --color-success: #059669; --color-warning: #d97706; --color-error: #dc2626; --color-info: #7c3aed;
+  }
+  .dark {
+    --color-bg: #0f172a; --color-surface: #1e293b; --color-surface-alt: #1e293b;
+    --color-text: #f1f5f9; --color-text-secondary: #e2e8f0; --color-text-muted: #cbd5e1; --color-text-faint: #94a3b8;
+    --color-border: #334155; --color-border-strong: #475569;
+    --color-accent: #2563eb; --color-accent-hover: #3b82f6; --color-accent-strong: #1d4ed8;
+    --color-focus: #3b82f6; --color-selection: rgba(56,189,248,.28);
+    --color-scrollbar: #334155; --color-scrollbar-border: #0f172a;
+    --color-success: #10b981; --color-warning: #f59e0b; --color-error: #ef4444; --color-info: #8b5cf6;
+  }
+  html,body { background:var(--color-bg); color:var(--color-text); font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; font-size:15px; }
+  .mono { font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric: tabular-nums; }
+  ::selection { background:var(--color-selection); }
+  ::-webkit-scrollbar { width:10px;height:10px; } ::-webkit-scrollbar-thumb { background:var(--color-scrollbar);border-radius:6px;border:2px solid var(--color-scrollbar-border); }
+  ::-webkit-scrollbar-track { background:transparent; }
+  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { outline:2px solid var(--color-focus); outline-offset:2px; border-radius:4px; }
+  input[type=range] { accent-color:var(--color-accent); }
+  @keyframes pulseDot { 0%,100%{opacity:.35} 50%{opacity:1} }
+  .dot-pulse { animation:pulseDot 1.2s ease-in-out infinite; }
+
+  /* tailwind v4 browser 构建会丢弃 <style> 内的自定义 @media——响应式一律改用 max-md:/motion-reduce: 等变体（与 index.html 同款模式） */
+  /* P1-R1: 侧栏开合（transform 用 CSS translate 属性，与 v4 的 translate-* 工具一致） */
+  .sidebar-responsive { transition:translate .2s ease-out; }
+  .sidebar-responsive[data-open="true"] { translate:0 !important; }
+
+  /* --- P2-A1: minimum touch target 44px --- */
+  .btn-touch { min-height:44px; min-width:44px; }
+
+  /* --- P1-R2: table scroll helper --- */
+  .table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  /* 宽松档：全站表格行 hover（普通规则，browser build 保留；走 token 不新增硬编码色） */
+  .table-scroll tbody tr:hover { background:var(--color-surface-alt); }
+
+  /* --- P3-P4: tabular number alignment --- */
+  .mono-num { font-variant-numeric:tabular-nums; text-align:right; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="boot-error" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:#7f1d1d;color:#fecaca;padding:8px 12px;font:12px monospace;"></div>
+
+<script type="text/babel" data-presets="react">
+const {useState, useEffect, useMemo, useRef} = React;
+
+/* ================= 数据层：只读对客端两键；配置键 ADMIN_KEY 由本端独占写（写权分离防 tick 竞态【对抗审查坑3】） ================= */
+const STORE_KEY="gpu-market-demo-v1";
+/* 与用户端 index.html 同口径的 ledger 裁剪（2026-09-20）：seed 行（hostV:3/seedTenant）豁免窗口裁剪，
+   普通行最老先裁——离线直写合并若裸 slice(0,42) 会把用户端存档里的 seed 流水裁掉。 */
+const trimLedger=(a,cap=300)=>{ a=[...a]; let rest=a.filter(e=>!(e.hostV===3||e.seedTenant)).length; while(rest>cap){ const i=a.findLastIndex(e=>!(e.hostV===3||e.seedTenant)); if(i<0) break; a.splice(i,1); rest--; } return a; };
+const ACCOUNTS_KEY="gpu-market-accounts-v1";
+const ADMIN_KEY="gpu-market-admin-v1";
+const loadStore=()=>{ try{ return JSON.parse(localStorage.getItem(STORE_KEY))||null }catch(e){ return null } };
+const loadAccounts=()=>{ try{ return JSON.parse(localStorage.getItem(ACCOUNTS_KEY))||{} }catch(e){ return {} } };
+const loadAdminCfg=()=>{ try{ return JSON.parse(localStorage.getItem(ADMIN_KEY))||{} }catch(e){ return {} } };
+const saveAdminCfg=(c)=>{ try{ localStorage.setItem(ADMIN_KEY,JSON.stringify(c)) }catch(e){} };
+const defaultCfg=()=>({v:1, commission:0, transitionStorageFee:true, delisted:[], banned:[], approved:[], forceStops:[], backup:null, audit:[], payouts:{approved:[],rejected:[]}});
+// 写配置 + 广播（用户端 storage/BroadcastChannel 双通道感知）
+let _BC=null; try{ _BC=new BroadcastChannel("gpu-market-admin-v1"); }catch(e){}
+const send=(msg)=>{ try{ _BC&&_BC.postMessage(msg) }catch(e){} };
+const commitCfg=(c,action,detail)=>{ saveAdminCfg(c); send({type:"cfg"}); if(action){ const a=[{t:Date.now(),action,detail},...(c.audit||[])].slice(0,200); const c2={...c,audit:a}; saveAdminCfg(c2); return c2; } return c; };
+
+/* ================= 工具 ================= */
+const fmt$=(n,d)=>{ if(n==null||isNaN(n)) return "—"; const v=+(n); const s=v.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); return (d==="raw")? s : "$"+s; };
+const fmtNeg=(n)=>{ if(n==null||isNaN(n)) return "—"; return "-$"+Math.abs(+(n)).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); };
+const fmtT=(t)=>{ if(t==null) return "—"; if(t<0) return "底数前";
+  const s=Math.floor(t), h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
+  return (h>0? h+"h "+m+"m " : m>0? m+"m " : "")+x+"s"; };
+const fmtDate=(ts)=>{ if(!ts) return "—"; try{ return new Date(ts).toLocaleString("zh-CN",{hour12:false}) }catch(e){ return "—" } };
+const nowStr=()=>{ try{ return new Date().toLocaleTimeString("zh-CN",{hour12:false}) }catch(e){ return "" } };
+// 对客端 ledger msgKey → 文案（admin 侧独立小映射，避免依赖对客端内部函数）
+const EVT = {
+  lgGpu:      {zh:"GPU 算力",        en:"GPU compute"},
+  lgStoreStop:{zh:"停机存储费",      en:"Stopped storage fee"},
+  lgBw:       {zh:"带宽",            en:"Bandwidth"},
+  lgAmort:    {zh:"订单时长摊销",    en:"Order amortized"},
+  lgPenalty:  {zh:"订单取消罚金",    en:"Order cancel fee"},
+  lgRefund:   {zh:"订单退款",        en:"Order refund"},
+  lgOrderPay: {zh:"订单预付扣款",    en:"Order prepay charge"},
+  lgTopup:    {zh:"账户充值",        en:"Account top-up"},
+  evRunning:  {zh:"实例进入 Running",en:"Instance entered Running"},
+  evRebooted: {zh:"重启完成",        en:"Reboot completed"},
+  evDebt:     {zh:"余额耗尽自动停机",en:"Balance exhausted, auto-stopped"},
+};
+const SRC = { offer:{zh:"已验证",en:"Verified",cls:"text-[var(--color-success)]"}, seed:{zh:"首发池",en:"Seed pool",cls:"text-[var(--color-info)]"}, host:{zh:"宿主上架",en:"Host listing",cls:"text-[var(--color-warning)]"} };
+// 静态 offer 摘要（与 index.html OFFERS 同 id 同采样；规格完整版仅存在于对客端内存，此处展示管控所需字段）
+const OFFERS_SUMMARY=[
+ {id:"28705887",gpu:"RTX PRO 6000 S",dph:3.47,geo:"Texas, US"},
+ {id:"31230659",gpu:"RTX 5070",dph:0.104,geo:"Texas, US"},
+ {id:"31230653",gpu:"RTX 5070",dph:0.204,geo:"Texas, US"},
+ {id:"33785603",gpu:"RTX 5080",dph:0.176,geo:"Sweden, SE"},
+ {id:"33735042",gpu:"RTX 5080",dph:0.176,geo:"Sweden, SE"},
+ {id:"44160786",gpu:"RTX PRO 4500",dph:0.322,geo:"Belgium, BE"},
+ {id:"44160784",gpu:"RTX PRO 4500",dph:0.322,geo:"Belgium, BE"},
+ {id:"43620827",gpu:"RTX PRO 6000 WS",dph:3.203,geo:"Hungary, HU"},
+ {id:"41903269",gpu:"RTX 5060 Ti",dph:0.112,geo:", US"},
+ {id:"48052164",gpu:"RTX PRO 6000 S",dph:2.136,geo:"Utah, US"},
+ {id:"46112205",gpu:"RTX 5090",dph:0.802,geo:", CN"},
+ {id:"46773231",gpu:"RTX 5080",dph:0.269,geo:"Hong Kong, HK"},
+];
+const INST_META = { Creating:{zh:"创建中",cls:"text-[var(--color-accent-hover)]"}, Loading:{zh:"拉取镜像",cls:"text-[var(--color-accent-hover)]"}, Connecting:{zh:"连接中",cls:"text-[var(--color-accent-hover)]"}, Running:{zh:"运行中",cls:"text-[var(--color-success)]"}, Inactive:{zh:"已停止",cls:"text-[var(--color-text-secondary)]"}, Scheduling:{zh:"排队中",cls:"text-[var(--color-warning)]"}, Offline:{zh:"宿主断连",cls:"text-[var(--color-error)]"}, Rebooting:{zh:"重启中",cls:"text-[var(--color-info)]"}, Expired:{zh:"租约过期",cls:"text-red-300"}, Destroyed:{zh:"已销毁",cls:"text-[var(--color-text-faint)]"} };
+const ACTIVE_STATES=["Running","Loading","Creating","Connecting","Scheduling","Rebooting"];
+
+/* ================= i18n（与对客端共用 vast-demo-lang 键；每键 zh/en 双录） ================= */
+let _LANG="zh";
+const setLang=(l)=>{ _LANG=l; };
+const I18N={
+zh:{
+  appTitle:"Mekong Admin", appDemo:"演示原型", openClient:"打开用户端 →", syncHint:"每 0.5s 同步用户端落盘",
+  navDash:"大盘", navMarket:"市场管理", navInst:"实例运维", navFund:"资金对账", navUser:"用户与合规", navData:"演示数据", navAudit:"操作审计",
+  dAccounts:"注册账号", dSupply:"在架供给", dInst:"活跃实例", dBal:"当前账号余额", dEscrow:"Escrow 冻结", dHost:"宿主累计收益", dPlat:"平台抽成收入", dSpend:"租客消费总额",
+  dEvents:"用户端实时流水（最近 8 条）", dNone:"用户端暂无数据——请打开 /index.html 操作，或到「演示数据」注入", dSync:"最近同步", dLive:"联动中",
+  colId:"ID", colGpu:"型号", colPrice:"$/hr", colSrc:"来源", colGeo:"位置", colStatus:"状态", colAct:"操作", colTime:"时间", colItem:"条目", colAmt:"金额", colTag:"标记", colRate:"抽成",
+  mDelist:"下架", mRestore:"恢复", mQueue:"宿主审核队列（上架即入队，通过=放行，驳回=下架）", mQueueEmpty:"队列为空——无待审宿主机器", mApprove:"通过", mReject:"驳回", mQueuedAt:"上架时间", mDeposit:"押金",
+  iForceStop:"强制停机", iForceDestroy:"强制销毁", iContract:"合约", iAcc:"未结算", iActive:"活跃", iTip:"干预经 BroadcastChannel 下发，用户端实时执行自身 Stop/Destroy 路径（写权在用户端）",
+  fCommission:"平台抽成比例", fCommissionTip:"默认 0%（与用户端 1:1 全额入账基线一致）；调整后仅影响新增消费，宿主按 (1−r) 入账、平台按 r 计收入", fApply:"应用", fApplied:(p)=>`抽成已调整为 ${p}%（仅影响后续消费）`,
+  fTransFee:"过渡态存储费", fTransFeeOn:"开启", fTransFeeOff:"关闭", fTransFeeTip:"计费引擎参数：实例启动/排队/断连等过渡态是否收取 0.6× 存储费。属平台单方条款，用户端只读镜像、无配置权（默认开启）", fTransFeeApplied:(on)=>`过渡态存储费已${on?"开启":"关闭"}（用户端实时生效）`,
+  poTitle:"出金审批 · 宿主提现申请", poEmpty:"暂无提现申请——用户端 Earnings 页发起后实时出现在此",
+  poApprove:"批准", poPending:"待审", poApproved:"已放行", poRejectedN:"已驳回",
+  poColChannel:"通道", poColTime:"申请时间", poColStatus:"状态",
+  poTotal:"累计已出金", poTotalSub:(n)=>`共 ${n} 笔 · 以 Admin 审批账本为准`, poPendingN:"待审笔数",
+  poNote:"批准即时扣减用户端宿主收益（在线实时生效、离线挂载补扣）；出金不产生 ledger 流水，下方对账表保持租客↔宿主入账口径",
+  reconTitle:"双边对账（以 ledger 流水为准）", reconRent:"租客消费（host 源）", reconHost:"宿主净入账 (1−r)", reconPlat:"平台抽成 (r)", reconCheck:"守恒校验", reconOk:"通过（±0.01）", reconErr:"校验失败，差值", reconSplit:(a,b)=>`rate>0 共 ${a} 笔 · rate=0 共 ${b} 笔（切抽成前后分段记账）`,
+  uEmail:"邮箱", uProvider:"注册方式", uRegAt:"注册时间", uRole:"状态", uBan:"封禁", uUnban:"解封", uBanned:"已封禁", uNormal:"正常", uCurrent:"当前登录", uBanTip:(e)=>`已封禁 ${e}（用户端即时登出并拦截登录）`, uUnbanTip:(e)=>`已解封 ${e}`,
+  kycTitle:"end-use 声明留痕", kycBody:"留痕为真实采集：声明确认时间、协议版本、四项勾选、注册通道（邮箱注册逐项收集；OAuth 首登如实标注）。受限方名单实时筛查仍属正式版范围——R4 缩窄，未虚构闭合。",
+  euVer:"协议版本", euChecks:"四项声明", euVia:"通道", euNoTrail:"无留痕（legacy 存档，未采集）", euOauthNote:"OAuth 首登视为接受 · 未逐项收集", euNever:"（新注册后此处出现留痕行）",
+  genTitle:"演示数据生成器", genBody:"注入 2 个演示账号 + 1 台待审宿主机器（RTX 4090）+ 3 条历史流水（含 1 笔 rate=10% 的宿主收益）+ $40 余额。注入前自动快照当前现场，可一键还原。", genBtn:"注入演示数据", genDone:"已注入；用户端在线时会自动刷新", genSnap:"已快照当前现场", genNoSnap:"尚无快照", genRestore:"还原快照", genRestoreTip:"将把快照写回用户端两键，并通知用户端刷新。建议先关闭用户端标签页再还原（避免其内存态覆盖）", genRestored:"已还原快照，用户端已通知刷新",
+  resetTitle:"重置 Admin 配置", resetBody:"清空下架/封禁/抽成/审计（不动用户端数据；用户端抽成即时回落为 0）", resetBtn:"重置配置", resetDone:"Admin 配置已重置",
+  aTitle:"操作审计", aEmpty:"暂无操作记录", aAction:"动作", aDetail:"对象/明细", aTime:"时间",
+  adBannedLogout:"你的账号已被平台封禁（Admin 干预）", adForceStop:"后台已强制停机（Admin 干预）", adForceDestroy:"后台已强制销毁（Admin 干预）", adInjected:"测试数据已注入（Admin 生成器）",
+  errBanned:"该账号已被封禁，请联系平台客服",
+  aDelist:"Offer 下架", aRestore:"Offer 恢复", aApprove:"宿主审核通过", aReject:"宿主审核驳回", aBan:"账号封禁", aUnban:"账号解封", aComm:"抽成调整", aTransFee:"过渡费调整", aStop:"强制停机", aDestroy:"强制销毁", aGen:"注入演示数据", aReset:"重置 Admin 配置", aSnapRestore:"还原快照", aPayoutOk:"出金批准", aPayoutNo:"出金驳回",
+  confirmGen:"注入会合并数据到当前用户端现场（原数据不删除，快照可还原）。继续？",
+  none:"—", yes:"是", sidenavHint:"单登录双主体 · 写权分离：本端只写 ADMIN 配置键，用户端只读",
+},
+en:{
+  appTitle:"Mekong Admin", appDemo:"Demo console", openClient:"Open client →", syncHint:"Syncs client state every 0.5s",
+  navDash:"Dashboard", navMarket:"Market", navInst:"Instances", navFund:"Finance", navUser:"Users & Compliance", navData:"Demo Data", navAudit:"Audit Log",
+  dAccounts:"Accounts", dSupply:"Listed supply", dInst:"Active instances", dBal:"Current balance", dEscrow:"Escrow held", dHost:"Host earnings", dPlat:"Platform commission", dSpend:"Tenant spend",
+  dEvents:"Client ledger (latest 8)", dNone:"No client data yet — open /index.html and interact, or inject from Demo Data", dSync:"Last sync", dLive:"Live",
+  colId:"ID", colGpu:"GPU", colPrice:"$/hr", colSrc:"Source", colGeo:"Location", colStatus:"Status", colAct:"Action", colTime:"Time", colItem:"Item", colAmt:"Amount", colTag:"Tag", colRate:"Rate",
+  mDelist:"Delist", mRestore:"Restore", mQueue:"Host review queue (auto-enqueued on listing; approve=keep, reject=delist)", mQueueEmpty:"Queue empty — no host machine pending review", mApprove:"Approve", mReject:"Reject", mQueuedAt:"Listed at", mDeposit:"Deposit",
+  iForceStop:"Force stop", iForceDestroy:"Force destroy", iContract:"Contract", iAcc:"Unsettled", iActive:"Active", iTip:"Interventions go via BroadcastChannel; the client executes its own Stop/Destroy path (write authority stays client-side)",
+  fCommission:"Platform commission", fCommissionTip:"Default 0% (matches the client's 1:1 baseline); affects new spend only — host receives (1−r), platform earns r", fApply:"Apply", fApplied:(p)=>`Commission set to ${p}% (new spend only)`,
+  fTransFee:"Transition storage fee", fTransFeeOn:"On", fTransFeeOff:"Off", fTransFeeTip:"Billing-engine parameter: whether transitional states (startup/queuing/disconnected) incur 0.6× storage. A platform-side clause — the client only mirrors it, with no config authority (default on)", fTransFeeApplied:(on)=>`Transition storage fee ${on?"enabled":"disabled"} (applies client-side instantly)`,
+  poTitle:"Payout approvals · host withdrawal requests", poEmpty:"No withdrawal requests yet — they appear here live once started from the client's Earnings page",
+  poApprove:"Release", poPending:"Pending", poApproved:"Released", poRejectedN:"Rejected",
+  poColChannel:"Channel", poColTime:"Requested", poColStatus:"Status",
+  poTotal:"Total paid out", poTotalSub:(n)=>`${n} payout(s) · per Admin approval ledger`, poPendingN:"Pending requests",
+  poNote:"Approving deducts the client's host earnings instantly (live when online, replayed on mount when offline); payouts create no ledger rows — the reconciliation table keeps the tenant↔host credit scope",
+  reconTitle:"Two-sided reconciliation (from ledger)", reconRent:"Tenant spend (host source)", reconHost:"Host net (1−r)", reconPlat:"Platform commission (r)", reconCheck:"Conservation check", reconOk:"passed (±0.01)", reconErr:"FAILED, diff", reconSplit:(a,b)=>`${a} entries with rate>0 · ${b} with rate=0 (segmented at commission switch)`,
+  uEmail:"Email", uProvider:"Provider", uRegAt:"Registered", uRole:"Status", uBan:"Ban", uUnban:"Unban", uBanned:"Banned", uNormal:"Normal", uCurrent:"Signed in", uBanTip:(e)=>`Banned ${e} (client logs out & blocks sign-in instantly)`, uUnbanTip:(e)=>`Unbanned ${e}`,
+  kycTitle:"end-use declaration trail", kycBody:"Trail is genuinely collected: consent time, statement version, the four checkbox answers, signup channel (per-item for email signup; OAuth first sign-in honestly marked as not itemized). Restricted-party screening at scale stays in the production build — R4 narrowed, not fabricated.",
+  euVer:"Version", euChecks:"Four declarations", euVia:"Channel", euNoTrail:"No trail (legacy archive, not collected)", euOauthNote:"OAuth first sign-in deemed accepted · not itemized", euNever:"(a trail row appears here after a fresh signup)",
+  genTitle:"Demo data generator", genBody:"Injects 2 demo accounts + 1 host machine pending review (RTX 4090) + 3 ledger entries (incl. one hostEarn at rate=10%) + $40 balance. Snapshots the current scene first; one-click restore.", genBtn:"Inject demo data", genDone:"Injected; open client tabs will auto-refresh", genSnap:"Scene snapshotted", genNoSnap:"No snapshot yet", genRestore:"Restore snapshot", genRestoreTip:"Writes the snapshot back to the two client keys and asks the client to reload. Close client tabs first (their in-memory state would overwrite)", genRestored:"Snapshot restored; client reload requested",
+  resetTitle:"Reset Admin config", resetBody:"Clears delist/ban/commission/audit (client data untouched; client commission falls back to 0 immediately)", resetBtn:"Reset config", resetDone:"Admin config reset",
+  aTitle:"Audit log", aEmpty:"No operations yet", aAction:"Action", aDetail:"Target / detail", aTime:"Time",
+  adBannedLogout:"Your account was suspended (Admin action)", adForceStop:"Instance force-stopped (Admin action)", adForceDestroy:"Instance force-destroyed (Admin action)", adInjected:"Test data injected (Admin generator)",
+  errBanned:"This account has been suspended. Contact support.",
+  aDelist:"Offer delisted", aRestore:"Offer restored", aApprove:"Host listing approved", aReject:"Host listing rejected", aBan:"Account banned", aUnban:"Account unbanned", aComm:"Commission changed", aTransFee:"Transition fee changed", aStop:"Force stop", aDestroy:"Force destroy", aGen:"Demo data injected", aReset:"Admin config reset", aSnapRestore:"Snapshot restored", aPayoutOk:"Payout released", aPayoutNo:"Payout rejected",
+  confirmGen:"Data will be MERGED into the current client scene (nothing deleted; snapshot restorable). Continue?",
+  none:"—", yes:"Yes", sidenavHint:"Single sign-in, dual principals · Split write authority: this console writes only ADMIN key; client reads it",
+}};
+const T = new Proxy({}, { get(_,k){ const v=I18N[_LANG]?.[k]; return v!==undefined? v : I18N.zh[k]; } });
+
+/* ================= 演示数据注入定义（内容在本端定义，执行在用户端——只发消息不动对客键） ================= */
+const GEN_PAYLOAD = {
+  balance: 40,
+  accounts: [ {email:"alice@demo.dev", pwd:"password123"}, {email:"bob@demo.dev", pwd:"password123"} ],
+  hostMachines: [ { id:"m-hx-009", name:"HX-009 · RTX 4090", spec:"RTX 4090 ×1", gpuRam:23.9, memBw:1008, pcie:4.0, arch:"Ada", cpuCores:16, ram:64, netUp:280, netDown:940, dph:0.41, deposit:50, geoloc:"Shenzhen · CN", status:"listed", seed:false, net:0.05, sto:0.02, contracts:0 } ],
+  ledger: [
+    { t:-7200,  msgKey:"lgGpu",       sid:"i-445120", amt:6.30, hostEarn:1, rate:0.10 },
+    { t:-86400, msgKey:"lgGpu",       sid:"i-203977", amt:12.75, hostEarn:1, rate:0 },
+    { t:-90000, msgKey:"lgStoreStop", sid:"i-203977", amt:0.85 },
+  ],
+};
+
+/* ================= 小组件 ================= */
+const Card=({label,value,sub,cls,live,size})=>(
+  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6" {...(live?{"aria-live":"polite"}:{})}>
+    <div className="text-[13px] text-[var(--color-text-muted)]">{label}</div>
+    {/* 数值字号必须是源码完整字面量（Tailwind 扫不到运行时拼接）；长文本 value（守恒校验）用 sm 档防溢出 */}
+    <div className={`mono mt-1.5 tabular-nums font-bold ${size==="sm"?"text-[20px]":"text-[28px]"} ${cls||""}`}>{value}</div>
+    {sub && <div className="mt-1 text-[12.5px] text-[var(--color-text-faint)]">{sub}</div>}
+  </div>);
+const Th=({children,w,cls})=><th scope="col" className={`border-b border-[var(--color-border)] px-4 py-3 text-left text-[13px] font-medium text-[var(--color-text-secondary)] ${w||""} ${cls||""}`}>{children}</th>;
+const Td=({children,cls})=><td className={`border-b border-[var(--color-border)]/60 px-4 py-3 ${cls||""}`}>{children}</td>;
+const Btn=({children,onClick,tone,disabled,title,cls,label})=>{
+  const map={ danger:"border-[var(--color-error)]/50 text-[var(--color-error)] hover:bg-[var(--color-error)]/10",
+    ok:"border-[var(--color-success)]/50 text-[var(--color-success)] hover:bg-[var(--color-success)]/10",
+    plain:"border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]" };
+  return <button onClick={onClick} disabled={disabled} title={title} aria-label={label}
+    className={`btn-touch rounded-md border px-3 py-1.5 text-[13.5px] font-medium disabled:cursor-not-allowed disabled:opacity-40 ${map[tone||"plain"]} ${cls||""}`}>{children}</button>; };
+
+/* ================= 派生数据 ================= */
+function derive(store, accounts, cfg){
+  const st = { escrow:0, hostEarnings:0, balance:0, ...(store||{}) }; // 注入最小对象时缺失字段按 0 兜底（用户端加载同口径补默认值）
+  const instances = Array.isArray(st.instances)? st.instances : [];
+  const ledger = Array.isArray(st.ledger)? st.ledger : [];
+  const machines = Array.isArray(st.hostMachines)? st.hostMachines : [];
+  // 在架供给（对齐对客端 allSupply 口径：12 静态 + 非离线宿主机，再扣 Admin 下架）
+  const delisted=(cfg.delisted||[]).map(String);
+  const supply=[ ...OFFERS_SUMMARY.map(o=>({id:o.id, source:"offer"})),
+    ...machines.filter(m=>!["offline","removed","maintenance"].includes(m.status)).map(m=>({id:"host-"+m.id, source:m.seed?"seed":"host"})) ];
+  const supplyLive = supply.filter(o=>!delisted.includes(String(o.id))).length;
+  const active = instances.filter(i=>ACTIVE_STATES.includes(i.status));
+  // 租客消费总额：仅计真实消费键（排除充值/退款/订单预付划款，避免口径虚高）
+  const CONSUME=new Set(["lgGpu","lgStoreStop","lgBw","lgAmort"]);
+  const spend = ledger.filter(e=>CONSUME.has(e.msgKey)).reduce((a,e)=>a+(e.amt||0),0);
+  const hostGross = ledger.filter(e=>e.hostEarn&&e.amt>0);
+  const hostNet = hostGross.reduce((a,e)=>a+e.amt*(1-(e.rate||0)),0);
+  const platRev = hostGross.reduce((a,e)=>a+e.amt*(e.rate||0),0);
+  const posRate = hostGross.filter(e=>(e.rate||0)>0).length, zeroRate = hostGross.length-posRate;
+  const reconDiff = Math.abs(hostGross.reduce((a,e)=>a+e.amt,0) - (hostNet+platRev));
+  // 审核队列：非 seed、listed、未被 Admin 通过过
+  const approved=(cfg.approved||[]);
+  const queue = machines.filter(m=>!m.seed && m.status==="listed" && !approved.includes(m.id));
+  const emails = Object.keys(accounts||{});
+  const payoutReqs = Array.isArray(st.payoutReqs)? st.payoutReqs : []; // 出金申请（用户端落盘，本端只读）
+  return { st, instances, ledger, machines, supplyLive, active, spend, hostGross, hostNet, platRev, posRate, zeroRate, reconDiff, queue, emails, delisted, payoutReqs };
+}
+
+/* ================= 页面 ================= */
+function Dashboard({d,syncAt}){
+  return (<div className="space-y-6">
+    <div className="grid grid-cols-2 gap-5 xl:grid-cols-4">
+      <Card label={T.dAccounts} value={d.emails.length}/>
+      <Card label={T.dSupply} value={d.supplyLive}/>
+      <Card label={T.dInst} value={d.active.length} sub={d.instances.length? `${d.instances.length} total` : null}/>
+      <Card label={T.dBal} value={fmt$(d.st.balance)} cls="text-[var(--color-success)]"/>
+      <Card label={T.dEscrow} value={fmt$(d.st.escrow)} cls="text-[var(--color-warning)]"/>
+      <Card label={T.dHost} value={fmt$(d.st.hostEarnings)} cls="text-[var(--color-warning)]"/>
+      <Card label={T.dPlat} value={fmt$(d.platRev)} cls="text-[var(--color-accent-hover)]"/>
+      <Card label={T.dSpend} value={fmt$(d.spend)}/>
+    </div>
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-3">
+        <span className="text-[14px] font-semibold">{T.dEvents}</span>
+        <span className="flex items-center gap-1.5 text-[12.5px] text-[var(--color-text-faint)]">
+          <span className="dot-pulse inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-success)] motion-reduce:animate-none"></span>
+          {T.dSync} {syncAt}
+        </span>
+      </div>
+      {d.ledger.length===0? <div className="px-5 py-8 text-[14px] text-[var(--color-text-faint)]">{T.dNone}</div> : (
+      <div className="table-scroll">
+      <table className="w-full text-[14px]">
+        <caption className="sr-only">{T.dEvents}</caption>
+        <thead><tr><Th w="w-36">{T.colTime}</Th><Th>{T.colItem}</Th><Th>{T.colId}</Th><Th w="w-36" cls="text-right">{T.colAmt}</Th><Th>{T.colTag}</Th></tr></thead>
+        <tbody>{d.ledger.slice(0,8).map((e,i)=>(
+          <tr key={i}>
+            <Td cls="mono text-[var(--color-text-muted)]">{fmtT(e.t)}</Td>
+            <Td>{EVT[e.msgKey]? EVT[e.msgKey][_LANG] : e.msgKey}</Td>
+            <Td cls="mono text-[var(--color-text-faint)]">{e.sid||"—"}</Td>
+            <Td cls={`mono text-right ${e.amt>0?"text-[var(--color-error)]":"text-[var(--color-text-secondary)]"}`}>{fmtNeg(e.amt)}</Td>
+            <Td>{e.hostEarn? <span className="rounded border border-[var(--color-warning)]/40 px-1.5 py-px text-[12px] text-[var(--color-warning)]">hostEarn{e.legacy?" · legacy":""}</span> : null}</Td>
+          </tr>))}</tbody>
+      </table>
+      </div>)}
+    </div>
+  </div>);
+}
+
+function Market({d,act}){
+  const rows=[
+    ...OFFERS_SUMMARY.map(o=>({...o, source:"offer"})),
+    ...d.machines.filter(m=>!["offline","removed","maintenance"].includes(m.status)).map(m=>({id:"host-"+m.id, source:m.seed?"seed":"host", gpu:(m.spec||m.name), dph:m.dph, geo:m.geoloc})),
+  ];
+  return (<div className="space-y-6">
+    <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="table-scroll">
+      <table className="w-full text-[14px]">
+        <caption className="sr-only">{T.navMarket}</caption>
+        <thead><tr><Th>{T.colId}</Th><Th>{T.colSrc}</Th><Th>{T.colGpu}</Th><Th cls="text-right">{T.colPrice}</Th><Th>{T.colGeo}</Th><Th>{T.colStatus}</Th><Th>{T.colAct}</Th></tr></thead>
+        <tbody>{rows.map(r=>{
+          const off=d.delisted.includes(r.id);
+          return (<tr key={r.id}>
+            <Td cls="mono text-[var(--color-text-faint)]">{r.id}</Td>
+            <Td cls={SRC[r.source].cls}>{SRC[r.source][_LANG]}</Td>
+            <Td>{r.gpu}</Td><Td cls="mono text-right">{r.dph!=="—"?"$"+r.dph.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"}</Td><Td>{r.geo}</Td>
+            <Td>{off? <span className="text-[var(--color-error)]">{T.mDelist}</span> : <span className="text-[var(--color-success)]">●</span>}</Td>
+            <Td>{off? <Btn tone="ok" onClick={()=>act.restoreOffer(r.id)}>{T.mRestore}</Btn> : <Btn tone="danger" onClick={()=>act.delistOffer(r.id)}>{T.mDelist}</Btn>}</Td>
+          </tr>);})}
+        </tbody>
+      </table>
+      </div>
+    </div>
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="border-b border-[var(--color-border)] px-5 py-3 text-[14px] font-semibold">{T.mQueue}</div>
+      {d.queue.length===0? <div className="px-5 py-8 text-[14px] text-[var(--color-text-faint)]">{T.mQueueEmpty}</div> : (
+      <div className="table-scroll">
+      <table className="w-full text-[14px]">
+        <caption className="sr-only">{T.mQueue}</caption>
+        <thead><tr><Th>{T.colGpu}</Th><Th cls="text-right">{T.colPrice}</Th><Th cls="text-right">{T.mDeposit}</Th><Th>{T.colGeo}</Th><Th>{T.mQueuedAt}</Th><Th>{T.colAct}</Th></tr></thead>
+        <tbody>{d.queue.map(m=>(
+          <tr key={m.id}>
+            <Td>{m.spec||m.name}</Td><Td cls="mono text-right">${+(m.dph||0).toLocaleString("en-US",{maximumFractionDigits:2})}/hr</Td><Td cls="mono text-right">{m.deposit? "$"+m.deposit : T.none}</Td><Td>{m.geoloc||T.none}</Td>
+            <Td cls="mono text-[var(--color-text-faint)]">{m.createdAt? fmtDate(m.createdAt) : T.none}</Td>
+            <Td><div className="flex gap-2"><Btn tone="ok" onClick={()=>act.approve(m.id)}>{T.mApprove}</Btn><Btn tone="danger" onClick={()=>act.reject(m.id)}>{T.mReject}</Btn></div></Td>
+          </tr>))}</tbody>
+      </table>
+      </div>)}
+    </div>
+  </div>);
+}
+
+function Instances({d,act}){
+  const rows=d.instances;
+  return (<div className="space-y-5">
+    <p className="text-[13px] text-[var(--color-text-faint)]">{T.iTip}</p>
+    <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      {rows.length===0? <div className="px-5 py-8 text-[14px] text-[var(--color-text-faint)]">{T.dNone}</div> : (
+      <div className="table-scroll">
+      <table className="w-full text-[14px]">
+        <caption className="sr-only">{T.navInst}</caption>
+        <thead><tr><Th>{T.colId}</Th><Th>{T.colGpu}</Th><Th>{T.colStatus}</Th><Th cls="text-right">{T.colPrice}</Th><Th cls="text-right">{T.iAcc}</Th><Th>{T.iContract}</Th><Th>{T.colAct}</Th></tr></thead>
+        <tbody>{rows.map(it=>{
+          const meta=INST_META[it.status]||{zh:it.status,cls:""};
+          const stoppable=!["Destroyed"].includes(it.status);
+          const active=ACTIVE_STATES.includes(it.status)||["Offline","Expired"].includes(it.status);
+          return (<tr key={it.key}>
+            <Td cls="mono text-[var(--color-text-faint)]">{it.shortId}</Td>
+            <Td>{it.offer?.gpu||it.offer?.name||T.none}</Td>
+            <Td cls={meta.cls}>{it.status}{_LANG==="zh"&&meta.zh? ` · ${meta.zh}`:""}</Td>
+            <Td cls="mono text-right">{it.dph==null? T.none : "$"+it.dph.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</Td>
+            <Td cls="mono text-right">{fmt$(it.acc)}</Td>
+            <Td>{it.contractType||"ondemand"}</Td>
+            <Td><div className="flex gap-2">
+              <Btn tone="danger" disabled={!stoppable} onClick={()=>act.forceStop(it.key)}>{T.iForceStop}</Btn>
+              <Btn tone="danger" disabled={!active} onClick={()=>act.forceDestroy(it.key)}>{T.iForceDestroy}</Btn>
+            </div></Td>
+          </tr>);})}
+        </tbody>
+      </table>
+      </div>)}
+    </div>
+  </div>);
+}
+
+function Fund({d,cfg,act}){
+  const ratePct=Math.round((cfg.commission||0)*100);
+  const [draft,setDraft]=useState(ratePct);
+  useEffect(()=>setDraft(ratePct),[ratePct]);
+  const ok=d.reconDiff<=0.011;
+  // 出金审批派生：待审 = 用户端 pending 且本端账本未批/未驳（用户端离线时已批申请由挂载重放补扣，不再重复展示）
+  const poCfg=cfg.payouts||{approved:[],rejected:[]};
+  const _done=new Set([...poCfg.approved,...poCfg.rejected].map(x=>x.id));
+  const pending=d.payoutReqs.filter(q=>q.status==="pending"&&!_done.has(q.id));
+  const totalOut=poCfg.approved.reduce((a,x)=>a+(x.amt||0),0);
+  return (<div className="space-y-6">
+    <div className="grid gap-5 xl:grid-cols-2">
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+        <div className="text-[14px] font-semibold">{T.fCommission}: <span className="mono text-[var(--color-accent-hover)]">{ratePct}%</span></div>
+        <input type="range" min="0" max="20" step="1" value={draft} onChange={e=>setDraft(+e.target.value)} className="mt-3 w-full" aria-label={T.fCommission}/>
+        <div className="mt-1 flex justify-between text-[12.5px] text-[var(--color-text-faint)]"><span>0%</span><span>20%</span></div>
+        <p className="mt-2 text-[13px] leading-snug text-[var(--color-text-muted)]">{T.fCommissionTip}</p>
+        <div className="mt-3"><Btn tone="ok" disabled={draft===ratePct} onClick={()=>act.setCommission(draft)}>{T.fApply}</Btn></div>
+      </div>
+      <div className="grid grid-cols-2 gap-5">
+        <Card label={T.reconRent} value={fmt$(d.hostGross.reduce((a,e)=>a+e.amt,0))}/>
+        <Card label={T.reconHost} value={fmt$(d.hostNet)} cls="text-[var(--color-warning)]"/>
+        <Card label={T.reconPlat} value={fmt$(d.platRev)} cls="text-[var(--color-accent-hover)]"/>
+        <Card label={T.reconCheck} size="sm" value={(ok? "✓ " : "✗ ")+(ok? T.reconOk : T.reconErr+" "+d.reconDiff.toFixed(4))} cls={ok?"text-[var(--color-success)]":"text-[var(--color-error)]"} sub={T.reconSplit(d.posRate,d.zeroRate)} live/>
+      </div>
+    </div>
+    {/* 计费参数（自对客端账单页迁入：平台单方条款，用户端只读镜像） */}
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div className="text-[14px] font-semibold">{T.fTransFee}: <span className={`mono ${cfg.transitionStorageFee!==false?"text-[var(--color-success)]":"text-[var(--color-text-muted)]"}`}>{cfg.transitionStorageFee!==false? T.fTransFeeOn : T.fTransFeeOff}</span></div>
+          <p className="mt-1 max-w-3xl text-[13px] leading-snug text-[var(--color-text-muted)]">{T.fTransFeeTip}</p>
+        </div>
+        <button type="button" role="switch" aria-checked={cfg.transitionStorageFee!==false} aria-label={T.fTransFee} onClick={()=>act.setTransFee(cfg.transitionStorageFee===false)}
+          className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${cfg.transitionStorageFee!==false?"bg-[var(--color-success)]":"bg-[var(--color-border)]"}`}>
+          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${cfg.transitionStorageFee!==false?"right-1":"left-1"}`}></span>
+        </button>
+      </div>
+    </div>
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="border-b border-[var(--color-border)] px-5 py-3 text-[14px] font-semibold">{T.poTitle}</div>
+      <div className="grid grid-cols-2 gap-5 p-5">
+        <Card label={T.poTotal} value={fmt$(totalOut)} cls="text-[var(--color-warning)]" sub={T.poTotalSub(poCfg.approved.length)}/>
+        <Card label={T.poPendingN} value={pending.length} live/>
+      </div>
+      <p className="px-5 pb-3 text-[13px] leading-snug text-[var(--color-text-muted)]">{T.poNote}</p>
+      {pending.length===0? <div className="px-5 pb-6 text-[14px] text-[var(--color-text-faint)]">{T.poEmpty}</div> : (
+      <div className="table-scroll">
+      <table className="w-full text-[14px]">
+        <caption className="sr-only">{T.poTitle}</caption>
+        <thead><tr><Th>{T.uEmail}</Th><Th>{T.poColChannel}</Th><Th cls="text-right">{T.colAmt}</Th><Th>{T.poColTime}</Th><Th>{T.poColStatus}</Th><Th>{T.colAct}</Th></tr></thead>
+        <tbody>{pending.map(q=>(
+          <tr key={q.id}>
+            <Td cls="mono">{q.email}</Td><Td>{q.channel||T.none}</Td>
+            <Td cls="mono text-right">{fmt$(q.amt)}</Td>
+            <Td cls="mono text-[var(--color-text-faint)]">{fmtDate(q.t)}</Td>
+            <Td><span className="text-[var(--color-warning)]">{T.poPending}</span></Td>
+            <Td><div className="flex gap-2"><Btn tone="ok" onClick={()=>act.payoutOk(q)}>{T.poApprove}</Btn><Btn tone="danger" onClick={()=>act.payoutNo(q)}>{T.mReject}</Btn></div></Td>
+          </tr>))}
+        </tbody>
+      </table>
+      </div>)}
+    </div>
+    <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="table-scroll">
+      <table className="w-full text-[14px]">
+        <caption className="sr-only">{T.reconTitle}</caption>
+        <thead><tr><Th>{T.colTime}</Th><Th>{T.colItem}</Th><Th>{T.colId}</Th><Th cls="text-right">{T.colAmt}</Th><Th>{T.colTag}</Th><Th cls="text-right">{T.colRate}</Th></tr></thead>
+        <tbody>{d.ledger.map((e,i)=>(
+          <tr key={i}>
+            <Td cls="mono text-[var(--color-text-muted)]">{fmtT(e.t)}</Td>
+            <Td>{EVT[e.msgKey]? EVT[e.msgKey][_LANG] : e.msgKey}</Td>
+            <Td cls="mono text-[var(--color-text-faint)]">{e.sid||"—"}</Td>
+            <Td cls={`mono text-right ${e.amt>0?"text-[var(--color-error)]":"text-[var(--color-text-secondary)]"}`}>{fmtNeg(e.amt)}</Td>
+            <Td>{e.hostEarn? <span className="rounded border border-[var(--color-warning)]/40 px-1.5 py-px text-[12px] text-[var(--color-warning)]">hostEarn{e.legacy?" · legacy":""}</span>:null}</Td>
+            <Td cls="mono text-right">{e.hostEarn? ((e.rate||0)*100).toFixed(0)+"%" : "—"}</Td>
+          </tr>))}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>);
+}
+
+function Users({d,cfg,act}){
+  const st=d.st; const cur=st.user?.email;
+  const banned=cfg.banned||[];
+  return (<div className="space-y-6">
+    <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="table-scroll">
+      <table className="w-full text-[14px]">
+        <caption className="sr-only">{T.navUser}</caption>
+        <thead><tr><Th>{T.uEmail}</Th><Th>{T.uProvider}</Th><Th>{T.uRegAt}</Th><Th>{T.uRole}</Th><Th>{T.colAct}</Th></tr></thead>
+        <tbody>{d.emails.length===0? <tr><Td cls="text-[var(--color-text-faint)]">{T.dNone}</Td></tr> : d.emails.map(e=>{
+          const isBanned=banned.includes(e);
+          return (<tr key={e}>
+            <Td cls="mono">{e}</Td><Td>{accounts[e]?.provider||"email"}</Td><Td cls="mono text-[var(--color-text-faint)]">{fmtDate(accounts[e]?.createdAt)}</Td>
+            <Td>{isBanned? <span className="text-[var(--color-error)]">{T.uBanned}</span> : (e===cur? <span className="text-[var(--color-accent-hover)]">{T.uCurrent}</span> : T.uNormal)}</Td>
+            <Td>{isBanned? <Btn tone="ok" onClick={()=>act.unban(e)}>{T.uUnban}</Btn> : <Btn tone="danger" onClick={()=>act.ban(e)}>{T.uBan}</Btn>}</Td>
+          </tr>);})}
+        </tbody>
+      </table>
+      </div>
+    </div>
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+     <div className="text-[14px] font-semibold">{T.kycTitle}</div>
+        <div className="table-scroll mt-3">
+        <table className="w-full text-[14px]">
+          <caption className="sr-only">{T.kycTitle}</caption>
+          <thead><tr><Th>{T.uEmail}</Th><Th>{T.uRegAt}</Th><Th>{T.euVer}</Th><Th>{T.euChecks}</Th><Th>{T.euVia}</Th></tr></thead>
+          <tbody>{(()=>{
+            const tr=d.st.endUseTrail;
+            if(tr) return (
+              <tr key="trail">
+                <Td cls="mono">{tr.email||cur||"—"}</Td>
+                <Td cls="mono text-[var(--color-text-faint)]">{fmtDate(tr.t)}</Td>
+                <Td cls="mono">{tr.v||"—"}</Td>
+                <Td cls="mono">{Array.isArray(tr.checks)? tr.checks.map(b=>b?"✓":"✗").join(" ") : <span className="text-[var(--color-text-muted)]">{T.euOauthNote}</span>}</Td>
+                <Td cls="mono">{tr.via||"—"}</Td>
+              </tr>);
+            if(cur) return (<tr key="legacy"><Td cls="mono text-[var(--color-text-faint)]" >{cur}</Td><Td colSpan={4} cls="text-[var(--color-text-faint)]">{T.euNoTrail}</Td></tr>);
+            return (<tr key="none"><Td colSpan={5} cls="text-[var(--color-text-faint)]">{T.euNever}</Td></tr>);
+          })()}</tbody>
+        </table>
+        </div>
+        <p className="mt-3 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{T.kycBody}</p>
+        <div className="mono mt-2 text-[12.5px] text-[var(--color-text-faint)]">accepted = {String(!!st.accepted)}{cur? ` · ${cur}`:""}</div>
+      </div>
+  </div>);
+}
+
+function Data({cfg,act,snapInfo}){
+  const [confirming,setConfirming]=useState(false);
+  return (<div className="grid gap-5 xl:grid-cols-2">
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+      <div className="text-[14px] font-semibold">{T.genTitle}</div>
+      <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{T.genBody}</p>
+      <div className="mt-3 flex items-center gap-3">
+        <button onClick={()=>{ if(!confirming){ setConfirming(true); setTimeout(()=>setConfirming(false),4000); } else { setConfirming(false); act.inject(); } }}
+          className={`rounded-md border px-3 py-1.5 text-[13.5px] font-medium ${confirming? "border-[var(--color-error)] bg-[var(--color-error)]/10 text-[var(--color-error)]" : "border-[var(--color-success)]/50 text-[var(--color-success)] hover:bg-[var(--color-success)]/10"}`}>
+          {confirming? (_LANG==="zh"? "再点一次确认注入" : "Click again to confirm") : T.genBtn}
+        </button>
+        <span className="text-[12.5px] text-[var(--color-text-faint)]">{snapInfo.has? "✓ "+T.genSnap : T.genNoSnap}</span>
+      </div>
+    </div>
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+      <div className="text-[14px] font-semibold">{T.genRestore}</div>
+      <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{T.genRestoreTip}</p>
+      <div className="mt-3"><Btn tone="danger" disabled={!snapInfo.has} onClick={act.restore}>{T.genRestore}</Btn></div>
+      <div className="mt-6 border-t border-[var(--color-border)] pt-5">
+        <div className="text-[14px] font-semibold">{T.resetTitle}</div>
+        <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{T.resetBody}</p>
+        <div className="mt-3"><Btn tone="danger" onClick={act.resetCfg}>{T.resetBtn}</Btn></div>
+      </div>
+    </div>
+  </div>);
+}
+
+function Audit({cfg,act}){
+  const rows=cfg.audit||[];
+  return (<div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+    <div className="table-scroll">
+    <table className="w-full text-[14px]">
+      <caption className="sr-only">{T.aTitle}</caption>
+      <thead><tr><Th w="w-36">{T.aTime}</Th><Th w="w-40">{T.aAction}</Th><Th>{T.aDetail}</Th></tr></thead>
+      <tbody>{rows.length===0? <tr><Td cls="text-[var(--color-text-faint)]">{T.aEmpty}</Td></tr> : rows.map((a,i)=>(
+        <tr key={i}><Td cls="mono text-[var(--color-text-faint)]">{fmtDate(a.t)}</Td><Td>{a.action}</Td><Td cls="mono text-[var(--color-text-muted)]">{a.detail||""}</Td></tr>))}
+      </tbody>
+    </table>
+    </div>
+  </div>);
+}
+
+/* ================= App ================= */
+let accounts={}; // 轮询刷新的账号库快照（Users 表读取）
+function App(){
+  const [lang,setLangState]=useState(()=>{ try{ const l=localStorage.getItem("vast-demo-lang"); return (l==="en"||l==="zh")?l:"zh"; }catch(e){ return "zh"; } });
+  setLang(lang);
+  const [tab,setTab]=useState("dash");
+  const [store,setStore]=useState(loadStore);
+  const [cfg,setCfg]=useState(()=>({...defaultCfg(),...loadAdminCfg()}));
+  const [syncAt,setSyncAt]=useState(nowStr());
+  const [tickN,setTickN]=useState(0); // 强制轮询重渲染
+  const [mobileNav,setMobileNav]=useState(false); // P1-R1: 移动端侧栏开关
+  const [notice,setNotice]=useState(null);        // P3-P3: 内联操作反馈（非模态、非全屏）
+  const noticeTimer=useRef(null);
+  const flash=(m)=>{ setNotice(m); if(noticeTimer.current) clearTimeout(noticeTimer.current); noticeTimer.current=setTimeout(()=>setNotice(null),2600); };
+  // 轮询用户端两键（对客端 dumpState 每 1s 落盘；本端 0.5s 读取——演示"后台看得见"）
+  useEffect(()=>{
+    const iv=setInterval(()=>{ setStore(loadStore()); accounts=loadAccounts(); setSyncAt(nowStr()); setTickN(n=>n+1); },500);
+    const onStorage=e=>{ if(e.key===STORE_KEY||e.key===ACCOUNTS_KEY){ setStore(loadStore()); accounts=loadAccounts(); setSyncAt(nowStr()); } };
+    window.addEventListener("storage",onStorage);
+    return ()=>{ clearInterval(iv); window.removeEventListener("storage",onStorage); };
+  },[]);
+  const d=useMemo(()=>derive(store,accounts,cfg),[store,cfg,tickN]);
+  const snapInfo={has:!!cfg.backup};
+  const act={
+    delistOffer:(id)=>{ setCfg(c=>commitCfg({...c,delisted:[...new Set([...(c.delisted||[]),String(id)])]},T.aDelist,id)); flash(T.aDelist+" · "+id); },
+    restoreOffer:(id)=>{ setCfg(c=>commitCfg({...c,delisted:(c.delisted||[]).filter(x=>x!==String(id))},T.aRestore,id)); flash(T.aRestore+" · "+id); },
+    approve:(id)=>{ setCfg(c=>commitCfg({...c,approved:[...(c.approved||[]),id]},T.aApprove,id)); flash(T.aApprove+" · "+id); },
+    reject:(id)=>{ setCfg(c=>commitCfg({...c,approved:(c.approved||[]).filter(x=>x!==id),delisted:[...new Set([...(c.delisted||[]),"host-"+id])]},T.aReject,id)); flash(T.aReject+" · "+id); },
+    forceStop:(key)=>{ send({type:"forceStop",key}); setCfg(c=>commitCfg({...c,forceStops:[...new Set([...(c.forceStops||[]),key])]},T.aStop,key)); flash(T.aStop+" · "+key); },
+    forceDestroy:(key)=>{ send({type:"forceDestroy",key}); setCfg(c=>commitCfg(c,T.aDestroy,key)); flash(T.aDestroy+" · "+key); },
+    setCommission:(pct)=>{ setCfg(c=>commitCfg({...c,commission:pct/100},T.aComm,pct+"%")); flash(T.fApplied(pct)); },
+    setTransFee:(on)=>{ setCfg(c=>commitCfg({...c,transitionStorageFee:on},T.aTransFee,on?"on":"off")); flash(T.fTransFeeApplied(on)); },
+    payoutOk:(q)=>{ setCfg(c=>{ const po=c.payouts||{approved:[],rejected:[]};
+      if(po.approved.some(x=>x.id===q.id)) return c; // 幂等：重复点击不重复入账本
+      return commitCfg({...c,payouts:{approved:[...po.approved,{id:q.id,email:q.email,channel:q.channel,amt:q.amt,t:q.t,at:Date.now()}],rejected:po.rejected}},T.aPayoutOk,q.email+" · $"+q.amt); });
+      flash(T.aPayoutOk+" · "+q.email+" $"+q.amt); },
+    payoutNo:(q)=>{ setCfg(c=>{ const po=c.payouts||{approved:[],rejected:[]};
+      if(po.rejected.some(x=>x.id===q.id)) return c;
+      return commitCfg({...c,payouts:{approved:po.approved,rejected:[...po.rejected,{id:q.id,email:q.email,amt:q.amt,t:q.t,at:Date.now()}]}},T.aPayoutNo,q.email+" · $"+q.amt); });
+      flash(T.aPayoutNo+" · "+q.email); },
+    ban:(e)=>{ setCfg(c=>commitCfg({...c,banned:[...new Set([...(c.banned||[]),e])]},T.aBan,e)); flash(T.uBanTip(e)); },
+    unban:(e)=>{ setCfg(c=>commitCfg({...c,banned:(c.banned||[]).filter(x=>x!==e)},T.aUnban,e)); flash(T.uUnbanTip(e)); },
+    inject:()=>{
+      const snap={store:loadStore(), accounts:loadAccounts(), at:Date.now()};
+      // 在线探测：150ms 内收到用户端 pong → 其自行注入（写权分离）；离线 → 本端读-改-写合并直写（单开 Admin 也能演示）
+      const pid="p"+Date.now(); let online=false;
+      const onPong=(ev)=>{ if(ev.data&&ev.data.type==="pong"&&ev.data.id===pid) online=true; };
+      try{ _BC.addEventListener("message",onPong); }catch(e){}
+      send({type:"ping",id:pid});
+      setTimeout(()=>{
+        try{ _BC.removeEventListener("message",onPong); }catch(e){}
+        if(!online){ // 离线直写：与用户端 inject 处理器同一合并口径
+          const s=loadStore()||{};
+          const merged={...s,
+            balance:+(((s.balance)||0)+GEN_PAYLOAD.balance).toFixed(2),
+            hostMachines:[...GEN_PAYLOAD.hostMachines,...(Array.isArray(s.hostMachines)?s.hostMachines:[])],
+            ledger:trimLedger([...GEN_PAYLOAD.ledger,...(Array.isArray(s.ledger)?s.ledger:[])])};
+          try{ localStorage.setItem(STORE_KEY,JSON.stringify(merged)); }catch(e){}
+          const a=loadAccounts(); GEN_PAYLOAD.accounts.forEach(x=>{ if(!a[x.email]) a[x.email]={pwd:x.pwd,provider:"email",createdAt:Date.now()}; });
+          try{ localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(a)); }catch(e){}
+          setStore(loadStore()); accounts=loadAccounts();
+        }else{ send({type:"inject",payload:GEN_PAYLOAD}); }
+        flash(T.genDone);
+        setCfg(c=>commitCfg({...c,backup:snap},T.aGen,(online?"client":"offline-direct")+" · "+GEN_PAYLOAD.hostMachines[0].id));
+      },150);
+    },
+    restore:()=>{ const b=cfg.backup; if(!b) return;
+      // P3-P3: 返回值/写盘结果检查——失败不入"成功"口径
+      let ok=true;
+      try{ if(b.store){ localStorage.setItem(STORE_KEY,JSON.stringify(b.store)); } }catch(e){ ok=false; }
+      try{ if(b.accounts){ localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(b.accounts)); } }catch(e){ ok=false; }
+      send({type:"cfg"}); send({type:"reload"});
+      setStore(loadStore()); accounts=loadAccounts();
+      setCfg(c=>commitCfg(c,T.aSnapRestore,(ok?"ok":"write-failed")+" · "+(b.store?"store":"")+(b.accounts?" accounts":"")));
+      flash(ok? T.genRestored : (_LANG==="zh"?"快照还原写入失败":"snapshot restore write failed"));
+    },
+    resetCfg:()=>{ const fresh=defaultCfg(); saveAdminCfg(fresh); send({type:"cfg"}); setCfg(fresh); flash(T.resetDone); },
+  };
+  const nav=[["dash",T.navDash],["market",T.navMarket],["inst",T.navInst],["fund",T.navFund],["user",T.navUser],["data",T.navData],["audit",T.navAudit]];
+  const toggleLang=()=>{ const nl=lang==="zh"?"en":"zh"; try{localStorage.setItem("vast-demo-lang",nl)}catch(e){}; setLangState(nl); };
+  return (<div className="flex min-h-screen">
+    {/* P1-R1: 移动端 backdrop */}
+    {mobileNav && <div className="sidebar-backdrop fixed inset-0 z-30 hidden bg-black/40 max-md:block" onClick={()=>setMobileNav(false)} aria-hidden="true"/>}
+    {/* 侧栏 */}
+    <aside id="admin-sidebar" data-open={mobileNav} className={`sidebar-responsive flex w-64 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:-translate-x-full md:static`}>
+      <div className="border-b border-[var(--color-border)] px-5 py-4">
+        <div className="text-[17px] font-bold tracking-tight">Mekong<span className="text-[var(--color-accent-hover)]">·</span>Admin</div>
+        <span className="mt-1 inline-block rounded border border-[var(--color-border)] px-1 py-px text-[11.5px] uppercase tracking-wider text-[var(--color-text-muted)]">{T.appDemo}</span>
+      </div>
+      <nav className="flex-1 space-y-1 p-3">
+        {nav.map(([k,l])=>(
+          <button key={k} onClick={()=>{setTab(k); setMobileNav(false);}}
+            className={`btn-touch w-full rounded-lg px-3 py-2 text-left text-[14px] ${tab===k?"bg-[var(--color-accent)]/10 font-semibold text-[var(--color-accent-hover)]":"text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]"}`}
+            aria-current={tab===k?"page":undefined}>{l}</button>))}
+      </nav>
+      <div className="space-y-2 border-t border-[var(--color-border)] p-4">
+        <a href="/index.html" className="btn-touch block rounded-lg border border-[var(--color-border)] px-3 py-2 text-center text-[13px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.openClient}</a>
+        <button onClick={toggleLang} aria-label={lang==="zh"?"Switch to English":"切换到中文"} className="btn-touch w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-[13px] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]">{lang==="zh"?"EN":"中文"}</button>
+        <p className="text-[12.5px] leading-snug text-[var(--color-text-faint)]">{T.sidenavHint}</p>
+      </div>
+    </aside>
+    {/* 主区 */}
+    <main className="min-w-0 flex-1 p-5 md:p-8">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-y-2">
+        <div className="flex items-center gap-2">
+          <button onClick={()=>setMobileNav(v=>!v)} className="hidden max-md:flex rounded-lg border border-[var(--color-border)] p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]" aria-label="Toggle navigation" aria-expanded={mobileNav} aria-controls="admin-sidebar">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
+          </button>
+          <h1 className="text-[21px] font-bold tracking-tight">{nav.find(n=>n[0]===tab)?.[1]}</h1>
+        </div>
+        <span className="flex items-center gap-1.5 text-[13px] text-[var(--color-text-faint)]" title={T.syncHint}>
+          <span className="dot-pulse inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-success)] motion-reduce:animate-none"></span>{T.dLive} · {syncAt}
+        </span>
+        {notice && <span className="rounded border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 px-2.5 py-1 text-[13px] text-[var(--color-success)]" aria-live="polite">{notice}</span>}
+      </header>
+      {tab==="dash" && <Dashboard d={d} syncAt={syncAt}/>}
+      {tab==="market" && <Market d={d} act={act}/>}
+      {tab==="inst" && <Instances d={d} act={act}/>}
+      {tab==="fund" && <Fund d={d} cfg={cfg} act={act}/>}
+      {tab==="user" && <Users d={d} cfg={cfg} act={act}/>}
+      {tab==="data" && <Data cfg={cfg} act={act} snapInfo={snapInfo}/>}
+      {tab==="audit" && <Audit cfg={cfg} act={act}/>}
+    </main>
+  </div>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

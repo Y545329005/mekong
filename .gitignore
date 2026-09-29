@@ -1,0 +1,11 @@
+.DS_Store
+proto/index_*_pre-theme*.html
+
+# 构建产物
+node_modules/
+dist/
+
+# 工具私有目录（浏览器自动化缓存 / 会话截图 / opencode 运行时）
+.playwright-cli/
+.openchamber/
+.opencode/
