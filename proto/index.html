@@ -67,10 +67,10 @@ window.addEventListener('error',function(e){
 <body>
 <a href="#main-content" class="skip-link">跳转到主要内容</a>
 <!--
-THESIS: 一份"可点击的规格说明书"——复刻 Vast.ai 租户漏斗的五个界面单元，验证《产品结构手册 v0.1》的页面卡片与实例状态机。
+THESIS: 一份"可点击的规格说明书"——复刻 Vast.ai 租户漏斗的五个界面单元，验证产品结构手册的页面卡片与实例状态机。
 2026-09-11 扩展：新增未登录落地页（landing）与独立注册/登录页（auth），覆盖老板演示所需全流程；营销层延续同一 zinc 工作台语言，非异质营销皮肤。强制门语义：未登录只见落地页，操作（进市场/租用）必须登录。
 OWN-WORLD: 锌灰暗色工作台（#09090b 底 / #131316 面板 / 1px #27272a 边），emerald 只给价格与运行态，sky 给动作，琥珀红橙只给异常态；数字一律 mono 表格数字。无渐变、无玻璃、无装饰阴影。
-STORY: 评审者 30 秒内走完 搜索→强制模板弹窗→余额墙→配置确认→实例生命周期，并体感"停机也在烧钱"；每个单元右上角的证据角标时刻提醒哪些是实测复刻、哪些只是推断设计。
+STORY: 访客 30 秒内走完 搜索→强制模板弹窗→余额墙→配置确认→实例生命周期，并体感"停机也在烧钱"；每个单元右上角的角标时刻提醒哪些是实测复刻、哪些只是推断设计。
 FIRST VIEWPORT: 左侧筛选栏(220px) + 右侧报价卡流；顶栏余额 chip 实时跳动；每张报价卡 hover 出价格分解 tooltip。
 FORM: brief-pinned——复刻对象即 vast.ai 真实控制台形态，无方向抽签；本文件为唯一产物。
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md.
@@ -146,7 +146,7 @@ const seedAccount=(email,pwd,provider)=>{ const a=loadAccounts(); if(!a[email]){
  // legacy 老存档回填：本需求前的演示态只有 authed 布尔无 user 对象，回填固定演示账号并 seed 进账号库（防退出后"账号不存在"）
 const LEGACY_USER={email:"demo@demo.dev",provider:"legacy"}; const LEGACY_PWD="demo12345";
 /* ================= Admin 演示联动（2026-09-14）：admin.html 同源管控 =================
-   写权分离【对抗审查坑3】：配置键 gpu-market-admin-v1 由 admin.html 独占写，本端只读；
+   写权分离：配置键 gpu-market-admin-v1 由 admin.html 独占写，本端只读；
    干预动作经 BroadcastChannel 下发，由本端执行自身既有路径（Stop/Destroy/登出）——
    避免 Admin 直写 STORE_KEY 被本端 1s dumpState 覆盖的双写竞态。 */
 const ADMIN_KEY="gpu-market-admin-v1";
@@ -277,7 +277,7 @@ cfContract:"合约类型",cfContractNote:"创建后不可互转（docs：转换�
   evRunning:(id)=>`实例 ${id} 进入 Running`,evRebooted:(id)=>`实例 ${id} 重启完成，数据无损`,evDebt:"余额耗尽且未绑卡：实例停止，进入删除调度",
   evReserveStart:(id)=>`预订 ${id} 到点自动开机`,evOrderExpire:(id)=>`订单 ${id} 到期自动释放，数据由平台寄存`,
   evBreach:(id)=>`宿主违约：实例 ${id} 断连超 5 分钟，合同终止，未用款项全额退款（§7.12）`,
- ctlBadge:"评审工具 · 正式产品无此栏",ctlOffline:(on)=>on?"恢复宿主机":"宿主断连 → Offline",ctlArmStuck:"布置重启卡住",
+ ctlBadge:"演示工具 · 正式产品无此栏",ctlOffline:(on)=>on?"恢复宿主机":"宿主断连 → Offline",ctlArmStuck:"布置重启卡住",
  ctlExpire:"快进到期 → Expired",ctlResetBal:"重置余额 $25",ctlLogout:"退出登录",ctlWipe:"清空重来 ↻",ctlSpeed:"时间加速",
  tOfflineOn:"已切断宿主机连接（Offline 分支）",tOfflineOff:"宿主机恢复上线",tArmed:"已布置：下次 Restart 将卡在 Scheduling（GPU 被他人租走）",
  tExpiredSim:"已快进至租约到期 → Expired 分支",
@@ -807,7 +807,7 @@ lang:_initLang,
     hostEarnings:128.40, escrow:0,
     payouts:[], // 出金通道（2026-09-18 多通道重构）：[{channel,email,isDefault}]；isDefault 为默认出金通道，首次绑定自动设为默认
     payoutReqs:[], endUseTrail:null, // 出金申请（Admin 审批制）/ end-use 留痕（R4：时间/版本/四项勾选/通道，真实采集）
-    bookings:null, // 他人预订占用（v3.3 时段互斥）：懒初始化（首次打开订单弹框按当时 simT 生成）并持久化——防渲染期重算漂移失真（对抗审查 P1-2）
+    bookings:null, // 他人预订占用（v3.3 时段互斥）：懒初始化（首次打开订单弹框按当时 simT 生成）并持久化——防渲染期重算漂移失真
     hostMachines: SEED_MACHINES.map(m=>({...m})),
     billingConfig:{
      storeChargeTransition:true,
@@ -829,7 +829,7 @@ lang:_initLang,
     base.filters={gpus:[],relMin:0,priceMin:"",priceMax:"",numGpuMin:1,gpuRamMin:0,includeUn:false,hideOwn:false,diskMin:FREE_DISK,searchModel:"",
       locs:[],cpuMin:0,ramMin:0,netDownMin:0,netUpMin:0,pcies:[],tpl:null,...(base.filters||{})};
     base.billingConfig={storeChargeTransition:true,...(_sv.billingConfig||{})};
-    // 老存档回填：authed 但无 user（本需求前的演示态）→ 生成 legacy 账号并 seed 进账号库，防退出后无法重登【对抗审查 V2】
+    // 老存档回填：authed 但无 user（本需求前的演示态）→ 生成 legacy 账号并 seed 进账号库，防退出后无法重登
     if(base.authed && !base.user){ base.user={...LEGACY_USER}; seedAccount(LEGACY_USER.email,LEGACY_PWD,"legacy"); }
     // 视图恢复（2026-09-11 重写）：原 L618 表达式 `||` 优先级高于 `?:`，任何非空 _sv.view 恒得 "instances"；
     // 老存档 view 可能已被该 bug 污染，无法与真实值区分，直接信任 _sv.view【取舍 T1，注释记录】。
@@ -1138,7 +1138,7 @@ else if(it.stuck && !it.stuckHint && n.simT>=it.hintAt){ it.stuckHint=true; }
   setFilter:(k,v)=>setS(p=>({...p,filters:{...p.filters,[k]:v}})),
   resetFilters:()=>setS(p=>({...p,filters:{gpus:[],relMin:0,priceMin:"",priceMax:"",numGpuMin:1,gpuRamMin:0,includeUn:false,hideOwn:false,diskMin:FREE_DISK,searchModel:"",
    locs:[],cpuMin:0,ramMin:0,netDownMin:0,netUpMin:0,pcies:[],tpl:null},sort:p.sort})),
-pickTemplate:(tpl)=>{ // 模板仅注入实例配置（评审 P3）；选模板后「继续租赁」直接链式续走门序（方案 D：消除二次 RENT），不兼容仅黄警不阻塞
+pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租赁」直接链式续走门序（方案 D：消除二次 RENT），不兼容仅黄警不阻塞
     const inj={diskMin:tpl.inject.diskMin, portsMin:tpl.portsMin};
     const of=ref.current.pendingOffer;
     const c=of?tplCompat(of,tpl):null;
@@ -1158,7 +1158,7 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置（评审 P3）；选模板�
      setS(p=>({...p,pendingOffer:offer,selectedTemplate:tpl,injectedParams:inj,modal:"confirm"}));
     },
    // —— 注册/登录（2026-09-11）：模拟账号库见文件头 ACCOUNTS_KEY 注释 ——
-   // 认证成功统一落点：view 先落 search（门序弹窗需在 search 上下文渲染【对抗审查 V1】），无 pendingOffer 时 continueRent 为 no-op
+   // 认证成功统一落点：view 先落 search（门序弹窗需在 search 上下文渲染），无 pendingOffer 时 continueRent 为 no-op
      _finishAuth:(user,toastMsg,trail)=>{
       // 协议语义（2026-09-11）：end-use 声明已移入注册流最后一步（AuthPage step2），认证完成即视为已接受——下单路径零打断
       // R4 留痕（2026-09-15）：trail 仅在「新接受协议」时传入（邮箱注册=逐项勾选，OAuth 首登=如实标注未逐项收集）；登录路径不传、不覆盖既有留痕
@@ -1253,13 +1253,13 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置（评审 P3）；选模板�
       act.toast(T.eaExportOk);
      }catch(e){ act.toast(T.eaExportOk); }
    },
-   resetDemo:()=>{ window.__demoReset=true; try{localStorage.removeItem(STORE_KEY); localStorage.removeItem(ACCOUNTS_KEY);}catch(e){}; location.reload(); }, // 账号库同步清空：否则演示残留注册邮箱报"已存在"【对抗审查 V4】
+   resetDemo:()=>{ window.__demoReset=true; try{localStorage.removeItem(STORE_KEY); localStorage.removeItem(ACCOUNTS_KEY);}catch(e){}; location.reload(); }, // 账号库同步清空：否则演示残留注册邮箱报"已存在"
    createInstance:(cfg)=>{
      const st=ref.current; const offer=st.pendingOffer;
      const ip=`65.${r(130,190)}.${r(1,254)}.${r(2,254)}`;
      // 双 SKU（§7）：按量=全局 escrow 预留（现状）；订单/预订=锁价全额 余额→escrowHold（per-instance，§7.9 禁入全局字段）
      const sku=cfg.sku||"ondemand";
-     const orderTotal = sku==="ondemand"? 0 : +(offer.dph*cfg.durationSec/3600).toFixed(2); // dph 为 $/hr·整机口径（v3.2 校准）：×秒数÷3600，不再 ×numGpu（对抗审查 P0-1）
+     const orderTotal = sku==="ondemand"? 0 : +(offer.dph*cfg.durationSec/3600).toFixed(2); // dph 为 $/hr·整机口径（v3.2 校准）：×秒数÷3600，不再 ×numGpu
      if(sku!=="ondemand" && st.balance<orderTotal){ act.toast(T.cfBalShort(orderTotal.toFixed(2))); return; } // 二次校验（P1-5）
       const it={ key:rid("k"), id:r(10000000,99999999), shortId:"i-"+r(100000,999999),
        hostId:r(100000,999999), machineId:r(10000,99999), offer, offerId:offer.id, ip, // offerId：时段互斥占用源关联（v3.3；老实例无此字段不参与冲突）
@@ -1401,7 +1401,7 @@ function Header({S,act,setS}){
  const [isDark,setIsDark]=useState(()=>{try{return localStorage.getItem("gpu-market-theme")!=="light"}catch(e){return true}});
   const [acctOpen,setAcctOpen]=useState(false); // 账号下拉菜单（完整邮箱+退出），替代旧齿轮菜单
   const acctRef=React.useRef(null);
-  React.useEffect(()=>{ // 外点关闭：mousedown+click 双监听（走查合成点击不触发 mousedown，走查铁律）
+  React.useEffect(()=>{ // 外点关闭：mousedown+click 双监听（合成点击不触发 mousedown）
    const h=e=>{ if(acctRef.current && !acctRef.current.contains(e.target)) setAcctOpen(false); };
    document.addEventListener("mousedown",h); document.addEventListener("click",h);
    return()=>{ document.removeEventListener("mousedown",h); document.removeEventListener("click",h); };
@@ -1416,7 +1416,7 @@ function Header({S,act,setS}){
   const toggleLang=()=>{const nl=S.lang==="zh"?"en":"zh";try{localStorage.setItem("vast-demo-lang",nl)}catch(e){};setLang(nl);setS(p=>({...p,lang:nl}))};
   const toggleTheme=()=>{const h=document.documentElement;const newDark=!isDark;h.classList.toggle('dark',newDark);setIsDark(newDark);try{localStorage.setItem("gpu-market-theme",newDark?"dark":"light")}catch(e){}};
   const authed=!!S.authed;
-   // 未登录精简态【对抗审查 V3】：隐藏 nav/perspective/余额/主题/账号菜单与低余额条；保留 logo/语言/登录注册入口（模拟时钟已迁控制条，auth 页本就不渲染控制条）
+   // 未登录精简态：隐藏 nav/perspective/余额/主题/账号菜单与低余额条；保留 logo/语言/登录注册入口（模拟时钟已迁控制条，auth 页本就不渲染控制条）
   const userEmail=S.user?.email||"";
   const chipEmail=userEmail.length>22?userEmail.slice(0,20)+"…":userEmail;
   return (
@@ -1520,7 +1520,7 @@ function FGroup({T,open,title,count,children,isTemplate}){
 
 /* =============================================================
    市场行情（Mekong 阶段一 M2）
-   口径（对抗审查 P1-2/P1-3 修订后）：
+   口径（修订后）：
    - 指标只给「在售」派生：卡数/型号/地域/价格分布。Provider 数在现有数据模型不可派生（供给无主体实体）→ 不展示
    - 成交列 = 本会话实例的挂牌价，标 n=；**不参与价格区间计算**（自指循环，见 P1-3）
    - 趋势为显式 mock 序列并标「演示数据」
@@ -2052,9 +2052,9 @@ function CreditsModal({S,act,setS}){
   const final = custom? Math.max(+custom||0,10):amt;
    async function pay(){ const fromGate=!!S.pendingOffer; setBusy(true); await act.addCredits(final); setBusy(false);
     const lbl = chanLbl || "Stripe · " + T.crChBank;
-    // 成功文案随入口分化：门序（余额墙）承诺「继续租用」，Header 独立入口只确认充值本身，不再谎报后续动作【评审 P1-2】
+    // 成功文案随入口分化：门序（余额墙）承诺「继续租用」，Header 独立入口只确认充值本身，不再谎报后续动作
     act.toast(fromGate?T.crOkRent(final,lbl):T.crOkPlain(final,lbl));
-    // 有 pendingOffer（RENT 门序进入）→ 关窗进确认页续门序；无（Header 充值入口）→ 仅关窗，不跳无关确认页【对抗审查坑3】
+    // 有 pendingOffer（RENT 门序进入）→ 关窗进确认页续门序；无（Header 充值入口）→ 仅关窗，不跳无关确认页
     setS(p=>({...p, modal: p.pendingOffer ? "confirm" : null}));
    }
  return (
@@ -2143,12 +2143,12 @@ function ConfirmPageInline({S,act,setS}){
    const [dur,setDur]=useState(1); // 档位：1/6/24 或 "custom"（自定义小时，上限=机器 maxDuration，§7.1）
    const [customH,setCustomH]=useState(8); // 自定义小时输入值（与档位选择分立 state，防混类型污染派生链）
    const [startMode,setStartMode]=useState("now");
-   const [atVal,setAtVal]=useState(""); // datetime-local 串；默认=模拟当前+2h（×60 加速下 ≈2 真实分钟填表余量，对抗审查 P2-1）
+   const [atVal,setAtVal]=useState(""); // datetime-local 串；默认=模拟当前+2h（×60 加速下 ≈2 真实分钟填表余量）
    const isOrder = sku==="order";
    const maxH = (offer.maxDuration||30)*24; // 上限=报价最长租期（maxDuration 单位=天；host 机缺字段时兜底 30d）
    const durH = dur==="custom"? (Number.isFinite(+customH)? +customH : NaN) : dur;
    const customErr = dur==="custom" && (!Number.isInteger(+customH) || +customH<1 || +customH>maxH);
-   // 他人预订占用懒初始化（对抗审查 P1-2）：首次打开订单 SKU 时按「当时 simT」生成并持久化，此后不重算
+   // 他人预订占用懒初始化：首次打开订单 SKU 时按「当时 simT」生成并持久化，此后不重算
    useEffect(()=>{ if(isOrder && !S.bookings){ const t=S.simT;
      setS(p=>({...p,bookings:[
        {offerId:offer.id, startAt:t+2*3600, endAt:t+6*3600},   // 模拟钟 +2h ~ +6h
@@ -2173,10 +2173,10 @@ function ConfirmPageInline({S,act,setS}){
   const winBase = isOrder && Number.isFinite(selS)? selS : S.simT; // 自定义非法/时刻无效时回退当前
   const win0 = Math.floor(winBase/3600)*3600, win1 = win0+86400;
   const cut = Number.isFinite(selE) && selE>win1; // 仅时长超 24h 才截断
- // —— 模板-机器兼容性黄警（评审 P3 修复配套）：确认页展示机器磁盘/端口 + 模板要求；不兼容仅提示不阻塞 ——
+ // —— 模板-机器兼容性黄警：确认页展示机器磁盘/端口 + 模板要求；不兼容仅提示不阻塞 ——
  const tpl=S.selectedTemplate;
  const compat=tpl?tplCompat(offer,tpl):null;
- // 折叠态计数只统计真实非空值；diskAlloc=容器盘配额语义（v3.2 裁决方案 A）：预填 max(模板 diskMin,10)，上限校验 min(机器盘,256)
+ // 折叠态计数只统计真实非空值；diskAlloc=容器盘配额语义：预填 max(模板 diskMin,10)，上限校验 min(机器盘,256)
  const advCount = [env.trim(),ports.trim(),onstart.trim()].filter(Boolean).length;
  const minDisk = tpl?.inject?.diskMin||10;
  const diskCap = Math.min(offer.disk||256,256);
@@ -2187,7 +2187,7 @@ function ConfirmPageInline({S,act,setS}){
     if(!tagOk){ setErr(T.cfTagErr); return; }
     if(customErr){ setErr(T.cfCustomErr(maxH)); return; } // 自定义小时非法/超上限（上限=报价最长租期）
     if(isOrder && conflict){ setErr(T.cfConflict); return; } // 提交时二次校验时段互斥（渲染期已实时拦截，此处兜底）
-    if(reserveErr){ setErr(T.cfPastErr); return; } // 提交瞬间二次校验：填表期间模拟钟流动可能飘过所选时刻（对抗审查 P1-1），阻断不静默降级
+    if(reserveErr){ setErr(T.cfPastErr); return; } // 提交瞬间二次校验：填表期间模拟钟流动可能飘过所选时刻，阻断不静默降级
   const lines = ports.split(/[\n,]/).map(s=>s.trim()).filter(Boolean);
   if(lines.some(s=>!/^\d+:\d+$/.test(s))){ setPortsErr(T.cfPortsErr); return; } // 非法端口行显式报错，不再静默丢弃
   setPortsErr(null);
@@ -2207,7 +2207,7 @@ function ConfirmPageInline({S,act,setS}){
    </div>
    <div className="grid gap-5 p-5 md:grid-cols-[1fr_240px]">
     <div className="space-y-4">
-      {/* 镜像：实例身份，一等输入项（操作/展示分离 v3.2 裁决：编辑态 hint 就近，右侧仅只读摘要） */}
+      {/* 镜像：实例身份，一等输入项（操作/展示分离：编辑态 hint 就近，右侧仅只读摘要） */}
       <section>
        <div className="mb-0.5 text-[13px] font-medium text-[var(--color-text-secondary)]">{T.cfImageFull}</div>
        {imgEditing ? (
@@ -2309,7 +2309,7 @@ function ConfirmPageInline({S,act,setS}){
              </div>);})()}
          </div>
         </section>)}
-      {/* 磁盘：容器盘配额语义（v3.2 裁决 A）——只读双展示，滑杆删除；上限校验 min(机器盘,256) 防超配；解释文案收进 ？（分级收纳 v3.3） */}
+      {/* 磁盘：容器盘配额语义——只读双展示，滑杆删除；上限校验 min(机器盘,256) 防超配；解释文案收进 ？（分级收纳 v3.3） */}
       <section>
        <div className="mb-0.5 flex items-center gap-1.5 text-[13px]">
         <span className="font-medium text-[var(--color-text-secondary)]">{T.cfDisk}</span>
@@ -2346,7 +2346,7 @@ function ConfirmPageInline({S,act,setS}){
       {/* 合约说明（分级收纳 v3.3）：订单保留一句常驻（无 Stop·到期自动退房=行为预期管理）；按量「不可互转」已收进 SKU 标题 ？ */}
       {isOrder && <p className="text-[12px] leading-snug text-amber-500/80">{T.cfSkuOrder} · {T.ordNoStop}</p>}
      </div>
-    {/* 右侧纯摘要（v3.2 裁决：只读确认区，不含任何编辑态） */}
+    {/* 右侧纯摘要（只读确认区，不含任何编辑态） */}
     <aside className="space-y-3 self-start rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]/60 p-4">
      <div className="text-[13px] text-[var(--color-text-muted)]">{T.cfTarget}</div>
      <div className="text-[15px] font-semibold">{offer.gpu} ×{offer.numGpu}</div>
@@ -2613,7 +2613,7 @@ function LogsModal({S,act,setS}){
 function LedgerDrawer({S}){
  const [open,setOpen]=useState(false);
   const isHost=S.perspective==="host";
-  // 宿主视角渲染 hostEarn 收益流水（与 Earnings 明细同源同真相），不再是「v0.2 采集项」空态【评审 P1-1】
+  // 宿主视角渲染 hostEarn 收益流水（与 Earnings 明细同源同真相），不再是「v0.2 采集项」空态
   const rows=isHost? S.ledger.filter(e=>e.hostEarn).slice(0,8) : S.ledger.filter(e=>!e.legacy);
  return (
   <div className={`fixed right-0 top-[92px] z-30 w-[290px] transition-transform duration-300 ${open?"translate-x-0":"translate-x-full"}`}>
@@ -2639,12 +2639,12 @@ function LedgerDrawer({S}){
 
 /* ================= Demo 控制条 ================= */
 function ControlBar({S,act,setS,collapsed}){
- const [forceOpen,setForceOpen]=useState(false); // landing 折叠为浮球但允许评审者手动展开（resetDemo 等入口保留）
+ const [forceOpen,setForceOpen]=useState(false); // landing 折叠为浮球但允许手动展开（resetDemo 等入口保留）
  const anyRunning = S.instances.some(i=>i.status==="Running");
  const anySched = S.instances.some(i=>i.status==="Inactive"||i.status==="Expired");
  if((!S.ctrlOpen || collapsed) && !forceOpen) return (
   <button onClick={()=>{setForceOpen(true);setS(p=>({...p,ctrlOpen:true}))}}
-   className="fixed bottom-3 right-3 z-[60] rounded-full border border-[var(--color-info)]/40 bg-[var(--color-info)]/10 px-3 py-1.5 text-[13px] text-[var(--color-info)]">评审控制 ▲</button>);
+   className="fixed bottom-3 right-3 z-[60] rounded-full border border-[var(--color-info)]/40 bg-[var(--color-info)]/10 px-3 py-1.5 text-[13px] text-[var(--color-info)]">演示控制 ▲</button>);
  if(!S.ctrlOpen && collapsed && !forceOpen) return null;
  return (
  <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[var(--color-info)]/30 bg-[var(--color-surface)] opacity-95 backdrop-blur">
@@ -2855,7 +2855,7 @@ function LandingPage({S,act,setS}){
 /* ================= 注册/登录页（独立全屏 auth 视图 · 不渲染控制台 Header） ================= */
 function AuthPage({S,act,setS}){
  const [tab,setTab]=useState(S.authTab==="register"?"register":"login");
-  const [step,setStep]=useState(0); // 注册三步：0 表单 → 1 模拟邮箱验证码 → 2 注册协议（end-use，PRD §4.10）
+  const [step,setStep]=useState(0); // 注册三步：0 表单 → 1 模拟邮箱验证码 → 2 注册协议（end-use 出口管制）
   const [email,setEmail]=useState(""); const [pwd,setPwd]=useState(""); const [pwd2,setPwd2]=useState(""); const [code,setCode]=useState("");
   const [agree,setAgree]=useState([false,false,false,false]);
  const [err,setErr]=useState("");

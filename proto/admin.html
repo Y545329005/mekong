@@ -6,7 +6,7 @@
 <meta name="description" content="Mekong Admin：运营后台，与对客端 proto/index.html 同源联动（共享 localStorage），运营侧对双边市场的看见/干预/对账。">
 <title>Mekong Admin</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230f172a'/><text x='32' y='44' font-family='ui-sans-serif,system-ui,sans-serif' font-size='30' font-weight='700' fill='%233b82f6' text-anchor='middle'>N</text></svg>">
-<!-- CDN 与 index.html 严格同域同版本（走查环境仅 jsdelivr 可达；版本漂移是行为差异源【对抗审查坑9】） -->
+<!-- CDN 与 index.html 严格同域同版本（版本漂移是行为差异源） -->
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
@@ -72,7 +72,7 @@ window.addEventListener('error',function(e){
 <script type="text/babel" data-presets="react">
 const {useState, useEffect, useMemo, useRef} = React;
 
-/* ================= 数据层：只读对客端两键；配置键 ADMIN_KEY 由本端独占写（写权分离防 tick 竞态【对抗审查坑3】） ================= */
+/* ================= 数据层：只读对客端两键；配置键 ADMIN_KEY 由本端独占写（写权分离防 tick 竞态） ================= */
 const STORE_KEY="gpu-market-demo-v1";
 /* 与用户端 index.html 同口径的 ledger 裁剪（2026-09-20）：seed 行（hostV:3/seedTenant）豁免窗口裁剪，
    普通行最老先裁——离线直写合并若裸 slice(0,42) 会把用户端存档里的 seed 流水裁掉。 */

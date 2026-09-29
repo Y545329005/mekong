@@ -2,15 +2,20 @@
 
 P2P GPU 算力市场的可点击规格原型。单文件、零构建：React 18 UMD + Babel standalone + Tailwind，全部经 CDN 加载，浏览器直接打开即可运行。
 
-> 本文件是对客版说明。内部实现排期、评审记录与裁决过程不在此文档范围内。
+> 本文件是对客版说明。**演示数据均为浏览器本地生成，不产生任何真实订单、费用或合同；内部实现排期、评审记录与裁决过程不在此文档范围内。**
 
 ## 运行
 
 ```bash
 npm install
 npm run dev
-# 打开 http://localhost:8787/proto/index.html
 ```
+
+vite 预览端口 `:8787`，访问：
+
+- 用户端 `http://localhost:8787/proto/index.html`
+- 后台 `http://localhost:8787/proto/admin.html`
+- 企业入口 `http://localhost:8787/proto/enterprise.html`
 
 也可直接用浏览器打开 `proto/index.html`，或使用任意静态服务器。**需要联网访问 `cdn.jsdelivr.net`**（React / Babel / Tailwind 均由 CDN 加载；断网时页面顶部会出现降级提示）。
 
@@ -73,7 +78,7 @@ npm run dev
 
 - 注册：任意邮箱（如 `test@demo.dev`）+ 密码 `password123` + 任意 6 位验证码
 - 管理端内置演示账号
-- 页面底部「评审工具」条可重置余额、模拟时钟加速、清除重来（正式产品无此栏）
+- 页面底部「演示工具」条可重置余额、模拟时钟加速、清除重来（正式产品无此栏）
 
 ## 多语言
 
