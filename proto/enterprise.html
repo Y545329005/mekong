@@ -47,11 +47,11 @@
 <script type="text/babel" data-presets="react">
 /* =============================================================
    Mekong 企业客户入口（独立单文件演示页）
-   口径：
+   口径（代码自身成立的理由）：
    - 定位＝「企业采购需求提交 + 线下对接指引」的受理漏斗，非 B2B 自助购买平台
    - 不承诺尚未交付的能力：统一交付责任 / SLA / 统一账单 / 价格优势（未定能力不作为承诺依据）
-   - 表单落 sessionStorage（同源 per-tab，刷新不丢，不污染 8787 主存档）
-   - 零 localStorage 读写（多 tab 竞态铁律）
+   - 表单落 sessionStorage（同源 per-tab，刷新不丢，不写入其他页面共用的主存档键）
+   - 除语言偏好外零 localStorage 读写（多 tab 同开互相覆盖存档）
    ============================================================= */
 const {useState,useEffect} = React;
 
@@ -69,14 +69,14 @@ zh:{
   fact2:"算力供给来自平台已核验的机器，含平台实测数据", fact2s:"供给准入 · 平台实测",
   fact3:"费用在平台侧计量与结算，账单可逐笔追溯", fact3s:"计量结算 · 流水可追溯",
   fact2nd:"企业合同、统一交付责任、SLA 与统一账单尚在规划中，当前不作为承诺。",
-  formTitle:"提交采购需求", formLead:"带 * 为必填。提交后进入线下对接流程，不会自动产生订单或费用。",
-  fModel:"算力类型 *", fModelPh:"选择主要用途", oTraining:"模型训练", oInference:"推理服务", oRender:"渲染 / 图形", oOther:"其他",
-  fModelOther:"其他用途说明 *", fModelOtherPh:"请简述用途（选填其他时必填）",
-  fGpu:"GPU 型号 *", fGpuPh:"选择型号", gAny:"暂不指定（由方案团队建议）", gH100:"NVIDIA H100", gH200:"NVIDIA H200", gA100:"NVIDIA A100", gL40S:"NVIDIA L40S",
-  fCards:"预计卡数 *", fCardsPh:"例如 8", fPeriod:"使用周期 *", fPeriodPh:"选择周期", pWeek:"按周", pMonth:"按月", pQuarter:"按季度", pLong:"长期 / 不确定",
-  fBudget:"预算区间（USD）", fBudgetPh:"例如 20000 – 50000", fBudgetPh2:"选填。用于方案匹配，不构成报价。",
-  fEmail:"联系邮箱 *", fEmailPh:"name@company.com",
-  fName:"联系人", fNamePh:"选填", fNote:"需求说明", fNotePh:"选填。软件栈、网络要求、数据合规要求等",
+  formTitle:"提交采购需求", formLead:"带 * 为必填。提交后进入线下对接流程，不会自动产生订单或费用。", opt:"选填",
+  fModel:"算力类型", fModelPh:"选择主要用途", oTraining:"模型训练", oInference:"推理服务", oRender:"渲染 / 图形", oOther:"其他",
+  fModelOther:"其他用途说明", fModelOtherPh:"请简述用途",
+  fGpu:"GPU 型号", fGpuPh:"选择型号", gAny:"暂不指定（由方案团队建议）", gH100:"NVIDIA H100", gH200:"NVIDIA H200", gA100:"NVIDIA A100", gL40S:"NVIDIA L40S",
+  fCards:"预计卡数", fCardsPh:"例如 8", fPeriod:"使用周期", fPeriodPh:"选择周期", pWeek:"按周", pMonth:"按月", pQuarter:"按季度", pLong:"长期 / 不确定",
+  fBudget:"预算区间（USD）", fBudgetPh:"例如 20000 – 50000", fBudgetPh2:"用于方案匹配，不构成报价。",
+  fEmail:"联系邮箱", fEmailPh:"name@company.com",
+  fName:"联系人", fNamePh:"", fNote:"需求说明", fNotePh:"软件栈、网络要求、数据合规要求等",
   errSummary:"以下字段需要修正",errGpu:"请选择 GPU 型号", errModel:"请选择算力类型", errCards:"请填写卡数（1–10000 之间的整数）", errPeriod:"请选择使用周期", errEmail:"请填写有效邮箱", errOther:"请填写其他用途说明",
   submit:"提交需求", reset:"重填", sentTitle:"需求已受理", sentLead:"我们已收到你的需求，将由销售与方案团队对接确认。",
   sentNo:"受理编号", sentNext:"后续流程", sentS1:"1 · 销售对接：确认用途、规模与合规要求", sentS2:"2 · 方案确认：机型、周期、部署与计费方案", sentS3:"3 · 线下签约：合同与交付安排以线下确认为准",
@@ -91,14 +91,14 @@ en:{
   fact2:"Supply comes from platform-verified machines with measured specs", fact2s:"Supply intake · Measured",
   fact3:"Usage is metered and settled on-platform, with per-entry traceability", fact3s:"Metering · Traceable entries",
   fact2nd:"Enterprise contracts, unified delivery liability, SLA and consolidated billing are still in planning and are not committed at this stage.",
-  formTitle:"Submit a request", formLead:"Fields marked * are required. Submission starts an offline onboarding flow; it creates no order and no charge.",
-  fModel:"Workload type *", fModelPh:"Select primary use", oTraining:"Model training", oInference:"Inference", oRender:"Rendering / graphics", oOther:"Other",
-  fModelOther:"Other workload detail *", fModelOtherPh:"Describe the workload (required when Other)",
-  fGpu:"GPU model *", fGpuPh:"Select a model", gAny:"No preference (advised by solution team)", gH100:"NVIDIA H100", gH200:"NVIDIA H200", gA100:"NVIDIA A100", gL40S:"NVIDIA L40S",
-  fCards:"Estimated GPUs *", fCardsPh:"e.g. 8", fPeriod:"Term *", fPeriodPh:"Select term", pWeek:"Weekly", pMonth:"Monthly", pQuarter:"Quarterly", pLong:"Long-term / unsure",
-  fBudget:"Budget range (USD)", fBudgetPh:"e.g. 20000 – 50000", fBudgetPh2:"Optional. Used for matching; not a quotation.",
-  fEmail:"Contact email *", fEmailPh:"name@company.com",
-  fName:"Contact name", fNamePh:"Optional", fNote:"Requirements", fNotePh:"Optional. Software stack, network, data compliance, etc.",
+  formTitle:"Submit a request", formLead:"Fields marked * are required. Submission starts an offline onboarding flow; it creates no order and no charge.", opt:"Optional",
+  fModel:"Workload type", fModelPh:"Select primary use", oTraining:"Model training", oInference:"Inference", oRender:"Rendering / graphics", oOther:"Other",
+  fModelOther:"Other workload detail", fModelOtherPh:"Describe the workload",
+  fGpu:"GPU model", fGpuPh:"Select a model", gAny:"No preference (advised by solution team)", gH100:"NVIDIA H100", gH200:"NVIDIA H200", gA100:"NVIDIA A100", gL40S:"NVIDIA L40S",
+  fCards:"Estimated GPUs", fCardsPh:"e.g. 8", fPeriod:"Term", fPeriodPh:"Select term", pWeek:"Weekly", pMonth:"Monthly", pQuarter:"Quarterly", pLong:"Long-term / unsure",
+  fBudget:"Budget range (USD)", fBudgetPh:"e.g. 20000 – 50000", fBudgetPh2:"Used for matching; not a quotation.",
+  fEmail:"Contact email", fEmailPh:"name@company.com",
+  fName:"Contact name", fNamePh:"", fNote:"Requirements", fNotePh:"Software stack, network, data compliance, etc.",
   errSummary:"The following fields need attention", errGpu:"Select a GPU model", errModel:"Select a workload type", errCards:"Enter GPU count (integer 1–10000)", errPeriod:"Select a term", errEmail:"Enter a valid email", errOther:"Describe the workload",
   submit:"Submit request", reset:"Clear form", sentTitle:"Request received", sentLead:"Your request is in; sales and the solution team will follow up.",
   sentNo:"Reference no.", sentNext:"What happens next", sentS1:"1 · Sales follow-up: workload, scale and compliance requirements", sentS2:"2 · Solution confirmation: model, term, deployment and billing plan", sentS3:"3 · Offline contracting: contract and delivery confirmed offline",
@@ -114,6 +114,12 @@ const writeLS = (k, v) => { try { sessionStorage.setItem(k, JSON.stringify(v)); 
 const EMPTY_DRAFT = {model:"",modelOther:"",gpu:"",cards:"",period:"",budget:"",email:"",name:"",note:""};
 /* 草稿信封带版本号：字段增删时旧草稿可被识别并安全丢弃（旧结构无 v 字段） */
 const readDraft = () => { const r = readLS(DRAFT_KEY, null); return (r && r.v===1 && r.draft) ? r.draft : null; };
+
+/* 必填标记：符号本身即非颜色信号（WCAG 1.4.1 不违规），红色只作强化；读屏靠 required 属性播报，故对符号 aria-hidden */
+const Star = () => <span aria-hidden="true" className="ml-0.5 text-[var(--color-error)]">*</span>;
+/* 选填标记：与红 * 对称，落在 label 上而非 placeholder（placeholder 一经输入即消失，不能承载约束）；
+   显式前置空格：ml 只管视觉，缺空格会让可访问名拼成「Budget range (USD)Optional」 */
+const OptMark = ({T}) => <span className="ml-0.5 text-[12px] font-normal text-[var(--color-text-faint)]">{" "}{T.opt}</span>;
 
 /* 能力面板：只依赖 T（语言），memo 后不随表单 draft 每次按键重渲染 */
 const FactsPanel=React.memo(function FactsPanel({T}){
@@ -162,10 +168,12 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
   };
   const reset=()=>{ setDraft({...EMPTY_DRAFT}); setErr({}); writeLS(DRAFT_KEY,null); };
 
-  const sel = (id,label,val,onChange,opts,errTxt) => (
+  /* req＝字段约束（与 validate() 的必填判断一一对应），只提供程序化语义；
+     提交闸门仍是 validate()，故 form 保留 noValidate 避免原生气泡与 role="alert" 汇总双报错 */
+  const sel = (id,label,val,onChange,opts,errTxt,req=false) => (
     <div>
-      <label htmlFor={id} className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{label}</label>
-      <select id={id} value={val} onChange={e=>onChange(e.target.value)}
+      <label htmlFor={id} className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{label}{req && <Star/>}</label>
+      <select id={id} required={req} value={val} onChange={e=>onChange(e.target.value)}
         aria-invalid={!!errTxt} aria-describedby={errTxt?`${id}-err`:undefined}
         className={"mt-1.5 w-full rounded-lg border bg-[var(--color-surface)] px-3 py-2 text-[14px] text-[var(--color-text)] outline-none focus:border-[var(--color-accent)] "+(errTxt?"border-[var(--color-error)]":"border-[var(--color-border-strong)]")}>
         {opts.map(o=><option key={o.v} value={o.v}>{o.t}</option>)}
@@ -173,10 +181,10 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
       {errTxt && <p id={`${id}-err`} className="mt-1 text-[12px] text-[var(--color-error)]">{errTxt}</p>}
     </div>
   );
-  const inp = (id,label,val,onChange,ph,errTxt,type="text") => (
+  const inp = (id,label,val,onChange,ph,errTxt,{type="text",req=false}={}) => (
     <div>
-      <label htmlFor={id} className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{label}</label>
-      <input id={id} type={type} value={val} placeholder={ph} onChange={e=>onChange(e.target.value)}
+      <label htmlFor={id} className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{label}{req && <Star/>}</label>
+      <input id={id} type={type} required={req} value={val} placeholder={ph} onChange={e=>onChange(e.target.value)}
         aria-invalid={!!errTxt} aria-describedby={errTxt?`${id}-err`:undefined}
         className={"mt-1.5 w-full rounded-lg border bg-[var(--color-surface)] px-3 py-2 text-[14px] text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-accent)] "+(errTxt?"border-[var(--color-error)]":"border-[var(--color-border-strong)]")}/>
       {errTxt && <p id={`${id}-err`} className="mt-1 text-[12px] text-[var(--color-error)]">{errTxt}</p>}
@@ -239,21 +247,22 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
          {T.errSummary}：{Object.keys(err).map(k=>err[k]).join("；")}
         </div>)}
        <form onSubmit={submit} noValidate className="mt-5 grid gap-4 md:grid-cols-2">
-         {sel("model",T.fModel,draft.model,v=>set("model",v),[{v:"",t:T.fModelPh},{v:"training",t:T.oTraining},{v:"inference",t:T.oInference},{v:"render",t:T.oRender},{v:"other",t:T.oOther}],err.model)}
-         {draft.model==="other" && inp("modelOther",T.fModelOther,draft.modelOther,v=>set("modelOther",v),T.fModelOtherPh,err.modelOther)}
-         {sel("gpu",T.fGpu,draft.gpu,v=>set("gpu",v),[{v:"",t:T.fGpuPh},{v:"any",t:T.gAny},{v:"h100",t:T.gH100},{v:"h200",t:T.gH200},{v:"a100",t:T.gA100},{v:"l40s",t:T.gL40S}],err.gpu)}
-         {inp("cards",T.fCards,draft.cards,v=>set("cards",v),T.fCardsPh,err.cards,"text")}
-         {sel("period",T.fPeriod,draft.period,v=>set("period",v),[{v:"",t:T.fPeriodPh},{v:"week",t:T.pWeek},{v:"month",t:T.pMonth},{v:"quarter",t:T.pQuarter},{v:"long",t:T.pLong}],err.period)}
+         {sel("model",T.fModel,draft.model,v=>set("model",v),[{v:"",t:T.fModelPh},{v:"training",t:T.oTraining},{v:"inference",t:T.oInference},{v:"render",t:T.oRender},{v:"other",t:T.oOther}],err.model,true)}
+         {/* 该字段仅在 model==="other" 时渲染 → 字段存在即必填，红 * 不会误标为常显必填 */}
+         {draft.model==="other" && inp("modelOther",T.fModelOther,draft.modelOther,v=>set("modelOther",v),T.fModelOtherPh,err.modelOther,{req:true})}
+         {sel("gpu",T.fGpu,draft.gpu,v=>set("gpu",v),[{v:"",t:T.fGpuPh},{v:"any",t:T.gAny},{v:"h100",t:T.gH100},{v:"h200",t:T.gH200},{v:"a100",t:T.gA100},{v:"l40s",t:T.gL40S}],err.gpu,true)}
+         {inp("cards",T.fCards,draft.cards,v=>set("cards",v),T.fCardsPh,err.cards,{req:true})}
+         {sel("period",T.fPeriod,draft.period,v=>set("period",v),[{v:"",t:T.fPeriodPh},{v:"week",t:T.pWeek},{v:"month",t:T.pMonth},{v:"quarter",t:T.pQuarter},{v:"long",t:T.pLong}],err.period,true)}
          <div>
-           <label htmlFor="budget" className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{T.fBudget}</label>
+           <label htmlFor="budget" className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{T.fBudget}<OptMark T={T}/></label>
            <input id="budget" value={draft.budget} placeholder={T.fBudgetPh} onChange={e=>set("budget",e.target.value)}
              className="mt-1.5 w-full rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-[14px] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-accent)]"/>
            <p className="mt-1 text-[11px] text-[var(--color-text-faint)]">{T.fBudgetPh2}</p>
          </div>
-         {inp("email",T.fEmail,draft.email,v=>set("email",v),T.fEmailPh,err.email,"email")}
+         {inp("email",T.fEmail,draft.email,v=>set("email",v),T.fEmailPh,err.email,{type:"email",req:true})}
          {inp("name",T.fName,draft.name,v=>set("name",v),T.fNamePh)}
          <div className="md:col-span-2">
-           <label htmlFor="note" className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{T.fNote}</label>
+           <label htmlFor="note" className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{T.fNote}<OptMark T={T}/></label>
            <textarea id="note" rows={3} value={draft.note} placeholder={T.fNotePh} onChange={e=>set("note",e.target.value)}
              className="mt-1.5 w-full rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-[14px] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-accent)]"/>
          </div>
