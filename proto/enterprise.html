@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Mekong 企业客户入口——企业算力采购需求提交与线下对接指引（演示原型）。">
+<meta name="description" content="Mekong 企业客户入口——企业算力采购需求提交与线下对接指引。">
 <title>Mekong · 企业客户入口</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%232563eb'/><text x='32' y='45' font-family='ui-sans-serif,system-ui,sans-serif' font-size='34' font-weight='700' fill='%23ffffff' text-anchor='middle'>M</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -122,8 +122,7 @@ zh:{
   errMsg:{ "model.required":"请选择算力类型", "modelOther.required":"请填写其他用途说明", "gpu.required":"请选择 GPU 型号", "cards.invalid":"请填写卡数（1–10000 之间的整数）", "period.required":"请选择使用周期", "email.invalid":"请填写有效邮箱" },
   submit:"提交需求", reset:"重填", sentTitle:"需求已受理", sentLead:"我们已收到你的需求，将由销售与方案团队对接确认。",
   sentNo:"受理编号", sentNext:"后续流程", sentS1:"1 · 销售对接：确认用途、规模与合规要求", sentS2:"2 · 方案确认：机型、周期、部署与计费方案", sentS3:"3 · 线下签约：合同与交付安排以线下确认为准",
-  sentNote:"本阶段未产生订单与费用；演示页数据仅存于当前浏览器会话。", again:"再提交一条", backHome:"返回平台首页",
-  note:"演示原型页面 · 非线上提交入口，不产生任何真实订单或合同。",
+  again:"再提交一条", backHome:"返回平台首页",
 },
 en:{
   brand:"Mekong", back:"Back to home", theme:"Toggle theme", langAria:"Switch language", skipMain:"Skip to main content",
@@ -145,8 +144,7 @@ en:{
   errMsg:{ "model.required":"Select a workload type", "modelOther.required":"Describe the workload", "gpu.required":"Select a GPU model", "cards.invalid":"Enter GPU count (integer 1–10000)", "period.required":"Select a term", "email.invalid":"Enter a valid email" },
   submit:"Submit request", reset:"Clear form", sentTitle:"Request received", sentLead:"Your request is in; sales and the solution team will follow up.",
   sentNo:"Reference no.", sentNext:"What happens next", sentS1:"1 · Sales follow-up: workload, scale and compliance requirements", sentS2:"2 · Solution confirmation: model, term, deployment and billing plan", sentS3:"3 · Offline contracting: contract and delivery confirmed offline",
-  sentNote:"No order or charge was created at this stage; demo data stays in this browser session.", again:"Submit another", backHome:"Back to home",
-  note:"Demo prototype page · not a live intake channel; creates no real order or contract.",
+  again:"Submit another", backHome:"Back to home",
 }
 };
 
@@ -282,7 +280,6 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
        <ol className="mt-2 space-y-1.5 text-[13px] leading-5 text-[var(--color-text-muted)]">
          {[T.sentS1,T.sentS2,T.sentS3].map((s,i)=><li key={i}>{s}</li>)}
        </ol>
-       <p className="mt-4 text-[12px] text-[var(--color-text-faint)]">{T.sentNote}</p>
        <div className="mt-5 flex flex-wrap gap-2">
          <button onClick={()=>{ setSent(null); reset(); }} className="tap rounded-lg border border-[var(--color-border-strong)] px-3.5 py-2 text-[13px] font-medium hover:bg-[var(--color-surface-alt)]">{T.again}</button>
          <a href="./index.html" className="tap rounded-lg bg-[var(--color-accent)] px-3.5 py-2 text-[13px] font-semibold text-white hover:bg-[var(--color-accent-hover)]">{T.backHome}</a>
@@ -325,8 +322,6 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
      </section>
     )}
    </main>
-
-   <footer className="mt-6 border-t border-[var(--color-border)] px-5 py-3 text-center text-[12px] text-[var(--color-text-faint)]">{T.note}</footer>
   </div>);
 }
 
