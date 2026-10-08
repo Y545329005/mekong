@@ -10,24 +10,49 @@
 <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
 <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script crossorigin src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+<script>
+window.addEventListener('error',function(e){
+  var d=document.getElementById('boot-error');
+  if(d){ d.style.display='block'; d.textContent+=' | '+(e.message||e.type); }
+});
+/* 主题与 index.html 同键同默认值（未设置=暗色）；head 内同步执行，避免首帧闪烁。 */
+(function(){
+  try{ var t=localStorage.getItem("gpu-market-theme");
+       document.documentElement.classList.toggle("dark", t!=="light"); }catch(e){}
+})();
+</script>
 <style>
   @custom-variant dark (&:where(.dark, .dark *));
+  /* tokens:begin —— 以下整块由 tools/sync-tokens.mjs 生成，勿手改 */
   :root {
+  /* 令牌由 tools/sync-tokens.mjs 生成 —— 不要手改本块；改脚本后重跑。四页共用同一份取值。 */
     --color-bg: #f8fafc; --color-surface: #ffffff; --color-surface-alt: #f1f5f9;
     --color-text: #0f172a; --color-text-secondary: #334155; --color-text-muted: #475569; --color-text-faint: #5b6673;
     --color-border: #e2e8f0; --color-border-strong: #cbd5e1;
-    --color-accent: #2563eb; --color-accent-hover: #3b82f6; --color-accent-strong: #1d4ed8;
-    --color-success: #047857; --color-warning: #d97706; --color-error: #dc2626; --color-info: #7c3aed;
+    --color-accent: #2563eb; --color-accent-hover: #1d4ed8; --color-accent-strong: #1d4ed8; --color-focus: #2563eb;
+    --color-selection: rgba(37,99,235,.2); --color-scrollbar: #cbd5e1; --color-scrollbar-border: #f8fafc;
+    --color-success: #047857; --color-warning: #b45309; --color-error: #dc2626; --color-info: #7c3aed;
+    --color-on-solid: #ffffff;
+    --color-success-on-tint: #065f46; --color-warning-on-tint: #92400e; --color-error-on-tint: #b91c1c; --color-info-on-tint: #6d28d9;
+    --color-accent-on-tint: #1d4ed8;
+    --color-map-stroke: #64748b; --color-map-grid: #cbd5e1;
   }
   .dark {
+  /* 同浅色档的同一套取值；深色下语义色底是亮色，字色改用 --color-on-solid / --color-*-on-tint。 */
     --color-bg: #0f172a; --color-surface: #1e293b; --color-surface-alt: #1e293b;
-    --color-text: #f1f5f9; --color-text-secondary: #e2e8f0; --color-text-muted: #cbd5e6; --color-text-faint: #94a3b8;
+    --color-text: #f1f5f9; --color-text-secondary: #e2e8f0; --color-text-muted: #cbd5e1; --color-text-faint: #94a3b8;
     --color-border: #334155; --color-border-strong: #475569;
-    --color-accent: #2563eb; --color-accent-hover: #3b82f6; --color-accent-strong: #1d4ed8;
+    --color-accent: #2563eb; --color-accent-hover: #3b82f6; --color-accent-strong: #1d4ed8; --color-focus: #3b82f6;
+    --color-selection: rgba(56,189,248,.28); --color-scrollbar: #334155; --color-scrollbar-border: #0f172a;
     --color-success: #10b981; --color-warning: #f59e0b; --color-error: #f87171; --color-info: #8b5cf6;
+    --color-on-solid: #0f172a;
+    --color-success-on-tint: #6ee7b7; --color-warning-on-tint: #f59e0b; --color-error-on-tint: #fca5a5; --color-info-on-tint: #a78bfa;
+    --color-accent-on-tint: #60a5fa;
+    --color-map-stroke: #94a3b8; --color-map-grid: #334155;
   }
+  /* tokens:end */
   html,body{background:var(--color-bg);color:var(--color-text);}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;}
   ::-webkit-scrollbar{width:8px;height:8px;} ::-webkit-scrollbar-thumb{background:var(--color-border-strong);border-radius:4px;}
   .fade-in{animation:fadeIn .45s ease both;} @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
   /* 焦点可见：纯键盘用户定位依据（WCAG 2.4.7 AA）——按钮/链接此前零指示 */
@@ -35,15 +60,31 @@
   /* 触控目标：视觉尺寸不变，触达区补足 44px（WCAG 2.5.8 / 行业基准） */
   .tap{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;}
   /* 前庭敏感：关闭动效但保留状态反馈（淡入不承载信息，改为直接呈现） */
-  @media (prefers-reduced-motion: reduce){ .fade-in{animation:none;} }
+  @media (prefers-reduced-motion: reduce){
+   .fade-in{animation:none !important;}
+   *, *::before, *::after { transition-duration:0.01ms !important; animation-duration:0.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; }
+  }
+  /* 键盘导航：跳过链接（与 index/admin/portal 同款） */
+  .skip-link{position:absolute;left:-9999px;z-index:999;padding:8px 16px;background:var(--color-accent);color:#ffffff;text-decoration:none;font-size:14px;}
+  .skip-link:focus{left:8px;top:8px;}
+  /* 触达区兜底（WCAG 2.5.8 AA 下限 24×24）。放进 @layer base：Tailwind v4 工具类在
+     @layer utilities，未分层样式永远压过已分层样式，会把 .tap 的 44px 一起压掉。 */
+  @layer base {
+   button, select, textarea, input:not([type=checkbox]):not([type=radio]) { min-height:24px; min-width:24px; }
+   input[type=checkbox], input[type=radio] { min-height:0; min-width:0; }
+  }
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  .boot-error{position:fixed;top:0;left:0;right:0;z-index:999;background:var(--color-error);color:var(--color-on-solid);padding:8px 12px;font:12px ui-monospace,"SF Mono",Menlo,monospace;}
   /* 数字层级：沿用收益页 NUM 语义（displayMoney/titleMoney/label） */
-  .num-xl{font-size:28px;font-weight:700;letter-spacing:-0.01em;}
-  .num-lg{font-size:19px;font-weight:600;}
-  .num-md{font-size:15px;font-weight:500;}
+  /* 数字层级：全部落在 9 档内（xl=display 档 34、lg=figure 档 20、md=title 档 16） */
+  .num-xl{font-size:34px;font-weight:700;letter-spacing:-0.01em;}
+  .num-lg{font-size:20px;font-weight:600;}
+  .num-md{font-size:16px;font-weight:500;}
 </style>
 </head>
 <body>
 <div id="root"></div>
+<div id="boot-error" class="boot-error" style="display:none"></div>
 <script type="text/babel" data-presets="react">
 /* =============================================================
    Mekong 企业客户入口（独立单文件演示页）
@@ -62,7 +103,7 @@ const ENT_KEY = "mekong-ent-submitted";
 /* ---- i18n 双包（主题与语言同 portal/index 范式；语言独立键，避免高频 tick 饿死落盘） ---- */
 const I18N = {
 zh:{
-  brand:"Mekong", back:"返回首页", theme:"切换主题", langAria:"切换语言",
+  brand:"Mekong", back:"返回首页", theme:"切换主题", langAria:"切换语言", skipMain:"跳到主要内容",
   heroKicker:"企业客户入口", heroTitle:"企业算力采购需求受理", heroLead:"提交算力需求后，由销售与方案团队对接确认。当前阶段不支持平台自助下单，合同与交付安排以线下确认为准。",
   factsTitle:"当前可用的能力",
   fact1:"个人与团队可自助在市场下单租用，按量计费", fact1s:"Marketplace · 按量租用",
@@ -77,14 +118,15 @@ zh:{
   fBudget:"预算区间（USD）", fBudgetPh:"例如 20000 – 50000", fBudgetPh2:"用于方案匹配，不构成报价。",
   fEmail:"联系邮箱", fEmailPh:"name@company.com",
   fName:"联系人", fNamePh:"", fNote:"需求说明", fNotePh:"软件栈、网络要求、数据合规要求等",
-  errSummary:"以下字段需要修正",errGpu:"请选择 GPU 型号", errModel:"请选择算力类型", errCards:"请填写卡数（1–10000 之间的整数）", errPeriod:"请选择使用周期", errEmail:"请填写有效邮箱", errOther:"请填写其他用途说明",
+  errSummary:"以下字段需要修正",
+  errMsg:{ "model.required":"请选择算力类型", "modelOther.required":"请填写其他用途说明", "gpu.required":"请选择 GPU 型号", "cards.invalid":"请填写卡数（1–10000 之间的整数）", "period.required":"请选择使用周期", "email.invalid":"请填写有效邮箱" },
   submit:"提交需求", reset:"重填", sentTitle:"需求已受理", sentLead:"我们已收到你的需求，将由销售与方案团队对接确认。",
   sentNo:"受理编号", sentNext:"后续流程", sentS1:"1 · 销售对接：确认用途、规模与合规要求", sentS2:"2 · 方案确认：机型、周期、部署与计费方案", sentS3:"3 · 线下签约：合同与交付安排以线下确认为准",
   sentNote:"本阶段未产生订单与费用；演示页数据仅存于当前浏览器会话。", again:"再提交一条", backHome:"返回平台首页",
   note:"演示原型页面 · 非线上提交入口，不产生任何真实订单或合同。",
 },
 en:{
-  brand:"Mekong", back:"Back to home", theme:"Toggle theme", langAria:"Switch language",
+  brand:"Mekong", back:"Back to home", theme:"Toggle theme", langAria:"Switch language", skipMain:"Skip to main content",
   heroKicker:"For enterprise", heroTitle:"Enterprise compute request intake", heroLead:"Submit a compute requirement; sales and solution engineers will follow up. Self-service enterprise ordering is not available at this stage — contracts and delivery are confirmed offline.",
   factsTitle:"What is available today",
   fact1:"Individuals and teams can rent on demand and are billed by usage", fact1s:"Marketplace · On-demand",
@@ -99,7 +141,8 @@ en:{
   fBudget:"Budget range (USD)", fBudgetPh:"e.g. 20000 – 50000", fBudgetPh2:"Used for matching; not a quotation.",
   fEmail:"Contact email", fEmailPh:"name@company.com",
   fName:"Contact name", fNamePh:"", fNote:"Requirements", fNotePh:"Software stack, network, data compliance, etc.",
-  errSummary:"The following fields need attention", errGpu:"Select a GPU model", errModel:"Select a workload type", errCards:"Enter GPU count (integer 1–10000)", errPeriod:"Select a term", errEmail:"Enter a valid email", errOther:"Describe the workload",
+  errSummary:"The following fields need attention",
+  errMsg:{ "model.required":"Select a workload type", "modelOther.required":"Describe the workload", "gpu.required":"Select a GPU model", "cards.invalid":"Enter GPU count (integer 1–10000)", "period.required":"Select a term", "email.invalid":"Enter a valid email" },
   submit:"Submit request", reset:"Clear form", sentTitle:"Request received", sentLead:"Your request is in; sales and the solution team will follow up.",
   sentNo:"Reference no.", sentNext:"What happens next", sentS1:"1 · Sales follow-up: workload, scale and compliance requirements", sentS2:"2 · Solution confirmation: model, term, deployment and billing plan", sentS3:"3 · Offline contracting: contract and delivery confirmed offline",
   sentNote:"No order or charge was created at this stage; demo data stays in this browser session.", again:"Submit another", backHome:"Back to home",
@@ -125,7 +168,7 @@ const OptMark = ({T}) => <span className="ml-0.5 text-[12px] font-normal text-[v
 const FactsPanel=React.memo(function FactsPanel({T}){
  return (
   <section className="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-   <h2 className="text-[15px] font-semibold">{T.factsTitle}</h2>
+   <h2 className="text-[16px] font-semibold">{T.factsTitle}</h2>
    <ul className="mt-3 grid gap-3 md:grid-cols-3">
     {[ [T.fact1,T.fact1s], [T.fact2,T.fact2s], [T.fact3,T.fact3s] ].map(([d,s],i)=>(
      <li key={i} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-3.5">
@@ -133,12 +176,15 @@ const FactsPanel=React.memo(function FactsPanel({T}){
       <p className="mt-1.5 text-[11px] text-[var(--color-text-faint)]">{s}</p>
      </li>))}
    </ul>
-   <p className="mt-3.5 rounded-lg border border-[var(--color-warning)]/50 bg-[var(--color-warning)]/10 px-3.5 py-2.5 text-[12.5px] leading-5 text-[var(--color-text-secondary)]">{T.fact2nd}</p>
+   <p className="mt-3.5 rounded-lg border border-[var(--color-warning)]/50 bg-[var(--color-warning)]/10 px-3.5 py-2.5 text-[13px] leading-5 text-[var(--color-text-secondary)]">{T.fact2nd}</p>
   </section>);});
 
 function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.getItem(LANG_KEY)==="en"?"en":"zh"; }catch{ return "zh"; } });
   const T = I18N[lang];
-  const [dark,setDark]=useState(true);
+  /* 主题与 index.html 共用 gpu-market-theme 键；初值读 head 脚本已定好的 class，避免首帧不一致 */
+  const [dark,setDark]=useState(()=>document.documentElement.classList.contains("dark"));
+  const toggleTheme=()=>setDark(d=>{ const nd=!d; document.documentElement.classList.toggle("dark",nd);
+    try{ localStorage.setItem("gpu-market-theme", nd?"dark":"light"); }catch(e){} return nd; });
   const [draft,setDraft]=useState(()=>readDraft() || {...EMPTY_DRAFT});
   const [sent,setSent]=useState(()=>readLS(ENT_KEY, null));
   const [err,setErr]=useState({});
@@ -150,17 +196,21 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
   useEffect(()=>{ if(!sent) writeLS(DRAFT_KEY, {v:1, draft}); },[draft, sent]);
 
   const set=(k,v)=>setDraft(d=>({...d,[k]:v}));
+  /* err 存错误码而非文案：文案随当前语言在渲染期解析，
+     否则 validate() 落的是当时语言，切语言后错误仍是上一种语言 */
   const validate=()=>{
     const e={};
-    if(!draft.model) e.model=T.errModel;
-    if(draft.model==="other" && !draft.modelOther.trim()) e.modelOther=T.errOther;
-    if(!draft.gpu) e.gpu=T.errGpu;
+    if(!draft.model) e.model="model.required";
+    if(draft.model==="other" && !draft.modelOther.trim()) e.modelOther="modelOther.required";
+    if(!draft.gpu) e.gpu="gpu.required";
     const n=parseInt(draft.cards,10);
-    if(!draft.cards.trim() || Number.isNaN(n) || n<1 || n>10000) e.cards=T.errCards;
-    if(!draft.period) e.period=T.errPeriod;
-    if(!EMAIL_RE.test(draft.email.trim())) e.email=T.errEmail;
+    if(!draft.cards.trim() || Number.isNaN(n) || n<1 || n>10000) e.cards="cards.invalid";
+    if(!draft.period) e.period="period.required";
+    if(!EMAIL_RE.test(draft.email.trim())) e.email="email.invalid";
     setErr(e); return Object.keys(e).length===0;
   };
+  /* 码 → 当前语言文案；未知码回退为空（不把码本身显示给用户） */
+  const msg = c => c ? (T.errMsg[c] || "") : "";
   const submit=(ev)=>{ ev.preventDefault(); if(!validate()) return;
     const ref="REQ-"+Date.now().toString(36).toUpperCase().slice(-6);
     const rec={v:1, draft:{...draft}, ref, at:Date.now()};   // 冗余 lang 字段已删（渲染跟随当前语言，不按提交时语言回显）
@@ -192,26 +242,27 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
   );
 
   return (<div className="min-h-screen">
+   <a className="skip-link" href="#ent-main">{T.skipMain}</a>
    {/* 顶栏：品牌 + 语言/主题 + 返回 */}
    <header className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur">
      <div className="mx-auto flex max-w-[1100px] items-center justify-between px-5 py-3">
-       <a href="./index.html" className="tap flex items-center gap-2 text-[15px] font-bold tracking-tight">
+       <a href="./index.html" className="tap flex items-center gap-2 text-[16px] font-bold tracking-tight">
          <span className="inline-block h-5 w-5 rounded-md bg-[var(--color-accent)]" aria-hidden="true"/>
          {T.brand}
        </a>
        <div className="flex items-center gap-1.5">
          <button onClick={()=>setLang(lang==="zh"?"en":"zh")} aria-label={T.langAria}
            className="tap rounded-md px-2.5 py-1.5 text-[12px] font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]">{lang==="zh"?"EN":"中文"}</button>
-         <button onClick={()=>setDark(d=>!d)} aria-label={T.theme} title={T.theme}
+         <button onClick={toggleTheme} aria-pressed={dark} aria-label={T.theme} title={T.theme}
            className="tap rounded-md px-2.5 py-1.5 text-[14px] hover:bg-[var(--color-surface-alt)]">{dark?"☀":"🌙"}</button>
          <a href="./index.html" className="tap rounded-md border border-[var(--color-border-strong)] px-2.5 py-1.5 text-[12px] font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]">{T.back}</a>
        </div>
      </div>
    </header>
 
-   <main className="mx-auto max-w-[1100px] px-5 py-8">
-    <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--color-accent)]">{T.heroKicker}</p>
-    <h1 className="mt-1.5 text-[26px] font-bold tracking-tight md:text-[32px]">{T.heroTitle}</h1>
+   <main id="ent-main" tabIndex={-1} className="mx-auto max-w-[1100px] px-5 py-8">
+    <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--color-accent-on-tint)]">{T.heroKicker}</p>
+    <h1 className="mt-1.5 text-[24px] font-bold tracking-tight md:text-[34px]">{T.heroTitle}</h1>
     <p className="mt-2 max-w-[62ch] text-[14px] leading-6 text-[var(--color-text-muted)]">{T.heroLead}</p>
 
     {/* 当前可用能力：memo 隔离，仅随语言变化重渲染，不随表单每次按键重渲染（P3-1） */}
@@ -222,11 +273,11 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
      <section className="fade-in mt-6 rounded-xl border border-[var(--color-success)]/50 bg-[var(--color-surface)] p-6" aria-live="polite">
        <div className="flex items-center gap-2.5">
          <span className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--color-success)]" aria-hidden="true"/>
-         <h2 className="text-[19px] font-bold tracking-tight">{T.sentTitle}</h2>
+         <h2 className="text-[20px] font-bold tracking-tight">{T.sentTitle}</h2>
        </div>
        <p className="mt-2 text-[14px] leading-6 text-[var(--color-text-muted)]">{T.sentLead}</p>
        <p className="mt-3 text-[12px] text-[var(--color-text-faint)]">{T.sentNo}</p>
-       <p className="mono text-[18px] font-bold tracking-wide text-[var(--color-success)]">{sent.ref}</p>
+       <p className="mono text-[20px] font-bold tracking-wide text-[var(--color-success)]">{sent.ref}</p>
        <h3 className="mt-5 text-[13px] font-semibold text-[var(--color-text-secondary)]">{T.sentNext}</h3>
        <ol className="mt-2 space-y-1.5 text-[13px] leading-5 text-[var(--color-text-muted)]">
          {[T.sentS1,T.sentS2,T.sentS3].map((s,i)=><li key={i}>{s}</li>)}
@@ -239,27 +290,27 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
      </section>
     ) : (
      <section className="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-       <h2 className="text-[19px] font-bold tracking-tight">{T.formTitle}</h2>
+       <h2 className="text-[20px] font-bold tracking-tight">{T.formTitle}</h2>
        <p className="mt-1.5 text-[13px] leading-5 text-[var(--color-text-muted)]">{T.formLead}</p>
        {/* 校验汇总：单一 role="alert"（避免 N 条同时朗读）；逐项错误经 aria-describedby 关联到各自控件 */}
        {Object.keys(err).length>0 && (
-        <div role="alert" className="mt-3 rounded-lg border border-[var(--color-error)]/50 bg-[var(--color-error)]/10 px-3.5 py-2.5 text-[12.5px] leading-5 text-[var(--color-text-secondary)]">
-         {T.errSummary}：{Object.keys(err).map(k=>err[k]).join("；")}
+        <div role="alert" className="mt-3 rounded-lg border border-[var(--color-error)]/50 bg-[var(--color-error)]/10 px-3.5 py-2.5 text-[13px] leading-5 text-[var(--color-text-secondary)]">
+         {T.errSummary}：{Object.keys(err).map(k=>msg(err[k])).filter(Boolean).join("；")}
         </div>)}
        <form onSubmit={submit} noValidate className="mt-5 grid gap-4 md:grid-cols-2">
-         {sel("model",T.fModel,draft.model,v=>set("model",v),[{v:"",t:T.fModelPh},{v:"training",t:T.oTraining},{v:"inference",t:T.oInference},{v:"render",t:T.oRender},{v:"other",t:T.oOther}],err.model,true)}
+         {sel("model",T.fModel,draft.model,v=>set("model",v),[{v:"",t:T.fModelPh},{v:"training",t:T.oTraining},{v:"inference",t:T.oInference},{v:"render",t:T.oRender},{v:"other",t:T.oOther}],msg(err.model),true)}
          {/* 该字段仅在 model==="other" 时渲染 → 字段存在即必填，红 * 不会误标为常显必填 */}
-         {draft.model==="other" && inp("modelOther",T.fModelOther,draft.modelOther,v=>set("modelOther",v),T.fModelOtherPh,err.modelOther,{req:true})}
-         {sel("gpu",T.fGpu,draft.gpu,v=>set("gpu",v),[{v:"",t:T.fGpuPh},{v:"any",t:T.gAny},{v:"h100",t:T.gH100},{v:"h200",t:T.gH200},{v:"a100",t:T.gA100},{v:"l40s",t:T.gL40S}],err.gpu,true)}
-         {inp("cards",T.fCards,draft.cards,v=>set("cards",v),T.fCardsPh,err.cards,{req:true})}
-         {sel("period",T.fPeriod,draft.period,v=>set("period",v),[{v:"",t:T.fPeriodPh},{v:"week",t:T.pWeek},{v:"month",t:T.pMonth},{v:"quarter",t:T.pQuarter},{v:"long",t:T.pLong}],err.period,true)}
+         {draft.model==="other" && inp("modelOther",T.fModelOther,draft.modelOther,v=>set("modelOther",v),T.fModelOtherPh,msg(err.modelOther),{req:true})}
+         {sel("gpu",T.fGpu,draft.gpu,v=>set("gpu",v),[{v:"",t:T.fGpuPh},{v:"any",t:T.gAny},{v:"h100",t:T.gH100},{v:"h200",t:T.gH200},{v:"a100",t:T.gA100},{v:"l40s",t:T.gL40S}],msg(err.gpu),true)}
+         {inp("cards",T.fCards,draft.cards,v=>set("cards",v),T.fCardsPh,msg(err.cards),{req:true})}
+         {sel("period",T.fPeriod,draft.period,v=>set("period",v),[{v:"",t:T.fPeriodPh},{v:"week",t:T.pWeek},{v:"month",t:T.pMonth},{v:"quarter",t:T.pQuarter},{v:"long",t:T.pLong}],msg(err.period),true)}
          <div>
            <label htmlFor="budget" className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{T.fBudget}<OptMark T={T}/></label>
            <input id="budget" value={draft.budget} placeholder={T.fBudgetPh} onChange={e=>set("budget",e.target.value)}
              className="mt-1.5 w-full rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-[14px] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-accent)]"/>
            <p className="mt-1 text-[11px] text-[var(--color-text-faint)]">{T.fBudgetPh2}</p>
          </div>
-         {inp("email",T.fEmail,draft.email,v=>set("email",v),T.fEmailPh,err.email,{type:"email",req:true})}
+         {inp("email",T.fEmail,draft.email,v=>set("email",v),T.fEmailPh,msg(err.email),{type:"email",req:true})}
          {inp("name",T.fName,draft.name,v=>set("name",v),T.fNamePh)}
          <div className="md:col-span-2">
            <label htmlFor="note" className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{T.fNote}<OptMark T={T}/></label>
@@ -275,7 +326,7 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
     )}
    </main>
 
-   <footer className="mt-6 border-t border-[var(--color-border)] px-5 py-3 text-center text-[11.5px] text-[var(--color-text-faint)]">{T.note}</footer>
+   <footer className="mt-6 border-t border-[var(--color-border)] px-5 py-3 text-center text-[12px] text-[var(--color-text-faint)]">{T.note}</footer>
   </div>);
 }
 

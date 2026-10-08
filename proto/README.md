@@ -16,6 +16,7 @@ vite 预览端口 `:8787`，访问：
 - 用户端 `http://localhost:8787/proto/index.html`
 - 后台 `http://localhost:8787/proto/admin.html`
 - 企业入口 `http://localhost:8787/proto/enterprise.html`
+- 工作区演示 `http://localhost:8787/proto/portal.html`
 
 也可直接用浏览器打开 `proto/index.html`，或使用任意静态服务器。**需要联网访问 `cdn.jsdelivr.net`**（React / Babel / Tailwind 均由 CDN 加载；断网时页面顶部会出现降级提示）。
 
@@ -26,6 +27,7 @@ vite 预览端口 `:8787`，访问：
 | `index.html` | 租户 + 宿主双主体。导航：控制台 / 行情 / 实例 / 账单 |
 | `admin.html` | 平台管理端：大盘 / 市场管理 / 资金对账 / 用户与合规 / 审计 |
 | `enterprise.html` | 企业客户入口：提交算力采购需求，进入线下对接流程 |
+| `portal.html` | 实例工作区演示：模拟第三方工作区网关的跳转落地，五场景自动播放导览 |
 
 `index.html` 与 `admin.html` **同源共享 localStorage**，双开两个 tab 可演示「用户操作 → 后台实时看见 → 后台干预 → 用户端生效」。
 

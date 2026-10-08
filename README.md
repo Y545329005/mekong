@@ -7,6 +7,7 @@ P2P GPU 算力市场交互原型（租户 + 宿主 + 平台管理端 + 企业客
 - 主原型（租户 / 宿主双视角）：<https://y545329005.github.io/mekong/proto/index.html>
 - 平台管理端（出金审批 / 抽成 / 风控）：<https://y545329005.github.io/mekong/proto/admin.html>
 - 企业客户入口（采购需求受理）：<https://y545329005.github.io/mekong/proto/enterprise.html>
+- 实例工作区演示（第三方跳转落地）：<https://y545329005.github.io/mekong/proto/portal.html>
 
 > 首屏加载需访问 CDN，请确保网络可访问 `cdn.jsdelivr.net`。
 
@@ -29,6 +30,7 @@ npm run dev
 | `proto/index.html` | 租户 + 宿主单文件原型。右上角「→ 宿主视角」切换双主体；导航含控制台 / 行情 / 实例 / 账单 |
 | `proto/admin.html` | 平台管理端：大盘 / 市场管理 / 资金对账（抽成滑杆 + 出金审批）/ 用户与合规 |
 | `proto/enterprise.html` | 企业客户入口：提交算力采购需求，进入线下对接流程 |
+| `proto/portal.html` | 实例工作区演示：五场景自动播放导览（第三方工作区网关形态） |
 
 核心演示链路：
 

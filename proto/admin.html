@@ -16,37 +16,68 @@ window.addEventListener('error',function(e){
   var d=document.getElementById('boot-error');
   if(d){ d.style.display='block'; d.textContent+=' | '+(e.message||e.type); }
 });
+/* 主题与 index.html 同键同默认值（未设置=暗色）。放在 head 内同步执行：样式生效前就把 .dark 定下来，
+   否则从 index 切到浅色再进后台，会先闪一下暗色。 */
+(function(){
+  try{ var t=localStorage.getItem("gpu-market-theme");
+       document.documentElement.classList.toggle("dark", t!=="light"); }catch(e){}
+})();
 </script>
 <style>
   @custom-variant dark (&:where(.dark, .dark *));
   /* 同 index.html 的 zinc/slate 暗色变量——两边同一种工作台语言 */
+  /* tokens:begin —— 以下整块由 tools/sync-tokens.mjs 生成，勿手改 */
   :root {
+  /* 令牌由 tools/sync-tokens.mjs 生成 —— 不要手改本块；改脚本后重跑。四页共用同一份取值。 */
     --color-bg: #f8fafc; --color-surface: #ffffff; --color-surface-alt: #f1f5f9;
     --color-text: #0f172a; --color-text-secondary: #334155; --color-text-muted: #475569; --color-text-faint: #5b6673;
     --color-border: #e2e8f0; --color-border-strong: #cbd5e1;
-    --color-accent: #2563eb; --color-accent-hover: #1d4ed8; --color-accent-strong: #1d4ed8;
-    --color-focus: #2563eb; --color-selection: rgba(37,99,235,.2);
-    --color-scrollbar: #cbd5e1; --color-scrollbar-border: #f8fafc;
-    --color-success: #047857; --color-warning: #d97706; --color-error: #dc2626; --color-info: #7c3aed;
+    --color-accent: #2563eb; --color-accent-hover: #1d4ed8; --color-accent-strong: #1d4ed8; --color-focus: #2563eb;
+    --color-selection: rgba(37,99,235,.2); --color-scrollbar: #cbd5e1; --color-scrollbar-border: #f8fafc;
+    --color-success: #047857; --color-warning: #b45309; --color-error: #dc2626; --color-info: #7c3aed;
+    --color-on-solid: #ffffff;
+    --color-success-on-tint: #065f46; --color-warning-on-tint: #92400e; --color-error-on-tint: #b91c1c; --color-info-on-tint: #6d28d9;
+    --color-accent-on-tint: #1d4ed8;
+    --color-map-stroke: #64748b; --color-map-grid: #cbd5e1;
   }
   .dark {
+  /* 同浅色档的同一套取值；深色下语义色底是亮色，字色改用 --color-on-solid / --color-*-on-tint。 */
     --color-bg: #0f172a; --color-surface: #1e293b; --color-surface-alt: #1e293b;
     --color-text: #f1f5f9; --color-text-secondary: #e2e8f0; --color-text-muted: #cbd5e1; --color-text-faint: #94a3b8;
     --color-border: #334155; --color-border-strong: #475569;
-    --color-accent: #2563eb; --color-accent-hover: #3b82f6; --color-accent-strong: #1d4ed8;
-    --color-focus: #3b82f6; --color-selection: rgba(56,189,248,.28);
-    --color-scrollbar: #334155; --color-scrollbar-border: #0f172a;
+    --color-accent: #2563eb; --color-accent-hover: #3b82f6; --color-accent-strong: #1d4ed8; --color-focus: #3b82f6;
+    --color-selection: rgba(56,189,248,.28); --color-scrollbar: #334155; --color-scrollbar-border: #0f172a;
     --color-success: #10b981; --color-warning: #f59e0b; --color-error: #f87171; --color-info: #8b5cf6;
+    --color-on-solid: #0f172a;
+    --color-success-on-tint: #6ee7b7; --color-warning-on-tint: #f59e0b; --color-error-on-tint: #fca5a5; --color-info-on-tint: #a78bfa;
+    --color-accent-on-tint: #60a5fa;
+    --color-map-stroke: #94a3b8; --color-map-grid: #334155;
   }
+  /* tokens:end */
   html,body { background:var(--color-bg); color:var(--color-text); font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; font-size:15px; }
   .mono { font-family: ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric: tabular-nums; }
   ::selection { background:var(--color-selection); }
   ::-webkit-scrollbar { width:10px;height:10px; } ::-webkit-scrollbar-thumb { background:var(--color-scrollbar);border-radius:6px;border:2px solid var(--color-scrollbar-border); }
   ::-webkit-scrollbar-track { background:transparent; }
-  button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { outline:2px solid var(--color-focus); outline-offset:2px; border-radius:4px; }
+  button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible { outline:2px solid var(--color-focus); outline-offset:2px; border-radius:4px; }
+  /* 键盘导航：跳过链接（与 index.html 同款；全站第一个可聚焦元素） */
+  .skip-link { position:absolute; left:-9999px; z-index:999; padding:8px 16px; background:var(--color-accent); color:#ffffff; text-decoration:none; font-size:14px; }
+  .skip-link:focus { left:8px; top:8px; }
+  /* 触达区兜底（WCAG 2.5.8 AA 下限 24×24）。必须放进 @layer base：Tailwind v4 的工具类位于
+     @layer utilities，未分层样式永远压过已分层样式，写成未分层会连 .btn-touch 的 44px 一起压掉。 */
+  @layer base {
+    button, select, textarea, input:not([type=checkbox]):not([type=radio]) { min-height:24px; min-width:24px; }
+    input[type=checkbox], input[type=radio] { min-height:0; min-width:0; }
+  }
   input[type=range] { accent-color:var(--color-accent); }
   @keyframes pulseDot { 0%,100%{opacity:.35} 50%{opacity:1} }
   .dot-pulse { animation:pulseDot 1.2s ease-in-out infinite; }
+  /* 动效降级（与 index.html 同款实现）。只掐时长不去状态：hover/focus 的颜色与透明度变化仍发生，
+     前庭敏感用户失去的是「动」而不是「状态反馈」。 */
+  @media (prefers-reduced-motion: reduce) {
+    .dot-pulse, .sidebar-responsive { animation:none !important; transition-duration:0.01ms !important; }
+    *, *::before, *::after { transition-duration:0.01ms !important; animation-duration:0.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; }
+  }
 
   /* tailwind v4 browser 构建会丢弃 <style> 内的自定义 @media——响应式一律改用 max-md:/motion-reduce: 等变体（与 index.html 同款模式） */
   /* P1-R1: 侧栏开合（transform 用 CSS translate 属性，与 v4 的 translate-* 工具一致） */
@@ -63,11 +94,13 @@ window.addEventListener('error',function(e){
 
   /* --- P3-P4: tabular number alignment --- */
   .mono-num { font-variant-numeric:tabular-nums; text-align:right; }
+  .boot-error { position:fixed; top:0; left:0; right:0; z-index:999; background:var(--color-error); color:var(--color-on-solid); padding:8px 12px; font:12px ui-monospace,"SF Mono",Menlo,monospace; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 </style>
 </head>
 <body>
 <div id="root"></div>
-<div id="boot-error" style="display:none;position:fixed;top:0;left:0;right:0;z-index:999;background:#7f1d1d;color:#fecaca;padding:8px 12px;font:12px monospace;"></div>
+<div id="boot-error" class="boot-error" style="display:none"></div>
 
 <script type="text/babel" data-presets="react">
 const {useState, useEffect, useMemo, useRef} = React;
@@ -127,7 +160,7 @@ const OFFERS_SUMMARY=[
  {id:"46112205",gpu:"RTX 5090",dph:0.802,geo:", CN"},
  {id:"46773231",gpu:"RTX 5080",dph:0.269,geo:"Hong Kong, HK"},
 ];
-const INST_META = { Creating:{zh:"创建中",cls:"text-[var(--color-accent-hover)]"}, Loading:{zh:"拉取镜像",cls:"text-[var(--color-accent-hover)]"}, Connecting:{zh:"连接中",cls:"text-[var(--color-accent-hover)]"}, Running:{zh:"运行中",cls:"text-[var(--color-success)]"}, Inactive:{zh:"已停止",cls:"text-[var(--color-text-secondary)]"}, Scheduling:{zh:"排队中",cls:"text-[var(--color-warning)]"}, Offline:{zh:"宿主断连",cls:"text-[var(--color-error)]"}, Rebooting:{zh:"重启中",cls:"text-[var(--color-info)]"}, Expired:{zh:"租约过期",cls:"text-red-300"}, Destroyed:{zh:"已销毁",cls:"text-[var(--color-text-faint)]"} };
+const INST_META = { Creating:{zh:"创建中",cls:"text-[var(--color-accent-on-tint)]"}, Loading:{zh:"拉取镜像",cls:"text-[var(--color-accent-on-tint)]"}, Connecting:{zh:"连接中",cls:"text-[var(--color-accent-on-tint)]"}, Running:{zh:"运行中",cls:"text-[var(--color-success)]"}, Inactive:{zh:"已停止",cls:"text-[var(--color-text-secondary)]"}, Scheduling:{zh:"排队中",cls:"text-[var(--color-warning)]"}, Offline:{zh:"宿主断连",cls:"text-[var(--color-error)]"}, Rebooting:{zh:"重启中",cls:"text-[var(--color-info)]"}, Expired:{zh:"租约过期",cls:"text-red-300"}, Destroyed:{zh:"已销毁",cls:"text-[var(--color-text-faint)]"} };
 const ACTIVE_STATES=["Running","Loading","Creating","Connecting","Scheduling","Rebooting"];
 
 /* ================= i18n（与对客端共用 vast-demo-lang 键；每键 zh/en 双录） ================= */
@@ -209,8 +242,8 @@ const Card=({label,value,sub,cls,live,size})=>(
   <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6" {...(live?{"aria-live":"polite"}:{})}>
     <div className="text-[13px] text-[var(--color-text-muted)]">{label}</div>
     {/* 数值字号必须是源码完整字面量（Tailwind 扫不到运行时拼接）；长文本 value（守恒校验）用 sm 档防溢出 */}
-    <div className={`mono mt-1.5 tabular-nums font-bold ${size==="sm"?"text-[20px]":"text-[28px]"} ${cls||""}`}>{value}</div>
-    {sub && <div className="mt-1 text-[12.5px] text-[var(--color-text-faint)]">{sub}</div>}
+    <div className={`mono mt-1.5 tabular-nums font-bold ${size==="sm"?"text-[20px]":"text-[24px]"} ${cls||""}`}>{value}</div>
+    {sub && <div className="mt-1 text-[13px] text-[var(--color-text-faint)]">{sub}</div>}
   </div>);
 const Th=({children,w,cls})=><th scope="col" className={`border-b border-[var(--color-border)] px-4 py-3 text-left text-[13px] font-medium text-[var(--color-text-secondary)] ${w||""} ${cls||""}`}>{children}</th>;
 const Td=({children,cls})=><td className={`border-b border-[var(--color-border)]/60 px-4 py-3 ${cls||""}`}>{children}</td>;
@@ -219,7 +252,7 @@ const Btn=({children,onClick,tone,disabled,title,cls,label})=>{
     ok:"border-[var(--color-success)]/50 text-[var(--color-success)] hover:bg-[var(--color-success)]/10",
     plain:"border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]" };
   return <button onClick={onClick} disabled={disabled} title={title} aria-label={label}
-    className={`btn-touch rounded-md border px-3 py-1.5 text-[13.5px] font-medium disabled:cursor-not-allowed disabled:opacity-40 ${map[tone||"plain"]} ${cls||""}`}>{children}</button>; };
+    className={`btn-touch rounded-md border px-3 py-1.5 text-[14px] font-medium disabled:cursor-not-allowed disabled:opacity-40 ${map[tone||"plain"]} ${cls||""}`}>{children}</button>; };
 
 /* ================= 派生数据 ================= */
 function derive(store, accounts, cfg){
@@ -259,13 +292,13 @@ function Dashboard({d,syncAt}){
       <Card label={T.dBal} value={fmt$(d.st.balance)} cls="text-[var(--color-success)]"/>
       <Card label={T.dEscrow} value={fmt$(d.st.escrow)} cls="text-[var(--color-warning)]"/>
       <Card label={T.dHost} value={fmt$(d.st.hostEarnings)} cls="text-[var(--color-warning)]"/>
-      <Card label={T.dPlat} value={fmt$(d.platRev)} cls="text-[var(--color-accent-hover)]"/>
+      <Card label={T.dPlat} value={fmt$(d.platRev)} cls="text-[var(--color-accent-on-tint)]"/>
       <Card label={T.dSpend} value={fmt$(d.spend)}/>
     </div>
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="flex items-center justify-between border-b border-[var(--color-border)] px-5 py-3">
         <span className="text-[14px] font-semibold">{T.dEvents}</span>
-        <span className="flex items-center gap-1.5 text-[12.5px] text-[var(--color-text-faint)]">
+        <span className="flex items-center gap-1.5 text-[13px] text-[var(--color-text-faint)]">
           <span className="dot-pulse inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-success)] motion-reduce:animate-none"></span>
           {T.dSync} {syncAt}
         </span>
@@ -378,16 +411,16 @@ function Fund({d,cfg,act}){
   return (<div className="space-y-6">
     <div className="grid gap-5 xl:grid-cols-2">
       <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-        <div className="text-[14px] font-semibold">{T.fCommission}: <span className="mono text-[var(--color-accent-hover)]">{ratePct}%</span></div>
+        <div className="text-[14px] font-semibold">{T.fCommission}: <span className="mono text-[var(--color-accent-on-tint)]">{ratePct}%</span></div>
         <input type="range" min="0" max="20" step="1" value={draft} onChange={e=>setDraft(+e.target.value)} className="mt-3 w-full" aria-label={T.fCommission}/>
-        <div className="mt-1 flex justify-between text-[12.5px] text-[var(--color-text-faint)]"><span>0%</span><span>20%</span></div>
+        <div className="mt-1 flex justify-between text-[13px] text-[var(--color-text-faint)]"><span>0%</span><span>20%</span></div>
         <p className="mt-2 text-[13px] leading-snug text-[var(--color-text-muted)]">{T.fCommissionTip}</p>
         <div className="mt-3"><Btn tone="ok" disabled={draft===ratePct} onClick={()=>act.setCommission(draft)}>{T.fApply}</Btn></div>
       </div>
       <div className="grid grid-cols-2 gap-5">
         <Card label={T.reconRent} value={fmt$(d.hostGross.reduce((a,e)=>a+e.amt,0))}/>
         <Card label={T.reconHost} value={fmt$(d.hostNet)} cls="text-[var(--color-warning)]"/>
-        <Card label={T.reconPlat} value={fmt$(d.platRev)} cls="text-[var(--color-accent-hover)]"/>
+        <Card label={T.reconPlat} value={fmt$(d.platRev)} cls="text-[var(--color-accent-on-tint)]"/>
         <Card label={T.reconCheck} size="sm" value={(ok? "✓ " : "✗ ")+(ok? T.reconOk : T.reconErr+" "+d.reconDiff.toFixed(4))} cls={ok?"text-[var(--color-success)]":"text-[var(--color-error)]"} sub={T.reconSplit(d.posRate,d.zeroRate)} live/>
       </div>
     </div>
@@ -400,7 +433,7 @@ function Fund({d,cfg,act}){
         </div>
         <button type="button" role="switch" aria-checked={cfg.transitionStorageFee!==false} aria-label={T.fTransFee} onClick={()=>act.setTransFee(cfg.transitionStorageFee===false)}
           className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${cfg.transitionStorageFee!==false?"bg-[var(--color-success)]":"bg-[var(--color-border)]"}`}>
-          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${cfg.transitionStorageFee!==false?"right-1":"left-1"}`}></span>
+          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-[left,right] ${cfg.transitionStorageFee!==false?"right-1":"left-1"}`}></span>
         </button>
       </div>
     </div>
@@ -462,7 +495,7 @@ function Users({d,cfg,act}){
           const isBanned=banned.includes(e);
           return (<tr key={e}>
             <Td cls="mono">{e}</Td><Td>{accounts[e]?.provider||"email"}</Td><Td cls="mono text-[var(--color-text-faint)]">{fmtDate(accounts[e]?.createdAt)}</Td>
-            <Td>{isBanned? <span className="text-[var(--color-error)]">{T.uBanned}</span> : (e===cur? <span className="text-[var(--color-accent-hover)]">{T.uCurrent}</span> : T.uNormal)}</Td>
+            <Td>{isBanned? <span className="text-[var(--color-error)]">{T.uBanned}</span> : (e===cur? <span className="text-[var(--color-accent-on-tint)]">{T.uCurrent}</span> : T.uNormal)}</Td>
             <Td>{isBanned? <Btn tone="ok" onClick={()=>act.unban(e)}>{T.uUnban}</Btn> : <Btn tone="danger" onClick={()=>act.ban(e)}>{T.uBan}</Btn>}</Td>
           </tr>);})}
         </tbody>
@@ -491,7 +524,7 @@ function Users({d,cfg,act}){
         </table>
         </div>
         <p className="mt-3 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{T.kycBody}</p>
-        <div className="mono mt-2 text-[12.5px] text-[var(--color-text-faint)]">accepted = {String(!!st.accepted)}{cur? ` · ${cur}`:""}</div>
+        <div className="mono mt-2 text-[13px] text-[var(--color-text-faint)]">accepted = {String(!!st.accepted)}{cur? ` · ${cur}`:""}</div>
       </div>
   </div>);
 }
@@ -504,10 +537,10 @@ function Data({cfg,act,snapInfo}){
       <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{T.genBody}</p>
       <div className="mt-3 flex items-center gap-3">
         <button onClick={()=>{ if(!confirming){ setConfirming(true); setTimeout(()=>setConfirming(false),4000); } else { setConfirming(false); act.inject(); } }}
-          className={`rounded-md border px-3 py-1.5 text-[13.5px] font-medium ${confirming? "border-[var(--color-error)] bg-[var(--color-error)]/10 text-[var(--color-error)]" : "border-[var(--color-success)]/50 text-[var(--color-success)] hover:bg-[var(--color-success)]/10"}`}>
+          className={`rounded-md border px-3 py-1.5 text-[14px] font-medium ${confirming? "border-[var(--color-error)] bg-[var(--color-error)]/10 text-[var(--color-error)]" : "border-[var(--color-success)]/50 text-[var(--color-success)] hover:bg-[var(--color-success)]/10"}`}>
           {confirming? (_LANG==="zh"? "再点一次确认注入" : "Click again to confirm") : T.genBtn}
         </button>
-        <span className="text-[12.5px] text-[var(--color-text-faint)]">{snapInfo.has? "✓ "+T.genSnap : T.genNoSnap}</span>
+        <span className="text-[13px] text-[var(--color-text-faint)]">{snapInfo.has? "✓ "+T.genSnap : T.genNoSnap}</span>
       </div>
     </div>
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
@@ -542,6 +575,10 @@ function Audit({cfg,act}){
 let accounts={}; // 轮询刷新的账号库快照（Users 表读取）
 function App(){
   const [lang,setLangState]=useState(()=>{ try{ const l=localStorage.getItem("vast-demo-lang"); return (l==="en"||l==="zh")?l:"zh"; }catch(e){ return "zh"; } });
+  /* 主题与 index.html 共用 gpu-market-theme 键；初值直接读 DOM 上 head 脚本已定好的 class，避免首帧不一致 */
+  const [isDark,setIsDark]=useState(()=>document.documentElement.classList.contains("dark"));
+  const toggleTheme=()=>{ const nd=!isDark; document.documentElement.classList.toggle("dark",nd); setIsDark(nd);
+    try{ localStorage.setItem("gpu-market-theme", nd?"dark":"light"); }catch(e){} };
   setLang(lang);
   const [tab,setTab]=useState("dash");
   const [store,setStore]=useState(loadStore);
@@ -619,39 +656,45 @@ function App(){
   const nav=[["dash",T.navDash],["market",T.navMarket],["inst",T.navInst],["fund",T.navFund],["user",T.navUser],["data",T.navData],["audit",T.navAudit]];
   const toggleLang=()=>{ const nl=lang==="zh"?"en":"zh"; try{localStorage.setItem("vast-demo-lang",nl)}catch(e){}; setLangState(nl); };
   return (<div className="flex min-h-screen">
+    <a className="skip-link" href="#admin-main">{lang==="zh"?"跳到主要内容":"Skip to main content"}</a>
     {/* P1-R1: 移动端 backdrop */}
     {mobileNav && <div className="sidebar-backdrop fixed inset-0 z-30 hidden bg-black/40 max-md:block" onClick={()=>setMobileNav(false)} aria-hidden="true"/>}
     {/* 侧栏 */}
     <aside id="admin-sidebar" data-open={mobileNav} className={`sidebar-responsive flex w-64 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-40 max-md:-translate-x-full md:static`}>
       <div className="border-b border-[var(--color-border)] px-5 py-4">
-        <div className="text-[17px] font-bold tracking-tight">Mekong<span className="text-[var(--color-accent-hover)]">·</span>Admin</div>
-        <span className="mt-1 inline-block rounded border border-[var(--color-border)] px-1 py-px text-[11.5px] uppercase tracking-wider text-[var(--color-text-muted)]">{T.appDemo}</span>
+        <div className="text-[16px] font-bold tracking-tight">Mekong<span className="text-[var(--color-accent-on-tint)]">·</span>Admin</div>
+        <span className="mt-1 inline-block rounded border border-[var(--color-border)] px-1 py-px text-[12px] uppercase tracking-wider text-[var(--color-text-muted)]">{T.appDemo}</span>
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {nav.map(([k,l])=>(
           <button key={k} onClick={()=>{setTab(k); setMobileNav(false);}}
-            className={`btn-touch w-full rounded-lg px-3 py-2 text-left text-[14px] ${tab===k?"bg-[var(--color-accent)]/10 font-semibold text-[var(--color-accent-hover)]":"text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]"}`}
+            className={`btn-touch w-full rounded-lg px-3 py-2 text-left text-[14px] ${tab===k?"bg-[var(--color-accent)]/10 font-semibold text-[var(--color-accent-on-tint)]":"text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]"}`}
             aria-current={tab===k?"page":undefined}>{l}</button>))}
       </nav>
       <div className="space-y-2 border-t border-[var(--color-border)] p-4">
         <a href="/index.html" className="btn-touch block rounded-lg border border-[var(--color-border)] px-3 py-2 text-center text-[13px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.openClient}</a>
+        <button onClick={toggleTheme} aria-pressed={isDark} aria-label={lang==="zh"?(isDark?"切换到浅色模式":"切换到深色模式"):(isDark?"Switch to light mode":"Switch to dark mode")}
+          className="btn-touch w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-[13px] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]">{isDark?"☀":"🌙"}</button>
         <button onClick={toggleLang} aria-label={lang==="zh"?"Switch to English":"切换到中文"} className="btn-touch w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-[13px] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]">{lang==="zh"?"EN":"中文"}</button>
-        <p className="text-[12.5px] leading-snug text-[var(--color-text-faint)]">{T.sidenavHint}</p>
+        <p className="text-[13px] leading-snug text-[var(--color-text-faint)]">{T.sidenavHint}</p>
       </div>
     </aside>
     {/* 主区 */}
-    <main className="min-w-0 flex-1 p-5 md:p-8">
+    <main id="admin-main" tabIndex={-1} className="min-w-0 flex-1 p-5 md:p-8">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-y-2">
         <div className="flex items-center gap-2">
           <button onClick={()=>setMobileNav(v=>!v)} className="hidden max-md:flex rounded-lg border border-[var(--color-border)] p-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]" aria-label="Toggle navigation" aria-expanded={mobileNav} aria-controls="admin-sidebar">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
           </button>
-          <h1 className="text-[21px] font-bold tracking-tight">{nav.find(n=>n[0]===tab)?.[1]}</h1>
+          <h1 className="text-[20px] font-bold tracking-tight">{nav.find(n=>n[0]===tab)?.[1]}</h1>
         </div>
         <span className="flex items-center gap-1.5 text-[13px] text-[var(--color-text-faint)]" title={T.syncHint}>
           <span className="dot-pulse inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-success)] motion-reduce:animate-none"></span>{T.dLive} · {syncAt}
         </span>
-        {notice && <span className="rounded border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 px-2.5 py-1 text-[13px] text-[var(--color-success)]" aria-live="polite">{notice}</span>}
+        {/* 播报区必须常驻：条件渲染的 aria-live 容器在内容出现前不在无障碍树里，读屏不会播报。
+            空时用 sr-only 保留节点、去掉视觉占位；内容从空变为有值才是可靠的播报时机。 */}
+        <span role="status" aria-live="polite" aria-atomic="true"
+          className={notice?"rounded border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 px-2.5 py-1 text-[13px] text-[var(--color-success-on-tint)]":"sr-only"}>{notice||""}</span>
       </header>
       {tab==="dash" && <Dashboard d={d} syncAt={syncAt}/>}
       {tab==="market" && <Market d={d} act={act}/>}

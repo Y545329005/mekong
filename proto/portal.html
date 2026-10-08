@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Instance Portal 演示页——模拟第三方工作区网关的跳转落地，按场景自动播放租户动线，仅演示流程与信息架构，非最终 UI 设计。">
+<title>Instance Portal · Workspace</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%2310b981'/><text x='32' y='45' font-family='ui-sans-serif,system-ui,sans-serif' font-size='36' font-weight='700' fill='%23ffffff' text-anchor='middle'>W</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"></script>
+<script>
+window.addEventListener('error',function(e){
+  var d=document.getElementById('boot-error');
+  if(d){ d.style.display='block'; d.textContent+=' | '+(e.message||e.type); }
+});
+/* 主题与 index.html 同键同默认值（未设置=暗色）；head 内同步执行，避免首帧闪烁。 */
+(function(){
+  try{ var t=localStorage.getItem("gpu-market-theme");
+       document.documentElement.classList.toggle("dark", t!=="light"); }catch(e){}
+})();
+</script>
+<style>
+  @custom-variant dark (&:where(.dark, .dark *));
+  /* tokens:begin —— 以下整块由 tools/sync-tokens.mjs 生成，勿手改 */
+  :root {
+  /* 令牌由 tools/sync-tokens.mjs 生成 —— 不要手改本块；改脚本后重跑。四页共用同一份取值。 */
+    --color-bg: #f8fafc; --color-surface: #ffffff; --color-surface-alt: #f1f5f9;
+    --color-text: #0f172a; --color-text-secondary: #334155; --color-text-muted: #475569; --color-text-faint: #5b6673;
+    --color-border: #e2e8f0; --color-border-strong: #cbd5e1;
+    --color-accent: #2563eb; --color-accent-hover: #1d4ed8; --color-accent-strong: #1d4ed8; --color-focus: #2563eb;
+    --color-selection: rgba(37,99,235,.2); --color-scrollbar: #cbd5e1; --color-scrollbar-border: #f8fafc;
+    --color-success: #047857; --color-warning: #b45309; --color-error: #dc2626; --color-info: #7c3aed;
+    --color-on-solid: #ffffff;
+    --color-success-on-tint: #065f46; --color-warning-on-tint: #92400e; --color-error-on-tint: #b91c1c; --color-info-on-tint: #6d28d9;
+    --color-accent-on-tint: #1d4ed8;
+    --color-map-stroke: #64748b; --color-map-grid: #cbd5e1;
+  }
+  .dark {
+  /* 同浅色档的同一套取值；深色下语义色底是亮色，字色改用 --color-on-solid / --color-*-on-tint。 */
+    --color-bg: #0f172a; --color-surface: #1e293b; --color-surface-alt: #1e293b;
+    --color-text: #f1f5f9; --color-text-secondary: #e2e8f0; --color-text-muted: #cbd5e1; --color-text-faint: #94a3b8;
+    --color-border: #334155; --color-border-strong: #475569;
+    --color-accent: #2563eb; --color-accent-hover: #3b82f6; --color-accent-strong: #1d4ed8; --color-focus: #3b82f6;
+    --color-selection: rgba(56,189,248,.28); --color-scrollbar: #334155; --color-scrollbar-border: #0f172a;
+    --color-success: #10b981; --color-warning: #f59e0b; --color-error: #f87171; --color-info: #8b5cf6;
+    --color-on-solid: #0f172a;
+    --color-success-on-tint: #6ee7b7; --color-warning-on-tint: #f59e0b; --color-error-on-tint: #fca5a5; --color-info-on-tint: #a78bfa;
+    --color-accent-on-tint: #60a5fa;
+    --color-map-stroke: #94a3b8; --color-map-grid: #334155;
+  }
+  /* tokens:end */
+  html,body{background:var(--color-bg);color:var(--color-text);}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;}
+  ::-webkit-scrollbar{width:8px;height:8px;} ::-webkit-scrollbar-thumb{background:var(--color-scrollbar,#334155);border-radius:4px;}
+  /* Tour 高亮：仅 outline，不注入 DOM、不碰布局链 */
+  .tour-active{outline:2px solid var(--color-accent-hover);outline-offset:3px;border-radius:8px;animation:tourPulse 1.6s ease-in-out infinite;}
+  @keyframes tourPulse{0%,100%{outline-color:var(--color-accent-hover);}50%{outline-color:var(--color-info);}}
+  .fade-in{animation:fadeIn .5s ease both;} @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .node-lit rect{stroke:var(--color-accent-hover);fill:var(--color-accent-hover);fill-opacity:.12;}
+  /* 键盘可见焦点：此前本页 :focus-visible 规则数为 0，键盘用户无法判断焦点位置（WCAG 2.4.7 AA）。 */
+  button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--color-focus);outline-offset:2px;border-radius:6px;}
+  .skip-link{position:absolute;left:-9999px;z-index:999;padding:8px 16px;background:var(--color-accent);color:#ffffff;text-decoration:none;font-size:14px;}
+  .skip-link:focus{left:8px;top:8px;}
+  /* 触达区兜底（WCAG 2.5.8 AA 下限 24×24）。必须放进 @layer base：Tailwind v4 的工具类位于
+     @layer utilities，未分层样式永远压过已分层样式，会把显式更大的 min-h-[44px] 一起压掉。 */
+  @layer base {
+    button, select, textarea, input:not([type=checkbox]):not([type=radio]) { min-height:24px; min-width:24px; }
+    input[type=checkbox], input[type=radio] { min-height:0; min-width:0; }
+  }
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  .boot-error{position:fixed;top:0;left:0;right:0;z-index:999;background:var(--color-error);color:var(--color-on-solid);padding:8px 12px;font:12px ui-monospace,"SF Mono",Menlo,monospace;}
+  /* 动效降级：只掐时长不去状态。tourActive 的 outline 脉冲一并停 —— 它是无限循环动画。 */
+  @media (prefers-reduced-motion: reduce) {
+    .tour-active, .fade-in { animation:none !important; }
+    *, *::before, *::after { transition-duration:0.01ms !important; animation-duration:0.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="boot-error" class="boot-error" style="display:none"></div>
+<script type="text/babel" data-presets="react">
+/* =============================================================
+   Instance Portal 演示页（模拟第三方工作区网关落地）
+   原则：
+   - 本页仅演示跳转流程与信息架构，非最终 UI 设计
+   - 零 localStorage 读写（避免多 tab 竞态）；实例信息全部来自 URL 参数快照
+   - 真实产品中实例状态权威源在平台 API，URL 参数不可作为状态依据
+   结构：无参直达＝场景选择页（Hub）；选场景 → Tour 自动播放（步骤高亮）
+   ============================================================= */
+const {useState,useEffect,useRef} = React;
+
+/* ---- URL 参数解析（一次性入口快照；演示便利的 state/story 参数在真实产品中不存在） ---- */
+const QS = new URLSearchParams(location.search);
+const P = {
+ sid:   QS.get("sid")||"",
+ gpu:   QS.get("gpu")||"",
+ tpl:   QS.get("tpl")||"",
+ lm:    QS.get("lm")||"ssh",
+ ip:    QS.get("ip")||"",
+ port:  QS.get("port")||"",
+ remain:Math.max(0, parseInt(QS.get("remain")||"0",10)||0),
+ lang:  QS.get("lang")==="en"?"en":"zh",
+ state: QS.get("state")||"",   // 仅演示：expired / disconnected（无 story 直开仍支持）
+ story: Math.max(-1, parseInt(QS.get("story")||"-1",10)), // 场景编号（-1=无）
+ hub:   QS.get("hub")==="1",   // 场景选择页开关：实例工作区顶栏「场景演示」可达（演示动线产品内闭环）
+};
+const ACTION_EV = "portal:action"; // App 播放器 → skin 组件的动作通道（CustomEvent，免 prop drilling）
+
+/* ---- i18n 双包（跟随入口 locale 参数） ---- */
+const I18N = {
+ zh:{
+  brandTip:"工作区演示 · Powered by Mekong",back:"返回控制台",
+  remainLbl:"剩余租期",addr:"地址",tplLbl:"模板",
+  expiredTitle:"租期已结束",expiredLead:"本实例的租约已到期，工作区已断开。您可以在 Mekong 控制台查看账单或重新租用。",
+  discTitle:"宿主连接中断",discLead:"宿主机器连接异常，工作区已断开。平台正在按协议处理，请稍后在 Mekong 控制台查看实例状态。",
+  backBtn:"前往 Mekong 控制台",
+  demoNote:"本页为对接流程演示（模拟第三方工作区网关），非最终 UI 设计；真实状态以平台 API 为准。",
+  jyTitle:"JupyterLab",jyHint:"演示工作区：点击 Run 运行单元格",
+  jyRun:"Run",jyRunning:"Running…",jyReset:"重置",
+  cvTitle:"ComfyUI",cvHint:"节点画布（演示态：拖拽交互未启用）",
+  cvQueue:"Queue Prompt",cvQueuing:"Queuing…",cvOut:"样张 · 1024×1024",
+  vlTitle:"vLLM Endpoint",vlHint:"OpenAI 兼容服务端点",vlBase:"Base URL",vlCurl:"快速验证",vlModels:"已加载模型",vlCopy:"复制",vlCopied:"已复制",
+  vlResp:"响应",
+  hubTitle:"Instance Portal · 场景演示",hubSub:"五个最高频的租户场景，点击卡片自动播放。",
+  hubDenied:"真实产品中，无凭证直接访问工作区链接会被拒绝（一次性凭证 + URL 不可收藏）。",
+  scTrain:"日常训练",scTrainD:"JupyterLab 跑起第一个 cell——租户 80% 的时间",
+  scInfer:"推理调用",scInferD:"OpenAI 兼容端点即取即用",
+  scImg:"生成图像",scImgD:"ComfyUI 工作流一键出图",
+  scExpire:"租期到期",scExpireD:"租期归零的断开与回引导",
+  scDrop:"宿主断连",scDropD:"P2P 宿主异常的处置体验",
+  steps:"步",tbPrev:"上一步",tbNext:"下一步",tbExit:"退出演示",tbReplay:"重播",tbHub:"回场景页",tbDone:"演示结束",
+  hubBtn:"场景演示",hubResume:"直接进入工作区（跳过演示）",
+  banner:"宿主连接不稳定——正在尝试恢复…",
+ },
+ en:{
+  brandTip:"Workspace demo · Powered by Mekong",back:"Back to console",
+  remainLbl:"Time left",addr:"Address",tplLbl:"Template",
+  expiredTitle:"Lease ended",expiredLead:"The lease for this instance has ended and the workspace was disconnected. Check billing or rent again from the Mekong console.",
+  discTitle:"Host connection lost",discLead:"The host machine connection dropped and the workspace was disconnected. The platform is handling this per protocol — check instance status in the Mekong console.",
+  backBtn:"Go to Mekong console",
+  demoNote:"Demo page for onboarding walkthrough (simulated vendor gateway) — not the final UI design. Authoritative state comes from the platform API.",
+  jyTitle:"JupyterLab",jyHint:"Demo workspace: click Run to execute the cell",
+  jyRun:"Run",jyRunning:"Running…",jyReset:"Reset",
+  cvTitle:"ComfyUI",cvHint:"Node canvas (demo: drag disabled)",
+  cvQueue:"Queue Prompt",cvQueuing:"Queuing…",cvOut:"Sample · 1024×1024",
+  vlTitle:"vLLM Endpoint",vlHint:"OpenAI-compatible inference endpoint",vlBase:"Base URL",vlCurl:"Quick check",vlModels:"Loaded models",vlCopy:"Copy",vlCopied:"Copied",
+  vlResp:"Response",
+  hubTitle:"Instance Portal · Scenario demos",hubSub:"Five most-frequent tenant scenarios, auto-played.",
+  hubDenied:"In production, workspace URLs without valid credentials are rejected (one-time credential + non-bookmarkable).",
+  scTrain:"Daily training",scTrainD:"First cell in JupyterLab — 80% of a tenant's time",
+  scInfer:"Inference call",scInferD:"OpenAI-compatible endpoint, ready to use",
+  scImg:"Image generation",scImgD:"One-click ComfyUI workflow",
+  scExpire:"Lease expiry",scExpireD:"Disconnect & guidance at expiry",
+  scDrop:"Host drop",scDropD:"Handling P2P host failures",
+  steps:"steps",tbPrev:"Prev",tbNext:"Next",tbExit:"Exit tour",tbReplay:"Replay",tbHub:"Scenarios",tbDone:"Tour finished",
+  hubBtn:"Scenario demos",hubResume:"Enter workspace directly (skip tour)",
+  banner:"Host connection unstable — trying to recover…",
+ },
+};
+const T = I18N[P.lang];
+const fmtDur=(s)=>{ const h=Math.floor(s/3600),m=Math.floor(s%3600/60),sec=s%60;
+ const pad=n=>String(n).padStart(2,"0"); return h>0? `${h}h ${pad(m)}m` : (m>0? `${m}m ${pad(sec)}s` : `${sec}s`); };
+
+/* ---- 五个场景脚本：act 语义见 dispatchStep；步骤文案双语 ---- */
+const STORIES=[
+ {id:"train",icon:"▸",view:"jupyter",tpl:"PyTorch 2.5.1",remain:82800,
+  card:{title:"scTrain",desc:"scTrainD"},
+  steps:[
+   {act:"hl:top",
+    zh:"租户在实例卡点 Open——新标签页直达工作区。顶栏展示实例身份快照与剩余租期；第三方须接收入口参数并展示（参数仅展示，鉴权以凭证为准）。",
+    en:"Tenant clicks Open on the instance card — workspace opens in a new tab. Header shows the instance snapshot and time left; the vendor must parse and display entry params (display-only; auth relies on the credential)."},
+   {act:"hl:filetree",
+    zh:"训练模板直达 JupyterLab：第三方按模板路由工作区形态；反向代理必须支持 WebSocket（JupyterLab 硬依赖）与 per-instance 转发规则。",
+    en:"Training template lands in JupyterLab: the vendor routes workspace shape by template; the reverse proxy must support WebSocket (hard dependency) and per-instance routing rules."},
+   {act:"runCell",
+    zh:"自动运行一个单元格——这就是租户租到 GPU 后的日常。",
+    en:"A cell runs automatically — this is a tenant's daily routine once the GPU is theirs."},
+   {act:"hl:cellout",
+    zh:"torch 就绪、GPU 识别成功。租户的核心诉求＝在浏览器里直接开干，无需本地环境。",
+    en:"torch ready, GPU recognized. The tenant's core need: start working right in the browser, no local setup."},
+  ]},
+ {id:"infer",icon:"◈",view:"vllm",tpl:"vLLM · OpenAI 兼容",remain:82800,
+  card:{title:"scInfer",desc:"scInferD"},
+  steps:[
+   {act:"hl:top",
+    zh:"推理模板同样从 Open 进入，顶栏身份信息一致。",
+    en:"Inference template enters the same way via Open; the header identity is identical."},
+   {act:"hl:vlbase",
+    zh:"推理模板的出口＝OpenAI 兼容端点文档页。统一 8080 代理口，容器内部端口映射由平台负责。",
+    en:"Inference templates surface an OpenAI-compatible endpoint page. Unified proxy port 8080; internal port mapping is handled by the platform."},
+   {act:"vllmRespond",
+    zh:"复制 curl 即可调用——OpenAI SDK 兼容，租户零迁移成本。",
+    en:"Copy the curl and call it — OpenAI SDK compatible, zero migration cost for tenants."},
+   {act:"hl:vllm-resp",
+    zh:"秒级返回。第三方网关须承载此类 API 流量的低延迟反向代理。",
+    en:"Sub-second response. The vendor gateway must serve this API traffic with low-latency reverse proxying."},
+  ]},
+ {id:"img",icon:"▦",view:"comfy",tpl:"ComfyUI",remain:82800,
+  card:{title:"scImg",desc:"scImgD"},
+  steps:[
+   {act:"hl:top",
+    zh:"图像生成租户同样一键 Open 进入。",
+    en:"Image-gen tenants enter with the same one-click Open."},
+   {act:"hl:comfy-canvas",
+    zh:"直达 ComfyUI 画布：工作流节点所见即所得。",
+    en:"Straight into the ComfyUI canvas: workflows as you see them."},
+   {act:"comfyQueue",
+    zh:"Queue 一条工作流——节点在租户的 GPU 上依次执行……",
+    en:"Queue a workflow — nodes execute on the tenant's GPU one by one…"},
+   {act:"hl:comfy-out",
+    zh:"样张产出。大文件下载走同一代理通道，第三方须声明带宽需求。",
+    en:"Sample produced. Large downloads use the same proxy channel; the vendor must state its bandwidth terms."},
+  ]},
+ {id:"expire",icon:"⏻",view:"jupyter",tpl:"PyTorch 2.5.1",remain:300,
+  card:{title:"scExpire",desc:"scExpireD"},
+  steps:[
+   {act:"hl:top",
+    zh:"注意顶栏剩余租期——本场景快进：租户工作中，租期只剩 5 分钟。",
+    en:"Watch the time left in the header — fast-forwarded: 5 minutes remain while the tenant works."},
+   {act:"fastForward",
+    zh:"租期归零：计费引擎到期出列。容器生命周期只由 Mekong 驱动——会话/UI 断开绝不停容器，计费只在平台。",
+    en:"Time hits zero: the billing engine expires the lease. Container lifecycle is driven by Mekong only: a dropped session/UI never stops the container, and billing lives in the platform."},
+   {act:"goto:expired",
+    zh:"工作区断开并展示中性提示——不泄露内部原因码，引导回控制台。",
+    en:"Workspace disconnects with a neutral message — no internal reason codes leak; tenant is guided back to the console."},
+  ]},
+ {id:"drop",icon:"⚠",view:"jupyter",tpl:"PyTorch 2.5.1",remain:82800,
+  card:{title:"scDrop",desc:"scDropD"},
+  steps:[
+   {act:"hl:cell",
+    zh:"一切正常：租户正在训练……",
+    en:"All normal: the tenant is training…"},
+   {act:"banner",
+    zh:"宿主机器连接异常——P2P 模式特有风险。第三方网关须即时感知并告知租户。",
+    en:"Host machine connection dropped — a P2P-specific risk. The vendor gateway must detect and inform the tenant immediately."},
+   {act:"goto:disc",
+    zh:"断开 + 中性提示；平台按协议处置宿主，租户在控制台查看状态与后续处理。",
+    en:"Disconnect with a neutral message; the platform handles the host per protocol — tenant checks status and follow-ups in the console."},
+  ]},
+];
+
+/* ---- 顶栏：实例身份快照 + 剩余租期倒计时（纯前端递减，不落任何存储；speed 供到期场景快进）
+      参数走 props（P 为加载时快照，Hub 选卡经 replaceState 不重载） ---- */
+function TopBar({remain,speed,sid,gpu,ip,port,tpl,onOpenHub}){
+ const [t,setT]=useState(remain);
+ /* 主题与 index.html 共用 gpu-market-theme；初值读 head 脚本已定好的 class，避免首帧不一致 */
+ const [isDark,setIsDark]=useState(()=>document.documentElement.classList.contains("dark"));
+ const onToggleTheme=()=>{ const nd=!isDark; document.documentElement.classList.toggle("dark",nd); setIsDark(nd);
+   try{ localStorage.setItem("gpu-market-theme", nd?"dark":"light"); }catch(e){} };
+ useEffect(()=>{ setT(remain); },[remain]);
+ useEffect(()=>{ if(remain<=0) return; const iv=setInterval(()=>setT(x=>Math.max(0,x-speed)),1000); return ()=>clearInterval(iv); },[remain,speed]);
+ return (
+  <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3">
+    <div className="flex items-center gap-2" data-tour="top">
+    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-success)] text-[13px] font-bold text-[var(--color-on-solid)]">W</span>
+    <div className="leading-tight">
+     <div className="text-[14px] font-semibold">Instance Portal <span className="mono ml-1 text-[12px] font-normal text-[var(--color-text-secondary)]">{sid}</span></div>
+     <div className="text-[11px] text-[var(--color-text-faint)]">{T.brandTip}</div>
+    </div>
+   </div>
+   <div className="ml-auto flex flex-wrap items-center gap-x-5 gap-y-1 text-[12px] text-[var(--color-text-secondary)]">
+    {gpu && <span><span className="text-[var(--color-text-faint)]">GPU </span><span className="mono">{gpu}</span></span>}
+    {(ip&&port) && <span className="mono" title={T.addr}>{ip}:{port}</span>}
+    {tpl && <span className="max-w-[220px] truncate" title={`${T.tplLbl}: ${tpl}`}>{tpl}</span>}
+    {t>0 && <span className={`mono rounded-md border px-2 py-0.5 ${speed>1?"border-[var(--color-warning)] text-[var(--color-warning-on-tint)]":"border-[var(--color-border)]"}`}><span className="text-[var(--color-text-faint)]">{T.remainLbl} </span>{fmtDur(t)}</span>}
+    <button onClick={onOpenHub}
+     className="rounded-lg border border-[var(--color-info)]/50 px-3 py-1 text-[12px] text-[var(--color-info-on-tint)] hover:bg-[var(--color-info)]/10">{T.hubBtn}</button>
+    <button onClick={()=>{ try{window.close();}catch(e){} try{location.href="/proto/index.html";}catch(e){} }}
+     className="rounded-lg border border-[var(--color-border-strong)] px-3 py-1 text-[12px] hover:text-[var(--color-text)]">{T.back}</button>
+    <button onClick={onToggleTheme} aria-pressed={isDark}
+     aria-label={isDark?"Switch to light mode":"Switch to dark mode"}
+     className="rounded-lg border border-[var(--color-border-strong)] px-2 py-1 text-[13px] hover:bg-[var(--color-surface-alt)]">{isDark?"☀":"🌙"}</button>
+   </div>
+  </header>);
+}
+
+/* ---- 皮 1：JupyterLab（文件树 + 可运行 cell；监听 tour 动作 runCell） ---- */
+function JupyterSkin({gpu}){
+ const [phase,setPhase]=useState("idle"); // idle | running | done
+ const timer=useRef(null);
+ const code=`import torch\nprint(torch.__version__, torch.cuda.is_available())\nprint(torch.cuda.get_device_name(0))`;
+ const run=()=>{ setPhase("running"); timer.current=setTimeout(()=>setPhase("done"),700); };
+ useEffect(()=>()=>clearTimeout(timer.current),[]);
+ useEffect(()=>{ // Tour 动作通道：runCell → 复用本地 run（幂等）
+  const h=(e)=>{ if(e.detail==="runCell"&&phase!=="running") run(); };
+  window.addEventListener(ACTION_EV,h); return ()=>window.removeEventListener(ACTION_EV,h);
+ },[phase]);
+ const reset=()=>setPhase("idle");
+ const files=[["notebooks","d",1],["data","d",1],["train.py","f",0],["requirements.txt","f",0],["README.md","f",0]];
+ return (
+  <div className="flex min-h-[calc(100vh-57px)] min-w-0">
+   <aside data-tour="filetree" className="hidden w-52 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] p-3 md:block">
+    <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-faint)]">{T.jyTitle}</div>
+    <ul className="space-y-1 text-[13px] text-[var(--color-text-secondary)]">
+     {files.map(([n,k])=>(
+      <li key={n} className="mono flex items-center gap-1.5 rounded px-2 py-1 hover:bg-[var(--color-surface-alt)]">
+       <span className="text-[var(--color-text-faint)]">{k==="d"?"▸":"·"}</span>{n}</li>))}
+    </ul>
+   </aside>
+   <div className="min-w-0 flex-1 p-5">
+    <p className="mb-3 text-[12px] text-[var(--color-text-faint)]">{T.jyHint}</p>
+    <div data-tour="cell" className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+     <div className="flex items-center justify-between border-b border-[var(--color-border)] px-3 py-2">
+      <span className="mono text-[12px] text-[var(--color-text-muted)]">In [1]</span>
+      <div className="flex gap-2">
+       <button onClick={run} disabled={phase==="running"}
+        className="rounded-md bg-[var(--color-success)]/90 px-3 py-1 text-[12px] font-semibold text-[var(--color-on-solid)] hover:bg-[var(--color-success)] disabled:opacity-50">
+        {phase==="running"?T.jyRunning:T.jyRun}</button>
+       <button onClick={reset} className="rounded-md border border-[var(--color-border-strong)] px-3 py-1 text-[12px] text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">{T.jyReset}</button>
+      </div>
+     </div>
+     <pre className="mono overflow-x-auto p-4 text-[13px] leading-6 text-[var(--color-text)]">{code}</pre>
+     {phase==="done" && (
+      <div data-tour="cellout" className="mono fade-in border-t border-[var(--color-border)] bg-[var(--color-bg)] p-4 text-[13px] leading-6 text-[var(--color-success)]">
+       <div>2.5.1+cu124 True</div>
+       <div>{gpu||"NVIDIA GPU"}</div>
+       <div className="mt-2 text-[var(--color-text-secondary)]">
+        +-----------------------------------------------------------------------------+<br/>
+        | NVIDIA-SMI 570.xx&nbsp;&nbsp;Driver: 570.xx&nbsp;&nbsp;CUDA: 12.4&nbsp;&nbsp;Persistence-M: On |<br/>
+        | GPU&nbsp;&nbsp;Name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;P-State&nbsp;&nbsp;Bus-Id&nbsp;&nbsp;Util&nbsp;&nbsp;Memory-Usage&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>
+        |&nbsp;&nbsp;0&nbsp;&nbsp;{(gpu||"GPU").slice(0,18).padEnd(18)}&nbsp;&nbsp;N/A&nbsp;&nbsp;&nbsp;&nbsp;N/A&nbsp;&nbsp;&nbsp;&nbsp;42%&nbsp;&nbsp;&nbsp;&nbsp;1.2GiB / 32GiB&nbsp;&nbsp;&nbsp;|<br/>
+        +-----------------------------------------------------------------------------+
+       </div>
+      </div>)}
+    </div>
+   </div>
+  </div>);
+}
+
+/* ---- 皮 2：ComfyUI（节点画布 + Queue 假出图；监听 tour 动作 comfyQueue） ---- */
+function ComfySkin(){
+ const [q,setQ]=useState("idle"); // idle | queuing | done
+ const timers=useRef([]);
+ useEffect(()=>()=>{ timers.current.forEach(clearTimeout); },[]);
+ useEffect(()=>{ // Tour 动作通道：comfyQueue
+  const h=(e)=>{ if(e.detail==="comfyQueue"&&q==="idle"){
+    setQ("queuing");
+    timers.current.push(setTimeout(()=>setQ("done"),2600));
+  } };
+  window.addEventListener(ACTION_EV,h); return ()=>window.removeEventListener(ACTION_EV,h);
+ },[q]);
+ const node=(x,y,w,title,lines,i)=>(
+  <g key={title} className={q!=="idle"?`node-lit ${i<=3?"":""}`:""} style={q==="queuing"?{transition:"stroke .4s, fill .4s",transitionDelay:`${i*0.5}s`}:null}>
+   <rect x={x} y={y} width={w} height={26+lines.length*16} rx="8" fill="var(--color-surface)" stroke="var(--color-border-strong)" strokeWidth="1.2"/>
+   <text x={x+10} y={y+17} fontSize="11" fontWeight="600" fill="var(--color-text)">{title}</text>
+   {lines.map((l,j)=>(<text key={j} x={x+10} y={y+33+j*16} fontSize="10" fill="var(--color-text-muted)">{l}</text>))}
+  </g>);
+ const wire=(x1,y1,x2,y2)=>(<path key={`${x1}-${y1}`} d={`M${x1},${y1} C${x1+40},${y1} ${x2-40},${y2} ${x2},${y2}`} stroke="var(--color-accent-hover)" strokeWidth="1.5" fill="none"/>);
+ return (
+  <div className="min-w-0 p-5">
+   <p className="mb-3 text-[12px] text-[var(--color-text-faint)]">{T.cvHint}</p>
+   <div className="flex flex-wrap items-start gap-4">
+    <div data-tour="comfy-canvas" className="min-w-0 flex-1 overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+     style={{backgroundImage:"radial-gradient(var(--color-border) 1px, transparent 1px)",backgroundSize:"22px 22px"}}>
+     <svg viewBox="0 0 860 300" className="min-w-[560px]" role="img" aria-label={T.cvTitle}>
+      {wire(190,120,260,120)}{wire(450,120,520,120)}{wire(700,120,750,120)}
+      {node(20,90,170,"Load Checkpoint",["sd3.5_large.safetensors","· 32GB VRAM"],0)}
+      {node(260,70,190,"CLIP Text Encode",["prompt: cyberpunk city","negative: blurry"],1)}
+      {node(520,90,180,"KSampler",["steps: 28 · cfg: 4.5","1024×1024 · seed: 42"],2)}
+      {node(750,95,90,"Save",["PNG"],3)}
+     </svg>
+     <div className="mt-3 flex justify-end">
+      <button disabled={q!=="idle"}
+       onClick={()=>{ setQ("queuing"); timers.current.push(setTimeout(()=>setQ("done"),2600)); }}
+       className="rounded-md bg-[var(--color-accent)] px-3 py-1 text-[12px] font-semibold text-white hover:bg-[var(--color-accent-strong)] disabled:opacity-50">
+       {q==="queuing"?T.cvQueuing:T.cvQueue}</button>
+     </div>
+    </div>
+    {q==="done" && (
+     <div data-tour="comfy-out" className="fade-in w-56 shrink-0 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      {/* 占位图：代表「第三方产出的图像内容」，不是本产品的 UI 表面。
+          此前用 4 段硬编码渐变（#312e81/#7c3aed/#db2777/#f59e0b），越出调色板。改为令牌底 + 虚线边 —— 虚线是「此处应有图而没有」的通用占位信号，
+          不引入新色值，也不假装有内容。 */}
+      <div className="flex h-40 items-center justify-center border-b border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-alt)]">
+       <span className="rounded-md border border-[var(--color-border-strong)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">SAMPLE</span>
+      </div>
+      <div className="mono px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">{T.cvOut}</div>
+     </div>)}
+   </div>
+  </div>);
+}
+
+/* ---- 皮 3：vLLM Endpoint 文档页（base URL + curl + 假响应；监听 tour 动作 vllmRespond） ---- */
+function VllmSkin({ip,port}){
+ const base=`http://${ip||"<host>"}:${port||"8080"}/v1`;
+ const curl=`curl ${base}/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -d '{"model":"meta-llama/Llama-3.1-8B-Instruct","messages":[{"role":"user","content":"hello"}]}'`;
+ const [copied,setCopied]=useState(false);
+ const [resp,setResp]=useState(false);
+ const tRef=useRef(null);
+ useEffect(()=>()=>clearTimeout(tRef.current),[]);
+ useEffect(()=>{ // Tour 动作通道：vllmRespond
+  const h=(e)=>{ if(e.detail==="vllmRespond") setResp(true); };
+  window.addEventListener(ACTION_EV,h); return ()=>window.removeEventListener(ACTION_EV,h);
+ },[]);
+ const copy=()=>{ if(navigator.clipboard?.writeText) navigator.clipboard.writeText(curl).then(()=>{setCopied(true);clearTimeout(tRef.current);tRef.current=setTimeout(()=>setCopied(false),1500);}).catch(()=>{}); };
+ return (
+  <div className="min-w-0 max-w-3xl p-5">
+   <p className="mb-3 text-[12px] text-[var(--color-text-faint)]">{T.vlHint}</p>
+   <section data-tour="vlbase" className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+    <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-faint)]">{T.vlBase}</div>
+    <code className="mono block truncate rounded-lg bg-[var(--color-bg)] p-3 text-[13px] text-[var(--color-success)]">{base}</code>
+   </section>
+   <section data-tour="vlcurl" className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+    <div className="mb-2 flex items-center justify-between">
+     <div className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-faint)]">{T.vlCurl}</div>
+     <button onClick={copy} className="rounded-md border border-[var(--color-border-strong)] px-2.5 py-1 text-[12px] text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">{copied?T.vlCopied:T.vlCopy}</button>
+    </div>
+    <pre className="mono overflow-x-auto rounded-lg bg-[var(--color-bg)] p-3 text-[13px] leading-6 text-[var(--color-text)]">{curl}</pre>
+   </section>
+   {resp && (
+    <section data-tour="vllm-resp" className="fade-in mb-4 rounded-xl border border-[var(--color-success)]/40 bg-[var(--color-surface)] p-4">
+     <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[var(--color-success)]">{T.vlResp} · 200 OK · 0.4s</div>
+     <pre className="mono overflow-x-auto rounded-lg bg-[var(--color-bg)] p-3 text-[13px] leading-6 text-[var(--color-success)]">{`{
+  "id": "cmpl-8f4a2",
+  "choices": [{
+    "message": {"role": "assistant", "content": "Hello! How can I help you today?"}
+  }],
+  "usage": {"prompt_tokens": 12, "completion_tokens": 9, "total_tokens": 21}
+}`}</pre>
+    </section>)}
+   <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+    <div className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-faint)]">{T.vlModels}</div>
+    <ul className="mono space-y-1.5 text-[13px] text-[var(--color-text-secondary)]">
+     <li>meta-llama/Llama-3.1-8B-Instruct <span className="text-[var(--color-success)]">· ready</span></li>
+     <li>Qwen/Qwen2.5-7B-Instruct <span className="text-[var(--color-text-faint)]">· idle</span></li>
+    </ul>
+   </section>
+  </div>);
+}
+
+/* ---- 断开/到期页（中性提示，不出现内部原因码） ---- */
+function EndedSkin({kind}){
+ const title = kind==="expired"? T.expiredTitle : T.discTitle;
+ const lead  = kind==="expired"? T.expiredLead  : T.discLead;
+ return (
+  <div className="flex min-h-[calc(100vh-57px)] min-w-0 items-center justify-center p-6">
+   <div data-tour="ended-card" className="fade-in w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
+    <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full text-[20px] ${kind==="expired"?"bg-[var(--color-warning)]/15 text-[var(--color-warning-on-tint)]":"bg-[var(--color-error)]/15 text-[var(--color-error)]"}`}>⏻</div>
+    <h1 className="mb-2 text-[20px] font-semibold">{title}</h1>
+    <p className="mb-6 text-[14px] leading-6 text-[var(--color-text-secondary)]">{lead}</p>
+    <button onClick={()=>{location.href="/proto/index.html";}}
+     className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-[14px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.backBtn}</button>
+   </div>
+  </div>);
+}
+
+/* ---- 场景选择页（无参直达入口，或工作区顶栏「场景演示」进入；小字保留无凭证拒绝语义） ---- */
+function Hub({onPick,onResume,canResume}){
+ const cards=[
+  {i:0,icon:"▸"},{i:1,icon:"◈"},{i:2,icon:"▦"},{i:3,icon:"⏻"},{i:4,icon:"⚠"},
+ ];
+ return (
+  <div className="mx-auto max-w-4xl p-6">
+   <h1 className="text-[20px] font-semibold">{T.hubTitle}</h1>
+   <p className="mt-1.5 text-[14px] leading-5 text-[var(--color-text-secondary)]">{T.hubSub}</p>
+   <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    {cards.map(({i,icon})=>{ const st=STORIES[i], card=T[st.card.title], desc=T[st.card.desc]; return (
+     <button key={st.id} onClick={()=>onPick(i)}
+      className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left transition-colors hover:border-[var(--color-accent-hover)]">
+      <div className="flex items-center gap-2.5">
+       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-success)]/15 text-[16px] text-[var(--color-success-on-tint)]">{icon}</span>
+       <div>
+        <div className="text-[14px] font-semibold group-hover:text-[var(--color-accent-hover)]">{card}</div>
+        <div className="text-[11px] text-[var(--color-text-faint)]">{st.steps.length} {T.steps}</div>
+       </div>
+      </div>
+      <p className="mt-2.5 text-[13px] leading-5 text-[var(--color-text-secondary)]">{desc}</p>
+     </button>); })}
+   </div>
+   <div className="mt-5 flex flex-wrap items-center gap-4">
+    <p className="text-[12px] leading-4 text-[var(--color-text-faint)]">{T.hubDenied}</p>
+    {canResume && <button onClick={onResume}
+     className="ml-auto rounded-lg border border-[var(--color-border-strong)] px-3 py-1.5 text-[12px] text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">{T.hubResume}</button>}
+   </div>
+  </div>);
+}
+
+/* ---- Tour 播放器气泡（底部居中；步进控制） ---- */
+function TourBar({story,step,done,onPrev,onNext,onExit,onReplay}){
+ const st=STORIES[story], sp=st.steps[step];
+ const text = P.lang==="en"? sp.en : sp.zh;
+ const last = step>=st.steps.length-1;
+ return (
+  <div className="fade-in fixed bottom-4 left-1/2 z-50 w-[min(92vw,680px)] -translate-x-1/2 rounded-2xl border border-[var(--color-border-strong)] bg-[var(--color-surface)] p-3.5 shadow-2xl">
+   <div className="flex items-start gap-3">
+    <p className="min-w-0 flex-1 text-[13px] leading-[18px] text-[var(--color-text)]">{done? `${T.tbDone} · ${T[st.card.title]}` : text}</p>
+   </div>
+   <div className="mt-2.5 flex items-center gap-2">
+    <span className="mono text-[11px] text-[var(--color-text-faint)]">{done? `${st.steps.length}/${st.steps.length}` : `${step+1}/${st.steps.length}`}</span>
+    <div className="ml-auto flex gap-2">
+     {done? (<>
+       <button onClick={onReplay} className="rounded-md border border-[var(--color-border-strong)] px-2.5 py-1 text-[12px] text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">{T.tbReplay}</button>
+       <button onClick={onExit} className="rounded-md bg-[var(--color-accent)] px-2.5 py-1 text-[12px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.tbHub}</button>
+      </>):(<>
+       {step>0 && <button onClick={onPrev} className="rounded-md border border-[var(--color-border-strong)] px-2.5 py-1 text-[12px] text-[var(--color-text-secondary)] hover:text-[var(--color-text)]">{T.tbPrev}</button>}
+       <button onClick={onNext} className="rounded-md bg-[var(--color-success)]/90 px-3 py-1 text-[12px] font-semibold text-[var(--color-on-solid)] hover:bg-[var(--color-success)]">{T.tbNext}</button>
+       <button onClick={onExit} className="rounded-md px-2 py-1 text-[12px] text-[var(--color-text-faint)] hover:text-[var(--color-text-secondary)]">{T.tbExit}</button>
+      </>)}
+    </div>
+   </div>
+  </div>);
+}
+
+/* ---- URL 同步：story 进/出（replaceState，刷新可回放同场景）；从 Hub 进入时补演示默认实例参数 ---- */
+function syncStoryUrl(i){
+ const q=new URLSearchParams(location.search);
+ if(i>=0){
+  q.set("story",String(i)); q.set("tpl",STORIES[i].tpl); q.set("remain",String(STORIES[i].remain)); q.delete("state"); q.delete("hub");
+  if(!q.get("sid")){ q.set("sid","i-480221"); q.set("gpu","RTX 5080"); q.set("ip","65.150.23.88"); q.set("port","45678"); }
+ }
+ else q.delete("story");
+ try{ history.replaceState(null,"",`${location.pathname}?${q.toString()}`); }catch(e){}
+}
+function syncHubUrl(on){
+ const q=new URLSearchParams(location.search);
+ if(on) q.set("hub","1"); else q.delete("hub");
+ try{ history.replaceState(null,"",`${location.pathname}?${q.toString()}`); }catch(e){}
+}
+
+function App(){
+ const initStory = (P.story>=0 && P.story<STORIES.length)? P.story : null;
+ const [story,setStory]=useState(initStory);
+ const [step,setStep]=useState(0);
+ const [done,setDone]=useState(false);
+ const [viewOverride,setViewOverride]=useState(null); // goto:* 切皮（S4/S5）
+ const [speed,setSpeed]=useState(1);                  // fastForward 快进倒计时
+ const [banner,setBanner]=useState(false);            // S5 警示横幅
+ const [hub,setHub]=useState(P.hub);                  // 场景选择页（工作区内可达）
+ const timers=useRef([]);
+
+ const clearTimers=()=>{ timers.current.forEach(clearTimeout); timers.current=[]; };
+ useEffect(()=>()=>clearTimers(),[]);
+
+ const pick=(i)=>{ clearTimers(); setHub(false); syncHubUrl(false); setStory(i); setStep(0); setDone(false); setViewOverride(null); setSpeed(1); setBanner(false); syncStoryUrl(i); };
+ const exit=()=>{ clearTimers(); setStory(null); setStep(0); setDone(false); setViewOverride(null); setSpeed(1); setBanner(false); syncStoryUrl(-1); setHub(true); syncHubUrl(true); };
+ const replay=()=>{ clearTimers(); setStep(0); setDone(false); setViewOverride(null); setSpeed(1); setBanner(false); };
+ const next=()=>{ const st=STORIES[story]; if(step<st.steps.length-1){ setStep(step+1); } else setDone(true); };
+ const prev=()=>{ if(done){ setDone(false); return; } if(step>0) setStep(step-1); };
+ const openHub=()=>{ clearTimers(); setStory(null); setDone(false); setViewOverride(null); setSpeed(1); setBanner(false); setHub(true); syncHubUrl(true); };
+ const closeHub=()=>{ setHub(false); syncHubUrl(false); };
+
+ /* 步进副作用：自动前进 + 高亮 + 动作分发（高亮集中此处管理，切步先全量清理） */
+ useEffect(()=>{
+  if(story==null) return;
+  document.querySelectorAll(".tour-active").forEach(el=>el.classList.remove("tour-active"));
+  if(done) return;
+  const sp=STORIES[story].steps[step];
+  const tm=setTimeout(()=>next(),4200); timers.current.push(tm);
+  const act=sp.act||"";
+  if(act.startsWith("hl:")){
+   const el=document.querySelector(`[data-tour="${act.slice(3)}"]`);
+   if(el) el.classList.add("tour-active");
+  }else if(act==="goto:expired"){ setViewOverride("expired"); }
+  else if(act==="goto:disc"){ setViewOverride("disc"); }
+  else if(act==="fastForward"){ setSpeed(60); }
+  else if(act==="banner"){ setBanner(true); const b=setTimeout(()=>setBanner(false),2600); timers.current.push(b); }
+  else{ window.dispatchEvent(new CustomEvent(ACTION_EV,{detail:act})); } // runCell / vllmRespond / comfyQueue
+  return ()=>clearTimeout(tm);
+ },[story,step,done]);
+
+ /* 渲染路由：hub 优先 > 无 story → URL 直开路由（含 state=expired/disc 直开与 Hub）；有 story → 场景驱动 */
+ const st = story!=null? STORIES[story] : null;
+ let view;
+ if(hub){ view="hub"; }
+ else if(st){ view = viewOverride || st.view; }
+ else if(P.state==="expired"||P.state==="disconnected"){ view=P.state; }
+ else if(!P.sid){ view="hub"; }
+ else{ view = P.tpl.includes("vLLM") ? "vllm" : (P.tpl.includes("ComfyUI") ? "comfy" : "jupyter"); }
+
+ if(view==="hub") return (<><Hub onPick={pick} onResume={closeHub} canResume={!!(P.sid||story!=null)}/><Footer/></>);
+
+ /* 有效参数：P 为加载时快照，story 进场经 replaceState 不重载——story 态用场景默认值兜底 */
+ const eff = st? {
+   sid: P.sid||"i-480221", gpu: P.gpu||"RTX 5080", ip: P.ip||"65.150.23.88", port: P.port||"45678", tpl: st.tpl,
+  } : P;
+ const skin = view==="vllm"? <VllmSkin ip={eff.ip} port={eff.port}/>
+  : view==="comfy"? <ComfySkin/>
+  : (view==="expired"||view==="disc")? <EndedSkin kind={view}/>
+  : <JupyterSkin gpu={eff.gpu}/>;
+ const showBar = story!=null;
+ return (<>
+  {banner && (
+   <div className="fade-in fixed left-1/2 top-16 z-50 -translate-x-1/2 rounded-xl border border-[var(--color-warning)]/60 bg-[var(--color-warning)]/15 px-4 py-2 text-[13px] font-semibold text-[var(--color-warning-on-tint)] shadow-lg">
+    {T.banner}</div>)}
+  <TopBar remain={st? st.remain : P.remain} speed={speed} sid={eff.sid} gpu={eff.gpu} ip={eff.ip} port={eff.port} tpl={eff.tpl} onOpenHub={openHub}/>
+  <main id="portal-main" tabIndex={-1} className="flex-1">{skin}</main>
+  {showBar && <TourBar story={story} step={step} done={done} onPrev={prev} onNext={next} onExit={exit} onReplay={replay}/>}
+  <Footer/>
+ </>);
+}
+
+/* 底部演示声明 */
+const Footer=()=>(
+ <footer className="border-t border-[var(--color-border)] px-5 py-2.5 text-[11px] leading-4 text-[var(--color-text-faint)]">{T.demoNote}</footer>);
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+ <React.StrictMode>
+  <div className="flex min-h-screen flex-col">
+   {/* 键盘导航：跳过链接，须为全站第一个可聚焦元素 */}
+   <a className="skip-link" href="#portal-main">Skip to main content</a>
+   <div className="flex-1"><App/></div>
+  </div>
+ </React.StrictMode>);
+</script>
+</body>
+</html>
