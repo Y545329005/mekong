@@ -176,14 +176,15 @@ const trimLedger=(a,cap=300)=>{ a=[...a]; let rest=a.filter(e=>!(e.hostV===3||e.
    不进计费引擎任何遍历路径；cap=50 防满档（localStorage 容量纪律），头部最新；reason 存 code，渲染时映射 i18n。 */
 const ARCHIVE_CAP=50;
 const pushArchive=(arr,snap)=>[snap,...(arr||[])].slice(0,ARCHIVE_CAP);
-/* ================= 模拟账号库（注册/登录 · 2026-09-11） ================= */
-// ⚠️ 演示取舍：账号与密码【明文】存 localStorage，仅作原型演示，不得沿用至正式产品（正式产品：服务端存储 + 密码哈希 + 会话令牌）
+/* ================= 模拟账号库（验证码直登 · 2026-10-09） ================= */
+// ⚠️ 演示取舍：账号【明文】存 localStorage，仅作原型演示，不得沿用至正式产品（正式产品：服务端存储 + 会话令牌）
+// 登录形态＝邮箱验证码直登（passwordless）：账号库只存邮箱与注册时间，无密码体系
 const ACCOUNTS_KEY="gpu-market-accounts-v1";
 const loadAccounts=()=>{ try{ return JSON.parse(localStorage.getItem(ACCOUNTS_KEY))||{} }catch(e){ return {} } };
 const saveAccounts=(a)=>{ try{ localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(a)) }catch(e){} };
-const seedAccount=(email,pwd,provider)=>{ const a=loadAccounts(); if(!a[email]){ a[email]={pwd,provider:provider||"email",createdAt:Date.now()}; saveAccounts(a); } };
+const seedAccount=(email,provider)=>{ const a=loadAccounts(); if(!a[email]){ a[email]={provider:provider||"email",createdAt:Date.now()}; saveAccounts(a); } };
  // legacy 老存档回填：本需求前的演示态只有 authed 布尔无 user 对象，回填固定演示账号并 seed 进账号库（防退出后"账号不存在"）
-const LEGACY_USER={email:"demo@demo.dev",provider:"legacy"}; const LEGACY_PWD="demo12345";
+const LEGACY_USER={email:"demo@demo.dev",provider:"legacy"};
 /* ================= Admin 演示联动（2026-09-14）：admin.html 同源管控 =================
    写权分离：配置键 gpu-market-admin-v1 由 admin.html 独占写，本端只读；
    干预动作经 BroadcastChannel 下发，由本端执行自身既有路径（Stop/Destroy/登出）——
@@ -263,9 +264,8 @@ zh:{
   tplFilter:"模板",tplFilterNone:"不限",stEmptyTpl:"该模板要求下无兼容机器（端口不足）· 试试更换模板或放宽筛选",
   crTitle:"Add Credits · 需要余额才能开机",crOther:"其他金额（≥ $10）",crOtherBtn:"其他",crChanLbl:"支付通道",crLater:"稍后再说",crProcessing:"处理中…",
   crD1Pre:"⚠ 仅",crD1Em:"未消费余额",crD1Suf:"可退款。",crD2Pre:"⚠ 平台",crD2Em:"不提供 SLA 保证",crD2Suf:"。",
-   tSwitchHost:"已切换到宿主视角（模拟）",tLoginOk:(v)=>`${v} 登录成功（模拟）`,
+   tSwitchHost:"已切换到宿主视角（模拟）",
     lblBw:"带宽",lblDisk:"磁盘",lblPorts:"端口",crChBank:"银行卡",crChAlipay:"支付宝",crChWechat:"微信支付",crChTransfer:"银行转账",crGrpFiat:"Airwallex（法币）",crGrpPaypal:"PayPal",crGrpCrypto:"加密货币",crTrustLine:"本笔支付由 Airwallex 安全收款",crDemoNote:"演示态：法币经 Airwallex 收单（Stripe 备选），加密为过渡通道；非最终方案。",crChipTip:"点击充值",crMinNote:(bal)=>`最低充值 $10 · 当前余额 ${fmt$(bal,2)}`,balHostTip:"可提现收益：租用「宿主上架」机器的消费按 1:1 全额入账（Running 计费与停机存储费均计入）",
-  loginGoogle:"Google",loginGithub:"Github",loginEmail:"邮箱",
    cfTitle:"确认实例配置",cfImageShort:"镜像",cfImageHint:"可填任意公共镜像路径，需带版本 tag，如 pytorch/pytorch:2.5.1",cfEdit:"改",cfEditTitle:"编辑镜像 tag",cfAdv:"高级配置",
     cfAdvPreset:(n)=>`已预填 ${n} 项`,cfAdvNone:"未预填",cfAdvEnv:"环境配置",cfAdvPorts:"开放端口",cfAdvOnstart:"启动脚本",cfAdvOpen:"收起 ▲",cfEnv:"环境配置",cfEnvHint:"一行一个，格式 KEY=VALUE",cfPorts:"对外开放端口",cfPortsHint:"每行一个，格式 宿主端口:容器端口",cfPortsErr:"端口格式应为 宿主端口:容器端口（如 8000:8000），每行或逗号一个",
   cfOnstart:"启动后自动执行",cfOnstartHint:"机器就绪后以 bash 运行",
@@ -392,6 +392,7 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   eaWdTitle:"提现",eaWdBtn:(a)=>`提现 $${(+a||0).toFixed(2)}`,eaWdNoCh:"请先绑定并选择出金通道",
   eaWdChannel:"出金通道",
    eaWdAmt:"提现金额 $",eaWdAmtSub:"起提 $20 · 上限为可提现余额",eaWdInvalid:"提现金额需 ≥$20 且不超过可提现余额",eaWdAll:"全部",
+   eaWdVerify:"出金二次验证",eaWdVerifyAmt:"提现金额",eaWdVerifySent:(e)=>`验证码已发送至 ${e}`,eaWdCode:"验证码",eaWdCodeHint:(c)=>`演示环境：本次验证码为 ${c}（正式产品将发送至账号邮箱；错误验证码会被拒绝）`,eaWdConfirm:"验证并提交",eaErrCode:"请输入 6 位数字验证码",eaErrCodeWrong:"验证码错误，请重试",
    eaPoTitle:"出金记录",eaPoEmpty:"暂无出金申请",eaPoStatus:"状态",
    eaPoPending:"审核中",eaPoApproved:"已放行",eaPoRejected:"已拒绝",
   wdSubmitted:(a)=>`提现申请已提交（$${a.toFixed(2)}），等待平台审核（Admin 出金审批）`,
@@ -408,14 +409,7 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   poRateNote:(r)=>`费率：${r}。可绑定多个通道，提现时可在面板选择通道（默认通道预选）。`,
   poBound:"已绑定",poBoundHint:"该通道已绑定，确认可更新收款邮箱。",
   poCancel:"取消",poConfirm:"确认添加",poOk:(ch)=>`${ch} 已绑定`,poManage:"管理通道",
-  // —— MVP P2P：账号级合规/信任门（2026-09-02 P2P 先行） ——
-  enduseTitle:"注册协议 · 最终用途声明",enduseLead:"您承诺本平台算力仅用于合规用途，且不会转让给受制裁实体/国家。请逐项确认：",enduseUsedFor:"用途：机器学习训练 / 推理 / 实验",
-  enduseList1:"不得用于核武器、化生武器、导弹等大规模杀伤性武器相关活动",
-  enduseList2:"不得用于未经批准的军事用途或出口管制违规用途",
-  enduseList3:"不得向受制裁国家 / 受限方转售、再出口或提供算力",
-  enduseRestricted:"本平台对出口管制敏感型号（如 H100/H200）执行受限方筛查；勾选即同意配合筛查。",
-  enduseRestrictedNote:"真实产品中，接受本声明即授权平台在敏感型号下单前调用受限方/地域筛查服务（如 denied-party list）。",
-  enduseOk:"同意并创建账号",  acceptedOk:"用途声明已记录",
+  // —— P2P：账号级信任门（宿主实名/KYC 见上架向导与视角切换） ——
   srcHostLbl:"宿主上架",srcDeposit:(d)=>`押金 $${d.toFixed(0)}`,srcSeedLbl:"首发池",srcSeedTitle:"平台首发池 · 自购/签约供给（非第三方宿主）",
   escrowTitle:"资金托管 · Escrow",escrowDesc:"下单时按实例预留冻结（防租客赖账），消费后释放，租约结束/销毁后释放回可退款余额；余额耗尽自动停机。",escrowHold:"托管冻结中",escrowRefundable:"可退款余额（含托管）",
   escrowNote:"租客资金由平台托管，余额不足时自动停机；订单提前取消按规则从冻结款中扣除罚金后余额退回。",
@@ -435,7 +429,7 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   ldUc2T:"模型训练",ldUc2D:"官方 PyTorch 镜像，内置 JupyterLab 与 SSH。",
   ldUc3T:"图像生成",ldUc3D:"ComfyUI 节点式扩散工作流，Web UI 直达。",
   // —— 开发者接入（2026-10-08 · 左列收敛为「一句主张 + 一行动作」，三接入方式降为一行 mono 小字） ——
-  ldDevEyebrow:"开发者优先",ldDevTitle:"一行命令，接入算力",ldDevSub:"与租用同一套 API：按秒计费、随取随停，训练推理通用。",
+  ldDevTitle:"一行命令，接入算力",ldDevSub:"与租用同一套 API：按秒计费、随取随停，训练推理通用。",
   ldDevModes:"CLI · Python SDK · REST API",
   ldDevCta:"探索开发者工具",ldDevTerm:"deploy.py",
   ldTickerTitle:"市场快照",ldTickerLive:"样本快照",ldTickerFoot:"公开采样 · 非实时行情",
@@ -471,22 +465,17 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   ldFootRes:"资源",ldFootR1:"开发者文档",ldFootR2:"常见问题",ldFootR3:"平台合规",
   ldFootLegal:"法律",
   ldFootNews:"订阅产品动态",ldFootNewsPh:"输入邮箱",ldFootNewsOk:"已订阅（演示环境，不会真实发送）",
-  // —— 注册/登录页（独立全屏 auth 视图） ——
-  auLoginTitle:"登录",auRegTitle:"创建账号",
-  auTabLogin:"登录",auTabRegister:"注册",
+  // —— 注册/登录弹窗（邮箱验证码直登 · passwordless） ——
+  auLoginTitle:"登录或注册",
+  auLead:"用邮箱接收验证码登录，无需密码——首次登录将自动创建账号。",
   auEmail:"邮箱",auEmailPh:"you@example.com",
-  auPwd:"密码",auPwdPh:"至少 8 位",auPwd2:"确认密码",
-  auNext:"发送验证码",auLoginBtn:"登录",
+  auNext:"发送验证码",
   auCodeTitle:"验证邮箱",auCodeSent:(e)=>`验证码已发送至 ${e}`,auCodePh:"6 位数字",auCodeHint:"演示环境：输入任意 6 位数字即可通过验证",auVerifyBtn:"验证并继续",
-  auForgot:"忘记密码？",auForgotToast:"演示环境：请用注册邮箱重新登录，或使用 OAuth 一键登录",
-  auOauthGoogle:"使用 Google 账号继续",auOauthGithub:"使用 Github 账号继续",auOr:"或",
-  auHaveAcct:"已有账号？",auGoLogin:"直接登录",auNoAcct:"还没有账号？",auGoReg:"免费注册",
-  auBack:"返回首页",auPendingLead:"登录后将继续租用您选中的报价",
-  auErrEmail:"请输入有效邮箱地址",auErrPwdLen:"密码至少 8 位",auErrPwdMatch:"两次输入的密码不一致",
-  auErrDup:"该邮箱已注册，请直接登录",auErrNoAcct:"账号不存在，请先注册",auErrPwdWrong:"密码错误，请重试",auErrCode:"请输入 6 位数字验证码",
-  auCreatedOk:"新账号已创建并登录",
+  auPendingLead:"登录后将继续租用您选中的报价",
+  auErrEmail:"请输入有效邮箱地址",auErrCode:"请输入 6 位数字验证码",
+  auCreatedOk:"新账号已创建并登录",auSigninOk:"欢迎回来，已登录",auBackEdit:"← 换个邮箱",auStep:(n)=>`第 ${n} 步 · 共 2 步`,
   // —— Header 双态 ——
-  hdLogin:"登录",hdRegister:"注册",hdLogout:"退出",hdAcctTip:(e)=>`当前账号：${e}`,
+  hdAuth:"登录 / 注册",hdEnt:"企业采购",hdLogout:"退出",hdAcctTip:(e)=>`当前账号：${e}`,
  },
  en:{
   ledTitle:"Billing ledger · recent",
@@ -546,10 +535,10 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   tplFilter:"Template",tplFilterNone:"Any",stEmptyTpl:"No machines compatible with this template (insufficient ports) · try another template or relax filters",
   crTitle:"Add Credits · credits required to boot",crOther:"Custom amount (≥ $10)",crOtherBtn:"Custom",crChanLbl:"Payment channel",crLater:"Later",crProcessing:"Processing…",
   crD1Pre:"⚠ We can refund only ",crD1Em:"unspent credit balance",crD1Suf:".",crD2Pre:"⚠ Machine reliability/performance varies and is ",crD2Em:"not guaranteed",crD2Suf:".",
-   tSwitchHost:"Switched to Host view (simulated)",tLoginOk:(v)=>`${v} sign-in succeeded (simulated)`,
+   tSwitchHost:"Switched to Host view (simulated)",
 
    lblBw:"BW",lblDisk:"Disk",lblPorts:"ports",crChBank:"Bank card",crChAlipay:"Alipay",crChWechat:"WeChat Pay",crChTransfer:"Bank transfer",crGrpFiat:"Airwallex (Fiat)",crGrpPaypal:"PayPal",crGrpCrypto:"Crypto",crTrustLine:"This payment is secured by Airwallex",crDemoNote:"Demo state: fiat collected via Airwallex (Stripe as backup); crypto via transitional channels. Not a final scheme.",crChipTip:"Click to top up",crMinNote:(bal)=>`Minimum top-up $10 · Current balance ${fmt$(bal,2)}`,balHostTip:"Withdrawable earnings: consumption on host-listed machines credits 1:1 (Running billing and stopped storage fees both included)",
-  loginGoogle:"Google",loginGithub:"Github",loginEmail:"Email",
+
    cfTitle:"Confirm instance configuration",cfImageShort:"Image",cfImageHint:"Any public image path with a version tag, e.g. pytorch/pytorch:2.5.1",cfEdit:"Edit",cfEditTitle:"Edit image tag",cfAdv:"Advanced options",
     cfAdvPreset:(n)=>`Preset ${n}`,cfAdvNone:"Nothing preset",cfAdvEnv:"Env config",cfAdvPorts:"Public ports",cfAdvOnstart:"Startup script",cfAdvOpen:"Collapse ▲",cfEnv:"Env config",cfEnvHint:"One per line, KEY=VALUE",cfPorts:"Public ports",cfPortsHint:"One per line, host:container",cfPortsErr:"Expected host:container (e.g. 8000:8000), one per line or comma-separated",
   cfOnstart:"Run on startup",cfOnstartHint:"Runs as bash once the machine is ready",
@@ -676,6 +665,7 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   eaWdTitle:"Withdraw",eaWdBtn:(a)=>`Withdraw $${(+a||0).toFixed(2)}`,eaWdNoCh:"Bind and select a payout channel first",
   eaWdChannel:"Payout channel",
    eaWdAmt:"Amount $",eaWdAmtSub:"$20 minimum · capped at withdrawable balance",eaWdInvalid:"Amount must be ≥$20 and within withdrawable balance",eaWdAll:"Max",
+   eaWdVerify:"Withdrawal verification",eaWdVerifyAmt:"Amount",eaWdVerifySent:(e)=>`Code sent to ${e}`,eaWdCode:"Verification code",eaWdCodeHint:(c)=>`Demo: this session's code is ${c} (in production it is sent to your account email; a wrong code is rejected)`,eaWdConfirm:"Verify & submit",eaErrCode:"Enter the 6-digit code",eaErrCodeWrong:"Incorrect code, please retry",
    eaPoTitle:"Payout history",eaPoEmpty:"No payout requests yet",eaPoStatus:"Status",
    eaPoPending:"Under review",eaPoApproved:"Released",eaPoRejected:"Rejected",
   wdSubmitted:(a)=>`Withdrawal request submitted ($${a.toFixed(2)}); awaiting platform review (Admin payouts)`,
@@ -692,14 +682,7 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   poRateNote:(r)=>`Rate: ${r}. Multiple channels can be bound; pick a channel in the withdraw panel (the default is preselected).`,
   poBound:"Bound",poBoundHint:"Channel already bound — confirm to update the payout email.",
   poCancel:"Cancel",poConfirm:"Confirm add",poOk:(ch)=>`${ch} bound`,poManage:"Manage channels",
-  // —— MVP P2P: account-level compliance/trust gates (2026-09-02 P2P-first; invite gate removed 2026-09-11) ——
-  enduseTitle:"Registration agreement · End-use statement",enduseLead:"You confirm that compute on this platform will be used only for compliant purposes and never diverted to sanctioned entities/countries. Confirm each item:",enduseUsedFor:"Intended use: ML training / inference / experimentation",
-  enduseList1:"No WMD-related activity (nuclear, chemical, biological, missiles)",
-  enduseList2:"No unauthorized military use or export-control-violating use",
-  enduseList3:"No resale, re-export or provision of compute to sanctioned countries / restricted parties",
-  enduseRestricted:"Sensitive export-controlled SKUs (e.g. H100/H200) undergo restricted-party screening; checking confirms you consent to screening.",
-  enduseRestrictedNote:"In the real product, accepting this statement authorizes the platform to run restricted-party/region screening (e.g. denied-party lists) before sensitive-SKU orders.",
-  enduseOk:"Agree & create account",  acceptedOk:"End-use statement recorded",
+  // —— P2P: account-level trust gate (host KYC lives in the listing wizard / perspective switch) ——
   srcHostLbl:"Host-listed",srcDeposit:(d)=>`deposit $${d.toFixed(0)}`,srcSeedLbl:"Seed pool",srcSeedTitle:"Platform seed pool · company/contracted supply (not a 3rd-party host)",
   escrowTitle:"Escrow · funds held",escrowDesc:"On order, hold is reserved per instance (protects against renter default), released as consumed, and returns to refundable balance when the lease ends/destroys; auto-stop when balance runs out.",escrowHold:"In escrow (held)",escrowRefundable:"Refundable incl. escrow",
   escrowNote:"Renter funds are held in escrow; instances auto-stop when the balance runs low. Early order cancellation deducts a fee from the held amount before the rest is refunded.",
@@ -719,7 +702,7 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   ldUc2T:"Model training",ldUc2D:"Official PyTorch images with JupyterLab & SSH built in.",
   ldUc3T:"Image generation",ldUc3D:"ComfyUI node-based diffusion workflows with a Web UI ready to go.",
   // —— Developer access (2026-10-08 · left column reduced to claim + one action) ——
-  ldDevEyebrow:"Developer-first",ldDevTitle:"Provision compute in one line",ldDevSub:"The same API that rents machines — billed per second, start and stop at will.",
+  ldDevTitle:"Provision compute in one line",ldDevSub:"The same API that rents machines — billed per second, start and stop at will.",
   ldDevModes:"CLI · Python SDK · REST API",
   ldDevCta:"Explore developer tools",ldDevTerm:"deploy.py",
   ldTickerTitle:"Market snapshot",ldTickerLive:"sample snapshot",ldTickerFoot:"Public sample · not a live feed",
@@ -755,22 +738,17 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   ldFootRes:"Resources",ldFootR1:"Developer docs",ldFootR2:"FAQ",ldFootR3:"Compliance",
   ldFootLegal:"Legal",
   ldFootNews:"Subscribe to product updates",ldFootNewsPh:"Enter your email",ldFootNewsOk:"Subscribed (demo only — no email is sent)",
-  // —— Auth page (standalone full-screen auth view) ——
-  auLoginTitle:"Sign in",auRegTitle:"Create account",
-  auTabLogin:"Sign in",auTabRegister:"Register",
+  // —— Auth modal (email-code passwordless) ——
+  auLoginTitle:"Sign in or sign up",
+  auLead:"Sign in with an emailed code — no password needed. First sign-in creates your account.",
   auEmail:"Email",auEmailPh:"you@example.com",
-  auPwd:"Password",auPwdPh:"at least 8 characters",auPwd2:"Confirm password",
-  auNext:"Send code",auLoginBtn:"Sign in",
+  auNext:"Send code",
   auCodeTitle:"Verify your email",auCodeSent:(e)=>`Code sent to ${e}`,auCodePh:"6 digits",auCodeHint:"Demo: any 6 digits will pass verification",auVerifyBtn:"Verify & continue",
-  auForgot:"Forgot password?",auForgotToast:"Demo: sign in again with your registered email, or use one-click OAuth",
-  auOauthGoogle:"Continue with Google",auOauthGithub:"Continue with Github",auOr:"or",
-  auHaveAcct:"Already have an account?",auGoLogin:"Sign in",auNoAcct:"No account yet?",auGoReg:"Register free",
-  auBack:"Back to home",auPendingLead:"After signing in we'll continue renting the offer you picked",
-  auErrEmail:"Enter a valid email address",auErrPwdLen:"Password must be at least 8 characters",auErrPwdMatch:"Passwords do not match",
-  auErrDup:"This email is already registered — please sign in",auErrNoAcct:"Account not found — please register first",auErrPwdWrong:"Wrong password, try again",auErrCode:"Enter the 6-digit code",
-  auCreatedOk:"New account created — you're signed in",
+  auPendingLead:"After signing in we'll continue renting the offer you picked",
+  auErrEmail:"Enter a valid email address",auErrCode:"Enter the 6-digit code",
+  auCreatedOk:"New account created — you're signed in",auSigninOk:"Welcome back — you're signed in",auBackEdit:"← Use a different email",auStep:(n)=>`Step ${n} of 2`,
   // —— Header dual state ——
-  hdLogin:"Sign in",hdRegister:"Register",hdLogout:"Sign out",hdAcctTip:(e)=>`Current account: ${e}`,
+  hdAuth:"Sign in / Sign up",hdEnt:"Enterprise",hdLogout:"Sign out",hdAcctTip:(e)=>`Current account: ${e}`,
  }};
 let _LANG="zh";
 function setLang(l){_LANG=l;}
@@ -972,7 +950,7 @@ function App(){
   const base = {
     view:"landing", balance:0, simT:0, timeScale:60,
     modal:null, pendingOffer:null,
-    user:null, authFrom:null, authTab:"login", // 注册/登录（2026-09-11）：账号对象 / 进入 auth 前来源视图 / auth 页初始 tab
+    user:null, // 注册/登录：账号对象
     filters:{gpus:[],relMin:0,priceMin:"",priceMax:"",numGpuMin:1,gpuRamMin:0,includeUn:false,hideOwn:false,diskMin:FREE_DISK,searchModel:"",
 locs:[],cpuMin:0,ramMin:0,netDownMin:0,netUpMin:0,pcies:[],tpl:null},
    sort:"priceAsc", selectedTemplate:null, injectedParams:null,
@@ -980,18 +958,18 @@ locs:[],cpuMin:0,ramMin:0,netDownMin:0,netUpMin:0,pcies:[],tpl:null},
    hostDown:false, armStuck:false, debtBanner:false,
    ctrlOpen:true,
 lang:_initLang,
-    authed:false, accepted:false, endUseAsked:false,
+    authed:false,
      perspective:"tenant", hostAgreed:false, hostRealname:false,
     hostEarnings:128.40, escrow:0,
     payouts:[], // 出金通道（2026-09-18 多通道重构）：[{channel,email,isDefault}]；isDefault 为默认出金通道，首次绑定自动设为默认
-    payoutReqs:[], endUseTrail:null, // 出金申请（Admin 审批制）/ end-use 留痕（R4：时间/版本/四项勾选/通道，真实采集）
+    payoutReqs:[], // 出金申请（Admin 审批制：Admin 纵审批后经 applyAdminCfg 扣款）
     bookings:null, // 他人预订占用（时段互斥）：懒初始化（首次打开订单弹框按当时 simT 生成）并持久化——防渲染期重算漂移失真
     hostMachines: SEED_MACHINES.map(m=>({...m})),
     billingConfig:{
      storeChargeTransition:true,
     },
    };
-   if(_sv){ ["balance","simT","timeScale","instances","ledger","filters","sort","selectedTemplate","injectedParams","authed","accepted","endUseAsked","hostAgreed","perspective","view","hostMachines","hostEarnings","escrow","payouts","payoutReqs","endUseTrail","bookings","user","instArchive"].forEach(k=>{ if(_sv[k]!==undefined) base[k]=_sv[k]; });
+   if(_sv){ ["balance","simT","timeScale","instances","ledger","filters","sort","selectedTemplate","injectedParams","authed","hostAgreed","hostRealname","perspective","view","hostMachines","hostEarnings","escrow","payouts","payoutReqs","bookings","user","instArchive"].forEach(k=>{ if(_sv[k]!==undefined) base[k]=_sv[k]; });
     // 出金通道迁移（2026-09-18）：payout 单通道 → payouts 多通道数组；老存档兜底
     if(_sv.payout && !Array.isArray(base.payouts)){
       const _old=_sv.payout||{channel:null,email:""};
@@ -1008,7 +986,7 @@ lang:_initLang,
       locs:[],cpuMin:0,ramMin:0,netDownMin:0,netUpMin:0,pcies:[],tpl:null,...(base.filters||{})};
     base.billingConfig={storeChargeTransition:true,...(_sv.billingConfig||{})};
     // 老存档回填：authed 但无 user（本需求前的演示态）→ 生成 legacy 账号并 seed 进账号库，防退出后无法重登
-    if(base.authed && !base.user){ base.user={...LEGACY_USER}; seedAccount(LEGACY_USER.email,LEGACY_PWD,"legacy"); }
+    if(base.authed && !base.user){ base.user={...LEGACY_USER}; seedAccount(LEGACY_USER.email,"legacy"); }
     // 视图恢复（2026-09-11 重写）：原 L618 表达式 `||` 优先级高于 `?:`，任何非空 _sv.view 恒得 "instances"；
     // 老存档 view 可能已被该 bug 污染，无法与真实值区分，直接信任 _sv.view【取舍 T1，注释记录】。
     // 强制门语义：未登录一律落地页；已登录 auth 视图（临时态）与非法视图 → 按 instances/search 兜底。
@@ -1018,8 +996,8 @@ lang:_initLang,
       if(base.view==="auth" || !_VIEWS.includes(base.view)) base.view=(base.instances && base.instances.length)?"instances":"search"; }
     base.modal=null;
     base.hostDown=false; base.armStuck=false; base.debtBanner=false; base.modal=null;
-    // 【取舍 T2】accepted=注册协议接受标记（end-use 声明在注册流最后一步确认，_finishAuth 置位），为全局态而非按账号存储——原型"单登录账号"铁律接受此简化，多账号切换时状态串号属演示取舍，不得沿用至正式产品
-   }
+     // 【取舍 T2】账号态不按账号分区：登录态（authed/user）与业务态共用单份存档；「注册新账号」时经 register 重置租客域+信任域（每号干净进入），但「退出后登录另一已有账号」仍串号——原型"单登录账号"铁律接受此简化，不得沿用至正式产品
+    }
    // 宿主历史底数 seed（hostV=3 · 2026-09-18 丰富化）：预置 9 笔跨越近 30 天的 hostEarn 流水，
    // 供「收益趋势」与「收益明细」演示；按权重分摊底数（Σ 精确守恒），尾条兜差。
    // 数组顺序 newest→oldest（与全局 ledger 头新尾老一致），heAfter 随之递减；追加在尾部=时间最老，随真实流水自然老化。
@@ -1060,7 +1038,7 @@ lang:_initLang,
   // 持久化：interval 快照 + 用户手势后 250ms 落盘（覆盖上架/下单/销毁等关键动作，不依赖 2s 节流窗口）+ beforeunload 兜底
   const sRef=useRef(S); sRef.current=S;
   const dumpState=()=>{ if(window.__demoReset) return; try{
-    const {modal,toast,hostDown,armStuck,debtBanner,ctrlOpen,authFrom,authTab,...keep}=sRef.current; // authFrom/authTab 为临时态，不持久化
+    const {modal,toast,hostDown,armStuck,debtBanner,ctrlOpen,...keep}=sRef.current; // 以上均为临时态，不持久化
     localStorage.setItem(STORE_KEY, JSON.stringify(keep));
   }catch(e){
     // localStorage 不可用或已满时的降级处理
@@ -1084,8 +1062,6 @@ lang:_initLang,
    const onKey=(e)=>{
     if(e.key!=="Escape") return;
     if(ref.current.modal){ setS(p=>({...p,modal:null})); return; }
-    // auth 视图（未登录注册/登录页）Esc 返回落地页——演示退出通道，与「返回首页」按钮同语义（保留 pendingOffer，登录后可继续租用）
-    if(ref.current.view==="auth" && !ref.current.authed){ setS(p=>({...p,view:"landing",authFrom:null})); }
    };
   const onPop=()=>{ if(ref.current.modal){ setS(p=>({...p,modal:null})); } };
   window.addEventListener("keydown",onKey); window.addEventListener("popstate",onPop);
@@ -1259,7 +1235,7 @@ else if(it.stuck && !it.stuckHint && n.simT>=it.hintAt){ it.stuckHint=true; }
    const _tsf = c.transitionStorageFee !== false;
    setS(p=> (p.billingConfig?.storeChargeTransition===_tsf) ? p : {...p, billingConfig:{...(p.billingConfig||{}), storeChargeTransition:_tsf}});
    const me=ref.current.user?.email;
-   if(me && (c.banned||[]).includes(me)){ // 封禁当前登录者：即时登出（后续登录被 loginAccount 拦截）
+   if(me && (c.banned||[]).includes(me)){ // 封禁当前登录者：即时登出（后续登录被 continueWithEmail 拦截）
      setS(p=>({...p,authed:false,user:null,view:"landing",perspective:"tenant",modal:null})); act.toast(T.adBannedLogout); return; }
    const _fs=new Set(c.forceStops||[]);
     if(_fs.size){ setS(p=>{ let changed=false, esc=p.escrow;
@@ -1326,8 +1302,8 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租�
    },
    openRent:(offer)=>{ // 模板意图优先级：过滤显式选择（filters.tpl，本次会话最高优先）> 历史记忆（selectedTemplate）；都无 → 模板门（机器导向）
      const st=ref.current;
-      // 强制门：未登录 → 独立登录页（保留 pendingOffer，登录后续走 template→credits→confirm 门序；end-use 协议已前置到注册流）
-      if(!st.authed){ setS(p=>({...p,pendingOffer:offer,view:"auth",authTab:"login",authFrom:(p.view==="auth"||!p.authFrom)?"landing":p.view})); return; }
+      // 强制门：未登录 → 登录弹窗（保留 pendingOffer，登录后续走 template→credits→confirm 门序）
+      if(!st.authed){ setS(p=>({...p,pendingOffer:offer,modal:"auth"})); return; }
       let tpl=st.selectedTemplate;
       if(st.filters.tpl){ const _t=TEMPLATES.find(x=>x.id===st.filters.tpl); if(_t) tpl=_t; }
       if(!tpl){ setS(p=>({...p,pendingOffer:offer,modal:"template"})); return; }
@@ -1335,43 +1311,31 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租�
       if(st.balance <= 0.001){ setS(p=>({...p,pendingOffer:offer,selectedTemplate:tpl,injectedParams:inj,modal:"credits"})); return; }
      setS(p=>({...p,pendingOffer:offer,selectedTemplate:tpl,injectedParams:inj,modal:"confirm"}));
     },
-   // —— 注册/登录（2026-09-11）：模拟账号库见文件头 ACCOUNTS_KEY 注释 ——
-   // 认证成功统一落点：view 先落 search（门序弹窗需在 search 上下文渲染），无 pendingOffer 时 continueRent 为 no-op
-     _finishAuth:(user,toastMsg,trail)=>{
-      // 协议语义（2026-09-11）：end-use 声明已移入注册流最后一步（AuthPage step2），认证完成即视为已接受——下单路径零打断
-      // R4 留痕（2026-09-15）：trail 仅在「新接受协议」时传入（邮箱注册=逐项勾选，OAuth 首登=如实标注未逐项收集）；登录路径不传、不覆盖既有留痕
-      setS(p=>({...p,authed:true,user,view:"search",authFrom:null,accepted:true,endUseAsked:true,
-        ...(trail? {endUseTrail:{t:Date.now(),v:"2026-09-02",checks:trail.checks,email:user.email,via:trail.via}} : {})}));
+    // —— 注册/登录（2026-10-09 重构）：邮箱验证码直登（passwordless）——邮箱不存在=建号，存在=登录；账号库见文件头 ACCOUNTS_KEY 注释 ——
+    // 认证成功统一落点：view 先落 search（门序弹窗需在 search 上下文渲染），无 pendingOffer 时 continueRent 为 no-op
+     _finishAuth:(user,toastMsg,reset)=>{
+      // reset=true（新注册）：租客域+信任域归零，每个新账号从干净新客开始（余额 $0 起步）
+      const _reset = reset? {balance:0,instances:[],ledger:[],bookings:null,escrow:0,instArchive:[],selectedTemplate:null,hostAgreed:false,hostRealname:false,payouts:[],payoutReqs:[]} : null;
+      setS(p=>({...p,authed:true,user,view:"search",modal:null,...(_reset||{})}));
       act.toast(toastMsg);
       setTimeout(()=>act.continueRent(),80);
      },
-    register:(email,pwd,agree)=>{ // 邮箱查重已在 AuthPage 表单校验完成，此处直接建号
-     const a=loadAccounts(); a[email]={pwd,provider:"email",createdAt:Date.now()}; saveAccounts(a);
-     act._finishAuth({email,provider:"email"},T.auCreatedOk,{checks:Array.isArray(agree)?agree:[true,true,true,true],via:"email"});
-    },
-    loginAccount:(email,pwd)=>{ // 返回 null=成功；"noAcct"/"pwdWrong"/"banned"=分态错误，由 AuthPage 显示
-     const acc=loadAccounts()[email];
-     if(!acc) return "noAcct";
-     if(acc.pwd!==pwd) return "pwdWrong";
-     if((loadAdminCfg().banned||[]).includes(email)) return "banned"; // Admin 联动：封禁拦截登录
-     act._finishAuth({email,provider:acc.provider||"email"},T.tLoginOk(T.loginEmail));
+    continueWithEmail:(email)=>{ // 验证码直登：返回 null=成功；"banned"=封禁（由 AuthModal 显示）
+     const me=(email||"").trim();
+     if((loadAdminCfg().banned||[]).includes(me)) return "banned"; // Admin 联动：封禁拦截登录
+     const a=loadAccounts(); const isNew=!a[me];
+     if(isNew){ a[me]={provider:"email",createdAt:Date.now()}; saveAccounts(a); }
+     act._finishAuth({email:me,provider:isNew?"email":(a[me].provider||"email")}, isNew? T.auCreatedOk : T.auSigninOk, isNew);
      return null;
     },
-   oauthLogin:(provider)=>{ // OAuth 一键：伪邮箱入账号库，首登=注册（演示口径）
-    const email=provider==="google"?"demo.user@gmail.demo":"demo.user@github.demo";
-    const via=provider==="google"?T.loginGoogle:T.loginGithub;
-    const a=loadAccounts(); const isNew=!a[email];
-     if(isNew){ a[email]={pwd:rid("oauth"),provider,createdAt:Date.now()}; saveAccounts(a); }
-     act._finishAuth({email,provider}, isNew? T.auCreatedOk : T.tLoginOk(via), isNew? {checks:null,via:"oauth"} : undefined);
-   },
    logout:()=>{ setS(p=>({...p,authed:false,user:null,view:"landing",perspective:"tenant",modal:null})); act.toast(T.tLogout); },
    addCredits:(amt)=>new Promise(res=>{ setTimeout(()=>{ setS(p=>{ const nb=+(p.balance+amt).toFixed(2); return {...p,balance:nb,ledger:trimLedger([{t:p.simT,msgKey:"lgTopup",amt:+amt,txnId:txid(),balAfter:nb},...p.ledger])}; }); res(); },700); }), // 充值入流水（P0.6 对账闭环 + 审计字段 txnId/balAfter）
    gotoConfirm:()=>setS(p=>({...p,modal:"confirm"})),
    closeModal:()=>setS(p=>({...p,modal:null})),
-    // —— 账号级门（2026-09-11）：end-use 声明已移入注册流（_finishAuth 置 accepted），内测邀请门已移除，下单路径不再有账号级弹窗门——
+    // —— 账号级门（2026-10-09）：end-use 声明与内测邀请门均已移除，下单路径无账号级弹窗门——
    continueRent:()=>{ const st=ref.current; if(st.pendingOffer) act.openRent(st.pendingOffer); },
    setPerspective:(v)=>{ // 未登录守卫：理论上不可达（Header 未登录隐藏切换按钮），防线防其他入口绕过强制门
-     if(!ref.current.authed){ setS(p=>({...p,view:"auth",authTab:"login",authFrom:"landing"})); return; }
+     if(!ref.current.authed){ setS(p=>({...p,modal:"auth"})); return; }
      if(v==="host" && !ref.current.hostAgreed){ setS(p=>({...p,modal:"hostagree"})); return; }
       setS(p=>({...p,perspective:v,view:v==="host"?"host-machines":"search"}));
       if(v==="host") act.toast(T.tSwitchHost); },
@@ -1535,14 +1499,13 @@ const filtered = useMemo(()=>{
 
  /* ================= 渲染 ================= */
   // 渲染期守卫：未登录强制 landing/auth（强制门铁律），防任何路径绕过【公开层语义】
-  const effView = (!S.authed && S.view!=="landing" && S.view!=="auth") ? "landing" : S.view;
+  const effView = (!S.authed && S.view!=="landing") ? "landing" : S.view;
   return (
   <div className="min-h-screen pb-24">
-   {S.view!=="auth" && <Header S={S} act={act} setS={setS}/>}
+   <Header S={S} act={act} setS={setS}/>
    <main id="main-content" tabIndex="-1">
    <>
    {effView==="landing" && <LandingPage S={S} act={act} setS={setS} adminCfg={adminCfg}/>}
-   {effView==="auth" && <AuthPage S={S} act={act} setS={setS}/>}
    {effView==="search" && S.authed && <SearchPage S={S} act={act} setS={setS} filtered={filtered}/>}
    {effView==="instances" && S.authed && <InstancesPage S={S} act={act} setS={setS}/>}
    {effView==="market-data" && S.authed && S.perspective!=="host" && <MarketDataPage S={S} act={act} setS={setS} adminCfg={adminCfg}/>}
@@ -1551,7 +1514,8 @@ const filtered = useMemo(()=>{
     {S.authed && (S.perspective==="host") && effView==="host-earnings" && <EarningsPage S={S} act={act} setS={setS}/>}
    </>
    </main>
-   {/* 弹窗组（登录门已改独立 auth 视图，LoginPage 弹窗分支移除；内测邀请门与 end-use 门已分别移除/前置注册流 2026-09-11） */}
+   {/* 弹窗组（登录门为 auth 弹窗；内测邀请门与 end-use 门已分别移除/前置注册流 2026-09-11） */}
+   {S.modal==="auth" && <AuthModal S={S} act={act} setS={setS}/>}
    {S.modal==="hostagree" && <HostAgreeGate S={S} act={act} setS={setS}/>}
   {S.modal==="template" && <TemplateModal S={S} act={act} setS={setS}/>}
   {S.modal==="credits" && <CreditsModal S={S} act={act} setS={setS}/>}
@@ -1563,10 +1527,10 @@ const filtered = useMemo(()=>{
   {S.modal==="payout" && <BindPayoutModal S={S} act={act} setS={setS}/>}
    {S.modal==="withdraw" && <WithdrawModal S={S} act={act} setS={setS}/>}
    {S.modal==="payout-manage" && <PayoutManageModal S={S} act={act} setS={setS}/>}
-   {/* 抽屉：计费流水（营销层 landing/auth 不渲染——控制台元素不进公开层） */}
+   {/* 抽屉：计费流水（营销层 landing 不渲染——控制台元素不进公开层） */}
    {S.authed && <LedgerDrawer S={S}/>}
    {/* 控制条：landing 折叠为浮球，auth 全屏不渲染 */}
-   {S.view!=="auth" && <ControlBar S={S} act={act} setS={setS} collapsed={S.view==="landing"}/>}
+   <ControlBar S={S} act={act} setS={setS} collapsed={S.view==="landing"}/>
   {/* Toast */}
    {S.toast && (
     <div role="status" aria-live="polite" aria-atomic="true" className="fixed left-1/2 top-4 z-[70] -translate-x-1/2 rise-in rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2 text-[14px] text-[var(--color-text-secondary)] shadow-xl shadow-black/10">{S.toast}</div>
@@ -1642,10 +1606,13 @@ function Header({S,act,setS}){
        {S.lang==="zh"?"EN":"中"}
       </button>
       {!authed && (
-      <div className="flex items-center gap-2">
-       <button onClick={goAuth(setS,"login")} className="rounded-md border border-[var(--color-border)] px-2.5 py-1 text-[13px] font-medium text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)]">{T.hdLogin}</button>
-       <button onClick={goAuth(setS,"register")} className="rounded-md bg-[var(--color-accent)] px-2.5 py-1 text-[13px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.hdRegister}</button>
-      </div>)}
+       <>
+        {/* 企业采购入口常驻顶栏：企业页非强制门，未登录即可直达。
+            移动端不做隐藏——本页未登录顶栏足够精简，而诉求正是「降低入口深度」 */}
+        <a href="./enterprise.html" className="rounded-md border border-[var(--color-accent-on-tint)] px-3 py-1 text-[13px] font-medium text-[var(--color-accent-on-tint)] transition-colors hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-white">{T.hdEnt}</a>
+        <button onClick={goAuth(setS)} className="rounded-md bg-[var(--color-accent)] px-3 py-1 text-[13px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.hdAuth}</button>
+       </>
+      )}
       {authed && (
       <div className="relative" ref={acctRef}>
        <button onClick={()=>setAcctOpen(v=>!v)} aria-expanded={acctOpen} title={T.hdAcctTip(userEmail)}
@@ -2900,16 +2867,7 @@ const LD_TERM_LINES=[
  [["prompt","$ "],["cmd","mekong"],["arg"," instances list"]],
  [["out","  a7f3   RTX 5070   "],["emph","Running"],["out","   "],["emph","$0.104/hr"]],
 ];
-const goAuth=(setS,tab)=>()=>setS(p=>({...p,view:"auth",authTab:tab,authFrom:p.view==="auth"?p.authFrom:"landing"}));
-// OAuth 品牌 mark：单色官方几何 path（公开品牌资源，simple-icons 口径），容器底色承担品牌认知——替代占位字符
-const BrandG=({className})=>(
- <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] bg-white ${className||""}`} aria-hidden="true">
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="#4285F4"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.828 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>
- </span>);
-const BrandGH=({className})=>(
- <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] bg-[#24292f] ${className||""}`} aria-hidden="true">
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="#ffffff"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
- </span>);
+const goAuth=(setS)=>()=>setS(p=>({...p,modal:"auth"}));
 function LandingPage({S,act,setS,adminCfg}){
  const picks=LD_OFFER_IDS.map(id=>OFFERS.find(o=>o.id===id)).filter(Boolean);
  // 规模数字取自挂牌口径而非市场筛选结果；型号名归一（hostToOffer 以规格整串作型号名，会带 "×8" 后缀）后再去重
@@ -2931,8 +2889,8 @@ function LandingPage({S,act,setS,adminCfg}){
      <h1 className="max-w-[14ch] text-balance text-[36px] font-semibold leading-[1.06] tracking-tight md:max-w-[20ch] md:text-[52px]">{T.ldHeroTitle}</h1>
      <p className="mt-5 max-w-[46ch] text-[16px] leading-relaxed text-[var(--color-text-secondary)]">{T.ldHeroSub}</p>
      <div className="mt-8 flex flex-wrap items-center gap-3">
-      <button onClick={goAuth(setS,"login")} className="rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-[16px] font-semibold text-white hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldCtaBrowse} →</button>
-      <button onClick={goAuth(setS,"register")} className="rounded-lg border border-[var(--color-border-strong)] px-5 py-2.5 text-[16px] text-[var(--color-text-secondary)] hover:border-[var(--color-text-faint)] active:translate-y-[1px]">{T.ldCtaHost}</button>
+      <button onClick={goAuth(setS)} className="rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-[16px] font-semibold text-white hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldCtaBrowse} →</button>
+      <button onClick={goAuth(setS)} className="rounded-lg border border-[var(--color-border-strong)] px-5 py-2.5 text-[16px] text-[var(--color-text-secondary)] hover:border-[var(--color-text-faint)] active:translate-y-[1px]">{T.ldCtaHost}</button>
      </div>
     </div>
     {/* 真实 OFFERS 采样数据面板（非 fake screenshot：直接渲染数据层采样） */}
@@ -2977,7 +2935,7 @@ function LandingPage({S,act,setS,adminCfg}){
        这道气质差就是这个 section 的存在理由。刻意排在目录表之前：先让访客知道「算力在地球上的哪几处」，
        再进交易细节。留白刻意收紧（py-14 md:px-16 级别）——309px 低密度内容自带呼吸，section 再加满留白会把页面拉太长 */}
    <section className="border-t border-[var(--color-border)] py-14 md:py-16">
-    <h2 className="text-[24px] font-semibold tracking-tight">{T.ldWhereTitle}</h2>
+    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldWhereTitle}</h2>
     <div className="mx-auto mt-6 w-full max-w-[960px]">
      <WorldMapSVG T2={T}/>
     </div>
@@ -2986,9 +2944,9 @@ function LandingPage({S,act,setS,adminCfg}){
 
    {/* 算力目录：全在售型号的规格与挂牌价（口径可引用＝定价权的基础）；行为只读，单一 CTA 进注册（强制门） */}
    <section className="border-t border-[var(--color-border)] py-16 md:py-24">
-    <h2 className="text-[24px] font-semibold tracking-tight">{T.ldMarketTitle}</h2>
+    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldMarketTitle}</h2>
     <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldMarketSub(listed.length,mkModels,ldGpus,ldRegions)}</p>
-    <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">{T.ldCatSub}</p>
+    <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldCatSub}</p>
     <div className="table-scroll mt-6">
      <table className="w-full border-collapse text-[13px]">
       <caption className="sr-only">{T.ldMarketTitle}</caption>
@@ -3020,7 +2978,7 @@ function LandingPage({S,act,setS,adminCfg}){
     </div>
     <p className="mt-2.5 text-[12px] leading-4 text-[var(--color-text-faint)]">{T.ldCatFoot}</p>
     <div className="mt-6 flex flex-col items-center gap-3">
-     <button onClick={goAuth(setS,"register")} className="rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldCatCta} →</button>
+     <button onClick={goAuth(setS)} className="rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldCatCta} →</button>
      <p className="text-center text-[12px] text-[var(--color-text-faint)]">{T.ldMarketFoot}</p>
     </div>
    </section>
@@ -3030,13 +2988,13 @@ function LandingPage({S,act,setS,adminCfg}){
        25 字 × 13.5px ≈ 338px 远未触到约束），所以调 max-width 治不了，只能改布局。卡片语法复用下方双主体
        section 的 1px 描边网格，卡片等高由 grid 拉伸保证 */}
    <section className="border-t border-[var(--color-border)] py-16 md:py-24">
-    <h2 className="text-[20px] font-semibold tracking-tight">{T.ldSupplyTitle}</h2>
+    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldSupplyTitle}</h2>
     <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldSupplySub}</p>
     <div className="mt-7 grid gap-px overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-border)] md:grid-cols-3">
      {[["01",T.ldSrc1T,T.ldSrc1D],["02",T.ldSrc2T,T.ldSrc2D],["03",T.ldSrc3T,T.ldSrc3D]].map(([n,t,d])=>(
       <div key={n} className="bg-[var(--color-surface)] p-6">
        <span className="mono block text-[12px] text-[var(--color-text-faint)]">{n}</span>
-       <div className="mt-2 text-[16px] font-semibold">{t}</div>
+       <div className="mt-2 text-[15px] font-semibold">{t}</div>
        <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{d}</p>
       </div>))}
     </div>
@@ -3044,14 +3002,14 @@ function LandingPage({S,act,setS,adminCfg}){
 
    {/* 信任合规：2×2（escrow / 一次性门 / 出口管制 / 实名宿主） */}
    <section className="border-t border-[var(--color-border)] py-16 md:py-24">
-    <h2 className="text-[20px] font-semibold tracking-tight">{T.ldTrustTitle}</h2>
+    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldTrustTitle}</h2>
     <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldTrustSub}</p>
     <div className="mt-7 grid gap-x-14 gap-y-6 sm:grid-cols-2">
      {[[P.dollar,T.ldTrust1T,T.ldTrust1D],[P.info,T.ldTrust2T,T.ldTrust2D],[P.port,T.ldTrust3T,T.ldTrust3D],[P.plug,T.ldTrust4T,T.ldTrust4D]].map(([ic,t,d],i)=>(
       <div key={i} className="flex gap-3.5">
        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent-hover)]"><Icon d={ic} size={15}/></span>
        <div>
-        <div className="text-[14px] font-semibold">{t}</div>
+        <div className="text-[15px] font-semibold">{t}</div>
         <div className="mt-1 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{d}</div>
        </div>
       </div>))}
@@ -3061,7 +3019,7 @@ function LandingPage({S,act,setS,adminCfg}){
    {/* 适用场景（2026-10-08）：三条映射平台模板真实分类（inference/training/image），非营销声明；
        置于信任合规之后、双主体之前——为访客在「如何开始」之前先回答「能用来做什么」 */}
    <section className="border-t border-[var(--color-border)] py-16 md:py-24">
-    <h2 className="text-[20px] font-semibold tracking-tight">{T.ldUcTitle}</h2>
+    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldUcTitle}</h2>
     <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldUcSub}</p>
     <div className="mt-7 grid gap-px overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-border)] md:grid-cols-3">
      {[[T.ldUc1T,T.ldUc1D],[T.ldUc2T,T.ldUc2D],[T.ldUc3T,T.ldUc3D]].map(([t,d],i)=>(
@@ -3077,8 +3035,7 @@ function LandingPage({S,act,setS,adminCfg}){
    <section className="border-t border-[var(--color-border)] py-16 md:py-24">
     <div className="grid gap-10 md:grid-cols-[5fr_7fr] md:items-center">
      <div>
-      <p className="mono text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--color-text-faint)]">{T.ldDevEyebrow}</p>
-      <h2 className="mt-3 text-[24px] font-semibold leading-tight tracking-tight md:text-[30px]">{T.ldDevTitle}</h2>
+      <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldDevTitle}</h2>
       <p className="mt-3 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">{T.ldDevSub}</p>
       <p className="mono mt-5 text-[12px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]">{T.ldDevModes}</p>
       <button onClick={()=>act.toast(T.ldFootStub)} className="mt-7 rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldDevCta} →</button>
@@ -3097,7 +3054,7 @@ function LandingPage({S,act,setS,adminCfg}){
 
    {/* 双主体 + 如何开始（合并 section）：对称 split，1px 内分隔线 */}
    <section className="border-t border-[var(--color-border)] py-12 md:py-16">
-    <h2 className="text-[20px] font-semibold tracking-tight">{T.ldRolesTitle}</h2>
+    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldRolesTitle}</h2>
     <div className="mt-7 grid gap-px overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-border)] md:grid-cols-2">
      {[
       {t:T.ldRoleTenantT,lead:T.ldRoleTenantLead,steps:[T.ldHowT1,T.ldHowT2,T.ldHowT3],cta:"login",ctaLbl:T.ldCtaBrowse},
@@ -3109,8 +3066,8 @@ function LandingPage({S,act,setS,adminCfg}){
            按钮有垂直 padding，items-baseline 会把按钮底缘顶出基线。触达区 20+20=40px，与全站 CTA 同量级
            （hero 42.5px / 目录表 41px），未凑 44px：次要动作在卡片角上凑满会显得笨重。 */}
        <div className="flex items-center justify-between gap-3">
-        <span className="text-[16px] font-semibold">{r.t}</span>
-        <button onClick={goAuth(setS,r.cta)} className="shrink-0 rounded-lg border border-[var(--color-border-strong)] px-4 py-2.5 text-[13px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text)] active:translate-y-[1px]">{r.ctaLbl}</button>
+        <span className="text-[15px] font-semibold">{r.t}</span>
+        <button onClick={goAuth(setS)} className="shrink-0 rounded-lg border border-[var(--color-border-strong)] px-4 py-2.5 text-[13px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text)] active:translate-y-[1px]">{r.ctaLbl}</button>
        </div>
        <p className="mt-2 max-w-[46ch] text-[13px] leading-relaxed text-[var(--color-text-muted)]">{r.lead}</p>
        <ol className="mt-5 space-y-2.5">
@@ -3130,10 +3087,10 @@ function LandingPage({S,act,setS,adminCfg}){
     <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-10 md:px-12 md:py-12">
      <div className="flex flex-wrap items-center justify-between gap-6">
       <div className="min-w-0">
-       <h2 className="text-[24px] font-semibold tracking-tight md:text-[30px]">{T.ldEntTitle}</h2>
+       <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldEntTitle}</h2>
        <p className="mt-2 max-w-[56ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">{T.ldEntDesc}</p>
       </div>
-      <a href="./enterprise.html" className="shrink-0 rounded-lg bg-[var(--color-accent)] px-5 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldEntBtn} →</a>
+      <a href="./enterprise.html" className="shrink-0 rounded-lg bg-[var(--color-accent)] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldEntBtn} →</a>
      </div>
     </div>
    </section>
@@ -3152,14 +3109,14 @@ function LandingPage({S,act,setS,adminCfg}){
       </form>
      </div>
      {[
-      [T.ldFootMarket,[T.ldFootM1,T.ldFootM2,T.ldFootM3]],
-      [T.ldFootRes,[T.ldFootR1,T.ldFootR2,T.ldFootR3]],
-      [T.ldFootLegal,[T.ldFootTerms,T.ldFootPrivacy,T.ldFootDocs]],
+      [T.ldFootMarket,[[T.ldFootM1],[T.ldFootM2],[T.ldFootM3,"./enterprise.html"]]],
+      [T.ldFootRes,[[T.ldFootR1],[T.ldFootR2],[T.ldFootR3]]],
+      [T.ldFootLegal,[[T.ldFootTerms],[T.ldFootPrivacy],[T.ldFootDocs]]],
      ].map(([title,items])=>(
       <div key={title}>
        <div className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">{title}</div>
        <ul className="mt-3 space-y-2.5">
-        {items.map(it=>(<li key={it}><button onClick={()=>act.toast(T.ldFootStub)} className="text-left text-[13px] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]">{it}</button></li>))}
+        {items.map(([it,href])=>(<li key={it}>{href?<a href={href} className="text-left text-[13px] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]">{it}</a>:<button onClick={()=>act.toast(T.ldFootStub)} className="text-left text-[13px] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]">{it}</button>}</li>))}
        </ul>
       </div>))}
     </div>
@@ -3171,142 +3128,71 @@ function LandingPage({S,act,setS,adminCfg}){
  );
 }
 
-/* ================= 注册/登录页（独立全屏 auth 视图 · 不渲染控制台 Header） ================= */
-function AuthPage({S,act,setS}){
- const [tab,setTab]=useState(S.authTab==="register"?"register":"login");
-  const [step,setStep]=useState(0); // 注册三步：0 表单 → 1 模拟邮箱验证码 → 2 注册协议（end-use 出口管制）
-  const [email,setEmail]=useState(""); const [pwd,setPwd]=useState(""); const [pwd2,setPwd2]=useState(""); const [code,setCode]=useState("");
-  const [agree,setAgree]=useState([false,false,false,false]);
- const [err,setErr]=useState("");
- const emailOk=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
- const toggleLang=()=>{const nl=S.lang==="zh"?"en":"zh";try{localStorage.setItem("vast-demo-lang",nl)}catch(e){};setLang(nl);setS(p=>({...p,lang:nl}))};
- const back=()=>setS(p=>({...p,view:(p.authFrom&&p.authFrom!=="auth")?p.authFrom:"landing",authFrom:null}));
-  const switchTab=(t)=>{ setTab(t); setStep(0); setCode(""); setErr(""); setAgree([false,false,false,false]); };
-  function doLogin(){ setErr("");
-   const r=act.loginAccount(email.trim(),pwd);
-   if(r==="noAcct") setErr(T.auErrNoAcct); else if(r==="pwdWrong") setErr(T.auErrPwdWrong); else if(r==="banned") setErr(T.auErrBanned);
-  }
-  function doRegStep1(){ setErr("");
+/* ================= 注册/登录弹窗（邮箱验证码直登 · passwordless） ================= */
+function AuthModal({S,act,setS}){
+  const [step,setStep]=useState(0); // 两步：0 邮箱 → 1 验证码（演示环境任意 6 位通过）
+  const [email,setEmail]=useState("");
+  const [code,setCode]=useState("");
+  const [err,setErr]=useState("");
+  const emailOk=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+  const close=()=>act.closeModal();
+  function sendCode(){ setErr("");
    if(!emailOk) return setErr(T.auErrEmail);
-   if(pwd.length<8) return setErr(T.auErrPwdLen);
-   if(pwd!==pwd2) return setErr(T.auErrPwdMatch);
-   const _ac=loadAdminCfg(); // Admin 联动说明：白名单拦截已移除（MVP P2P 决策 2026-09-15），保留 loadAdminCfg 供封禁联动参考
-   if(loadAccounts()[email.trim()]){ switchTab("login"); setErr(T.auErrDup); return; }
+   if((loadAdminCfg().banned||[]).includes(email.trim())) return setErr(T.auErrBanned); // Admin 联动：封禁账号提前拦截
    setStep(1);
   }
-  function doVerify(){ setErr(""); if(code.trim().length<6) return setErr(T.auErrCode); setStep(2); }
- const lblCls="block text-[13px] text-[var(--color-text-muted)]";
- const inputCls="mono mt-1 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-[14px]";
- const primaryBtn="w-full rounded-lg bg-[var(--color-accent)] py-2 text-[16px] font-semibold text-white hover:bg-[var(--color-accent-strong)]";
- return (
-  <div className="flex min-h-screen flex-col">
-   {/* 品牌条：logo + 返回 + 语言切换（该视图不渲染控制台 Header） */}
-   <div className="border-b border-[var(--color-border)] px-5 py-3">
-    <div className="mx-auto flex max-w-[1400px] items-center justify-between">
-     <button onClick={back} className="flex items-baseline gap-2" aria-label={T.auBack}>
-      <span className="text-[16px] font-semibold tracking-tight">Mekong</span>
+  function verify(){ setErr("");
+   if(code.trim().length<6) return setErr(T.auErrCode);
+   const r=act.continueWithEmail(email.trim());
+   if(r==="banned"){ setStep(0); setErr(T.auErrBanned); }
+  }
+  const inputCls="mono mt-3 min-h-[44px] w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-[14px]";
+  return (
+  <ModalShell width="max-w-md" onClose={close}>
+   <div className="relative px-7 py-8">
+    {/* 头区居中：品牌字标 → 标题 → 导语（质感来自中轴层次，非元素数量） */}
+    <div className="text-center">
+     <span className="inline-flex items-baseline gap-2" aria-hidden="true">
+      <span className="text-[18px] font-semibold tracking-tight">Mekong</span>
       <span className="rounded border border-[var(--color-border)] px-1 py-px text-[11px] uppercase tracking-wider text-[var(--color-text-muted)]">demo</span>
-     </button>
-     <div className="flex items-center gap-2">
-      <button onClick={toggleLang} title={S.lang==="zh"?"Switch to English":"切换到中文"}
-       className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-[13px] font-semibold text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)]">
-       {S.lang==="zh"?"EN":"中"}
-      </button>
-      <button onClick={back} title={T.auBack}
-       className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-[13px] font-semibold text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text)]">← {T.auBack}</button>
-     </div>
+     </span>
+     <h1 className="mt-4 text-[22px] font-semibold tracking-tight">{step===0?T.auLoginTitle:T.auCodeTitle}</h1>
+     <p className="mx-auto mt-2 max-w-[320px] text-[13px] leading-relaxed text-[var(--color-text-muted)]">{step===0?T.auLead:T.auCodeSent(email.trim())}</p>
     </div>
-   </div>
-   <div className="flex flex-1 items-start justify-center px-5 py-14">
-    <div className="w-full max-w-sm">
-     {S.pendingOffer && (
-      <p className="mb-4 rounded-lg border border-[var(--color-info)]/30 bg-[var(--color-info)]/[.07] px-3.5 py-2.5 text-[13px] leading-snug text-[var(--color-text-secondary)]">{T.auPendingLead}</p>)}
-     <div className="rise-in rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-      <h1 className="text-[20px] font-semibold tracking-tight">{tab==="login"?T.auLoginTitle:T.auRegTitle}</h1>
-      {/* tabs */}
-      <div className="mt-4 grid grid-cols-2 gap-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-1">
-       {[["login",T.auTabLogin],["register",T.auTabRegister]].map(([t,l])=>(
-        <button key={t} onClick={()=>switchTab(t)}
-         className={`rounded-md py-1.5 text-[13px] font-medium ${tab===t?"border border-[var(--color-border-strong)] bg-[var(--color-surface)] text-[var(--color-text)]":"text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"}`}>{l}</button>))}
-      </div>
-      {/* OAuth 一键（首登=注册，账号库联动；注册验证码步骤隐藏，保持单焦点） */}
-      {(tab==="login" || step===0) && (
-      <div>
-       <div className="mt-5 space-y-2">
-        <button onClick={()=>act.oauthLogin("google")} className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border-strong)] py-2 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-text-faint)]">
-         <BrandG/> {T.auOauthGoogle}
-        </button>
-        <button onClick={()=>act.oauthLogin("github")} className="flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-border-strong)] py-2 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-text-faint)]">
-         <BrandGH/> {T.auOauthGithub}
-        </button>
-       </div>
-       <div className="my-5 flex items-center gap-3 text-[12px] text-[var(--color-text-faint)]"><span className="h-px flex-1 bg-[var(--color-border)]"></span>{T.auOr}<span className="h-px flex-1 bg-[var(--color-border)]"></span></div>
-      </div>)}
-      {/* 表单区 */}
-      {tab==="login" ? (
-       <form onSubmit={e=>{e.preventDefault();doLogin();}} className="space-y-3">
-        <label className={lblCls}>{T.auEmail}
-         <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} placeholder={T.auEmailPh} autoComplete="email" aria-describedby={err?"auth-err-login":undefined} className={inputCls}/></label>
-        <label className={lblCls}>{T.auPwd}
-         <input type="password" value={pwd} onChange={e=>{setPwd(e.target.value);setErr("");}} placeholder={T.auPwdPh} autoComplete="current-password" className={inputCls}/></label>
-        {err && <p id="auth-err-login" role="alert" className="text-[13px] text-[var(--color-error-on-tint)]">{err}</p>}
-        <button type="submit" className={primaryBtn}>{T.auLoginBtn}</button>
-        <button type="button" onClick={()=>act.toast(T.auForgotToast)} className="w-full text-center text-[13px] text-[var(--color-text-faint)] hover:text-[var(--color-text-secondary)] hover:underline">{T.auForgot}</button>
-       </form>
-      ) : step===0 ? (
-       <form onSubmit={e=>{e.preventDefault();doRegStep1();}} className="space-y-3">
-        <label className={lblCls}>{T.auEmail}
-         <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} placeholder={T.auEmailPh} autoComplete="email" aria-describedby={err?"auth-err-reg":undefined} className={inputCls}/></label>
-        <label className={lblCls}>{T.auPwd}
-         <input type="password" value={pwd} onChange={e=>{setPwd(e.target.value);setErr("");}} placeholder={T.auPwdPh} autoComplete="new-password" className={inputCls}/></label>
-        <label className={lblCls}>{T.auPwd2}
-         <input type="password" value={pwd2} onChange={e=>{setPwd2(e.target.value);setErr("");}} placeholder={T.auPwdPh} autoComplete="new-password" className={inputCls}/></label>
-        {err && <p id="auth-err-reg" role="alert" className="text-[13px] text-[var(--color-error-on-tint)]">{err}</p>}
-        <button type="submit" className={primaryBtn}>{T.auNext}</button>
-       </form>
-       ) : step===1 ? (
-        <form onSubmit={e=>{e.preventDefault();doVerify();}} className="space-y-3">
-         <p className="text-[13px] text-[var(--color-text-muted)]">{T.auCodeSent(email.trim())}</p>
-         <input value={code} onChange={e=>{setCode(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6} inputMode="numeric" placeholder={T.auCodePh} aria-label={T.auCodeTitle} aria-invalid={!!err} aria-describedby={err?"auth-err-code":undefined}
-          className="mono w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-center text-[20px] tracking-[0.4em]"/>
-         {err && <p id="auth-err-code" role="alert" className="text-[13px] text-[var(--color-error-on-tint)]">{err}</p>}
-         <p className="rounded-lg border border-[var(--color-info)]/25 bg-[var(--color-info)]/[.06] p-2.5 text-[13px] leading-snug text-[var(--color-text-muted)]">{T.auCodeHint}</p>
-         <button type="submit" disabled={code.length<6} className={`w-full rounded-lg py-2 text-[16px] font-semibold ${code.length>=6?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"}`}>{T.auVerifyBtn}</button>
-        </form>
-       ) : (
-        <div className="space-y-3">
-         <p id="enduse-title" className="text-[13px] font-medium text-[var(--color-text-secondary)]">{T.enduseTitle}</p>
-         <p className="text-[13px] leading-relaxed text-[var(--color-text-muted)]">{T.enduseLead}</p>
-         <p className="rounded bg-[var(--color-surface)] px-2 py-1 text-[13px] text-[var(--color-text-muted)]">{T.enduseUsedFor}</p>
-         <div className="space-y-2">
-          {[T.enduseList1,T.enduseList2,T.enduseList3].map((c,i)=>(
-           <label key={i} className="flex cursor-pointer items-start gap-2 rounded-lg border border-[var(--color-border)] px-2.5 py-2 text-[13px] leading-snug text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">
-            <input type="checkbox" checked={agree[i]} onChange={()=>setAgree(a=>a.map((v,j)=>j===i?!v:v))} aria-label={c} className="mt-0.5 accent-[var(--color-accent)]"/>{c}</label>))}
-          <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-[var(--color-warning)]/25 bg-[var(--color-warning)]/[.05] px-2.5 py-2 text-[13px] leading-snug text-[var(--color-text-secondary)] hover:border-[var(--color-warning)]/50">
-           <input type="checkbox" checked={agree[3]} onChange={()=>setAgree(a=>a.map((v,j)=>j===3?!v:v))} aria-label={T.enduseRestricted} className="mt-0.5 accent-[var(--color-accent)]"/>{T.enduseRestricted}</label>
-          <p className="text-[12px] leading-snug text-[var(--color-text-faint)]">{T.enduseRestrictedNote}</p>
-         </div>
-         {err && <p id="auth-err-enduse" role="alert" className="text-[13px] text-[var(--color-error-on-tint)]">{err}</p>}
-         <div className="flex gap-2">
-          <button type="button" onClick={()=>setStep(1)} className="rounded-lg border border-[var(--color-border)] px-3.5 py-2 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.wzPrev}</button>
-           <button type="button" disabled={!agree.every(Boolean)} onClick={()=>{setErr("");act.register(email.trim(),pwd,agree);}}
-           className={`flex-1 rounded-lg py-2 text-[16px] font-semibold ${agree.every(Boolean)?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"}`}>{T.enduseOk}</button>
-         </div>
-        </div>
-       )}
-      {/* tab 底部互切 */}
-      <p className="mt-5 border-t border-[var(--color-border)] pt-4 text-center text-[13px] text-[var(--color-text-muted)]">
-       {tab==="login" ? <>{T.auNoAcct} <button onClick={()=>switchTab("register")} className="font-medium text-[var(--color-accent-hover)] hover:underline">{T.auGoReg}</button></>
-        : <>{T.auHaveAcct} <button onClick={()=>switchTab("login")} className="font-medium text-[var(--color-accent-hover)] hover:underline">{T.auGoLogin}</button></>}
-      </p>
-     </div>
+    {/* 两步进度指示：回答「还差几步」——文字说不出，进度点能说 */}
+    <div className="mt-8 flex items-center justify-center gap-1.5">
+     {[0,1].map(i=>(
+      <span key={i} className={`h-1.5 rounded-full transition-all ${step===i?"w-5 bg-[var(--color-accent)]":"w-1.5 bg-[var(--color-border-strong)]"}`}/>))}
+     <span className="ml-1.5 text-[11px] text-[var(--color-text-faint)]">{T.auStep(step+1)}</span>
     </div>
+    {S.pendingOffer && (
+     <p className="mt-6 rounded-lg border border-[var(--color-info)]/30 bg-[var(--color-info)]/[.07] px-3.5 py-2.5 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">{T.auPendingLead}</p>)}
+    {step===0 ? (
+     <form onSubmit={e=>{e.preventDefault();sendCode();}} className="mt-8 space-y-6">
+      <label className="block text-[13px] text-[var(--color-text-muted)]">{T.auEmail}
+       <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} placeholder={T.auEmailPh} autoComplete="email" autoFocus aria-describedby={err?"auth-err":undefined} className={inputCls}/></label>
+      {err && <p id="auth-err" role="alert" className="text-[13px] text-[var(--color-error-on-tint)]">{err}</p>}
+      <button type="submit" className="min-h-[44px] w-full rounded-lg bg-[var(--color-accent)] py-2.5 text-[15px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.auNext}</button>
+     </form>
+    ) : (
+     <form onSubmit={e=>{e.preventDefault();verify();}} className="mt-8 space-y-6">
+      <label className="block text-[13px] text-[var(--color-text-muted)]">{T.auCodeTitle}
+       <input value={code} onChange={e=>{setCode(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6} inputMode="numeric" autoFocus placeholder={T.auCodePh} aria-label={T.auCodeTitle} aria-invalid={!!err} aria-describedby={err?"auth-err":undefined}
+        className="mono mt-3 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-center text-[20px] tracking-[0.4em]"/></label>
+      {err && <p id="auth-err" role="alert" className="text-[13px] text-[var(--color-error-on-tint)]">{err}</p>}
+      <p className="rounded-lg border border-[var(--color-info)]/25 bg-[var(--color-info)]/[.06] p-4 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{T.auCodeHint}</p>
+      <button type="submit" disabled={code.length<6} className={`min-h-[44px] w-full rounded-lg py-2.5 text-[15px] font-semibold ${code.length>=6?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"}`}>{T.auVerifyBtn}</button>
+      <button type="button" onClick={()=>{setStep(0);setCode("");setErr("");}} className="w-full text-center text-[13px] text-[var(--color-text-faint)] hover:text-[var(--color-text-secondary)] hover:underline">{T.auBackEdit}</button>
+     </form>
+    )}
+    {/* 显式关闭路径（✕）；置于末位以免抢占邮箱输入框的 autoFocus */}
+    <button onClick={close} aria-label={T.eaClose}
+     className="absolute right-3.5 top-3.5 rounded-md px-2 py-1 text-[14px] leading-none text-[var(--color-text-muted)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]">✕</button>
    </div>
-  </div>
- );
-}
+  </ModalShell>);
+  }
 
-/* ================= end-use 声明 + 受限方筛查（账号级一次性 · 出口管制） ================= */
+/* ================= 宿主协议门（切换到宿主视角前一次性确认） ================= */
 function HostAgreeGate({S,act,setS}){
  const [ack,setAck]=useState(false);
  return (
@@ -3989,6 +3875,11 @@ function WithdrawModal({S,act,setS}){
  const defCh=POUTS.find(x=>x.isDefault);
  const [wdAmt,setWdAmt]=useState(()=>Math.min(20,S.hostEarnings).toFixed(2)); // 起提默认 $20；余额不足则预填余额
  const [wdCh,setWdCh]=useState(defCh?.channel||null); // 切换后若通道被删除回退默认
+ const [stage,setStage]=useState("form"); // form → verify：出金二次验证（step-up）
+ const [wdCode,setWdCode]=useState("");
+ const [wdErr,setWdErr]=useState("");
+ // 演示环境：本次验证码生成并展示；正式产品下发至账号登录邮箱，错误验证码会被拒绝
+ const [demoCode]=useState(()=>String(Math.floor(100000+Math.random()*900000)));
  const activeCh=POUTS.some(x=>x.channel===wdCh)?wdCh:(defCh?.channel||null);
  const wdVal=parseFloat(wdAmt);
  const wdOk=Number.isFinite(wdVal)&&wdVal>=20&&wdVal<=S.hostEarnings+1e-9;
@@ -3996,18 +3887,25 @@ function WithdrawModal({S,act,setS}){
  const close=()=>setS(p=>({...p,modal:null}));
  // 实到金额预估：费率展示串解析为数值（区间取上限为保守值，如 "0.25–1%"→1%）；平台不代扣，仅作参考【MK】
  const netOf=ch=>{ const rate=PAYOUT_RATES[ch]||""; const rn=+(String(rate).match(/[\d.]+/g)?.slice(-1)[0]??0); return ((wdOk?wdVal:0)*(1-rn/100)).toFixed(2); };
- const confirm=()=>{ if(!wdOk||!activeCh) return; act.withdraw(wdVal,activeCh); close(); }; // act.withdraw 不关弹窗，此处显式关闭
+ const toVerify=()=>{ if(!wdOk||!activeCh) return; setWdErr(""); setStage("verify"); };
+ const confirm=()=>{ // step-up：验证码经账号邮箱校验，错误码被拒（演示防线）
+  const c=wdCode.replace(/\D/g,"");
+  if(c.length<6) return setWdErr(T.eaErrCode);
+  if(c!==demoCode) return setWdErr(T.eaErrCodeWrong);
+  act.withdraw(wdVal,activeCh); close(); }; // act.withdraw 不关弹窗，此处显式关闭
+ const email=S.user?.email||"—";
  return (
  <ModalShell width="max-w-sm" onClose={close}>
   <div className="flex items-center justify-between gap-2 border-b border-[var(--color-border)] px-5 py-3">
-   <h2 className="text-[16px] font-semibold">{T.eaWdTitle}</h2>
+   <h2 className="text-[16px] font-semibold">{stage==="form"?T.eaWdTitle:T.eaWdVerify}</h2>
    <div className="flex items-center gap-1.5">
-    <button onClick={()=>setS(p=>({...p,modal:"payout-manage"}))}
-     className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.poManage}</button>
+    {stage==="form" && <button onClick={()=>setS(p=>({...p,modal:"payout-manage"}))}
+     className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.poManage}</button>}
     <button onClick={close} aria-label={T.eaClose}
      className="rounded-md px-2 py-1 text-[14px] leading-none text-[var(--color-text-muted)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]">✕</button>
    </div>
   </div>
+  {stage==="form" ? (
   <div className="p-5">
    <div className="flex items-baseline justify-between gap-2">
     <span className="text-[13px] text-[var(--color-text-muted)]">{T.eaWithdrawable}</span>
@@ -4048,15 +3946,36 @@ function WithdrawModal({S,act,setS}){
      </div>
     )}
    </div>
-   <button disabled={!canWithdraw||!activeCh||!wdOk} onClick={confirm}
+   <button disabled={!canWithdraw||!activeCh||!wdOk} onClick={toVerify}
     title={!activeCh?T.eaWdNoCh:!canWithdraw?T.eaWdThreshold:(!wdOk?T.eaWdInvalid:"")}
     className={`mt-4 w-full rounded-lg py-2 text-[16px] font-bold ${canWithdraw&&activeCh&&wdOk?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-faint)]"}`}>
     {T.eaWdBtn(wdOk?wdVal:0)}</button>
    {!canWithdraw && <p className="mt-2 text-[13px] leading-snug text-[var(--color-warning)]/70">{T.eaWdWarn}</p>}
    {canWithdraw && !wdOk && <p className="mt-2 text-[13px] leading-snug text-[var(--color-text-muted)]">{T.eaWdInvalid}</p>}
   </div>
+  ) : (
+  <div className="p-5">
+   <div className="flex items-baseline justify-between gap-2">
+    <span className="text-[13px] text-[var(--color-text-muted)]">{T.eaWdVerifyAmt}</span>
+    <span className="mono text-[20px] font-bold text-[var(--color-warning)]">${wdVal.toFixed(2)}</span>
+   </div>
+   <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">{T.eaWdVerifySent(email)}</p>
+   <label className="mt-3 block text-[13px] text-[var(--color-text-muted)]">{T.eaWdCode}
+    <input value={wdCode} onChange={e=>{setWdCode(e.target.value.replace(/\D/g,"").slice(0,6));setWdErr("");}} maxLength={6} inputMode="numeric" autoFocus placeholder={T.auCodePh} aria-label={T.eaWdCode} aria-invalid={!!wdErr} aria-describedby={wdErr?"wd-err":undefined}
+     className="mono mt-1 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-center text-[20px] tracking-[0.4em]"/></label>
+   {wdErr && <p id="wd-err" role="alert" className="mt-2 text-[13px] text-[var(--color-error-on-tint)]">{wdErr}</p>}
+   <p className="mt-2 rounded-lg border border-[var(--color-info)]/25 bg-[var(--color-info)]/[.06] p-2.5 text-[13px] leading-snug text-[var(--color-text-muted)]">{T.eaWdCodeHint(demoCode)}</p>
+   <div className="mt-4 flex gap-2">
+    <button type="button" onClick={()=>{setStage("form");setWdCode("");setWdErr("");}}
+     className="rounded-lg border border-[var(--color-border)] px-3.5 py-2 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.wzPrev}</button>
+    <button disabled={wdCode.length<6} onClick={confirm}
+     className={`flex-1 rounded-lg py-2 text-[16px] font-bold ${wdCode.length>=6?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-faint)]"}`}>
+     {T.eaWdConfirm}</button>
+   </div>
+  </div>
+  )}
  </ModalShell>);
-}
+ }
 /* 出金通道管理弹窗：设为默认 / 删除 / 新增（从提现弹窗进入） */
 function PayoutManageModal({S,act,setS}){
  const POUTS=S.payouts||[];

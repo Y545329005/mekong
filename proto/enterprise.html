@@ -52,11 +52,14 @@ window.addEventListener('error',function(e){
   }
   /* tokens:end */
   html,body{background:var(--color-bg);color:var(--color-text);}
+ /* 深色下原生控件（select 弹层/箭头）随主题；light 须声明在前——与 .dark 同 specificity，后声明者胜 */
+ :root{color-scheme:light;}
+ .dark{color-scheme:dark;}
   .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;}
   ::-webkit-scrollbar{width:8px;height:8px;} ::-webkit-scrollbar-thumb{background:var(--color-border-strong);border-radius:4px;}
   .fade-in{animation:fadeIn .45s ease both;} @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
   /* 焦点可见：纯键盘用户定位依据（WCAG 2.4.7 AA）——按钮/链接此前零指示 */
-  :focus-visible{outline:2px solid var(--color-accent);outline-offset:2px;border-radius:4px;}
+  :focus-visible{outline:2px solid var(--color-focus);outline-offset:2px;border-radius:4px;}
   /* 触控目标：视觉尺寸不变，触达区补足 44px（WCAG 2.5.8 / 行业基准） */
   .tap{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;}
   /* 前庭敏感：关闭动效但保留状态反馈（淡入不承载信息，改为直接呈现） */
@@ -92,7 +95,7 @@ window.addEventListener('error',function(e){
    - 定位＝「企业采购需求提交 + 线下对接指引」的受理漏斗，非 B2B 自助购买平台
    - 不承诺尚未交付的能力：统一交付责任 / SLA / 统一账单 / 价格优势（未定能力不作为承诺依据）
    - 表单落 sessionStorage（同源 per-tab，刷新不丢，不写入其他页面共用的主存档键）
-   - 除语言偏好外零 localStorage 读写（多 tab 同开互相覆盖存档）
+   - localStorage 只写语言偏好与主题两个键，不碰多页共用的主存档键 gpu-market-store（多 tab 同开会互相覆盖存档）
    ============================================================= */
 const {useState,useEffect} = React;
 
@@ -103,13 +106,8 @@ const ENT_KEY = "mekong-ent-submitted";
 /* ---- i18n 双包（主题与语言同 portal/index 范式；语言独立键，避免高频 tick 饿死落盘） ---- */
 const I18N = {
 zh:{
-  brand:"Mekong", back:"返回首页", theme:"切换主题", langAria:"切换语言", skipMain:"跳到主要内容",
+  brand:"Mekong", theme:"切换主题", langAria:"切换语言", skipMain:"跳到主要内容",
   heroKicker:"企业客户入口", heroTitle:"企业算力采购需求受理", heroLead:"提交算力需求后，由销售与方案团队对接确认。当前阶段不支持平台自助下单，合同与交付安排以线下确认为准。",
-  factsTitle:"当前可用的能力",
-  fact1:"个人与团队可自助在市场下单租用，按量计费", fact1s:"Marketplace · 按量租用",
-  fact2:"算力供给来自平台已核验的机器，含平台实测数据", fact2s:"供给准入 · 平台实测",
-  fact3:"费用在平台侧计量与结算，账单可逐笔追溯", fact3s:"计量结算 · 流水可追溯",
-  fact2nd:"企业合同、统一交付责任、SLA 与统一账单尚在规划中，当前不作为承诺。",
   formTitle:"提交采购需求", formLead:"带 * 为必填。提交后进入线下对接流程，不会自动产生订单或费用。", opt:"选填",
   fModel:"算力类型", fModelPh:"选择主要用途", oTraining:"模型训练", oInference:"推理服务", oRender:"渲染 / 图形", oOther:"其他",
   fModelOther:"其他用途说明", fModelOtherPh:"请简述用途",
@@ -117,21 +115,16 @@ zh:{
   fCards:"预计卡数", fCardsPh:"例如 8", fPeriod:"使用周期", fPeriodPh:"选择周期", pWeek:"按周", pMonth:"按月", pQuarter:"按季度", pLong:"长期 / 不确定",
   fBudget:"预算区间（USD）", fBudgetPh:"例如 20000 – 50000", fBudgetPh2:"用于方案匹配，不构成报价。",
   fEmail:"联系邮箱", fEmailPh:"name@company.com",
-  fName:"联系人", fNamePh:"", fNote:"需求说明", fNotePh:"软件栈、网络要求、数据合规要求等",
+  fCompany:"公司 / 组织", fCompanyPh:"例如 Acme AI Ltd", fName:"联系人", fNamePh:"", fNote:"需求说明", fNotePh:"软件栈、网络要求、数据合规要求等",
   errSummary:"以下字段需要修正",
-  errMsg:{ "model.required":"请选择算力类型", "modelOther.required":"请填写其他用途说明", "gpu.required":"请选择 GPU 型号", "cards.invalid":"请填写卡数（1–10000 之间的整数）", "period.required":"请选择使用周期", "email.invalid":"请填写有效邮箱" },
-  submit:"提交需求", reset:"重填", sentTitle:"需求已受理", sentLead:"我们已收到你的需求，将由销售与方案团队对接确认。",
+  errMsg:{ "model.required":"请选择算力类型", "modelOther.required":"请填写其他用途说明", "gpu.required":"请选择 GPU 型号", "cards.invalid":"请填写卡数（1–{max} 之间的整数）", "period.required":"请选择使用周期", "email.invalid":"请填写有效邮箱" },
+  submit:"提交需求", reset:"重填", resetConfirm:"确认清空表单？", cancel:"取消", sentTitle:"需求已受理", sentLead:"我们已收到你的需求，将由销售与方案团队对接确认。",
   sentNo:"受理编号", sentNext:"后续流程", sentS1:"1 · 销售对接：确认用途、规模与合规要求", sentS2:"2 · 方案确认：机型、周期、部署与计费方案", sentS3:"3 · 线下签约：合同与交付安排以线下确认为准",
   again:"再提交一条", backHome:"返回平台首页",
 },
 en:{
-  brand:"Mekong", back:"Back to home", theme:"Toggle theme", langAria:"Switch language", skipMain:"Skip to main content",
+  brand:"Mekong", theme:"Toggle theme", langAria:"Switch language", skipMain:"Skip to main content",
   heroKicker:"For enterprise", heroTitle:"Enterprise compute request intake", heroLead:"Submit a compute requirement; sales and solution engineers will follow up. Self-service enterprise ordering is not available at this stage — contracts and delivery are confirmed offline.",
-  factsTitle:"What is available today",
-  fact1:"Individuals and teams can rent on demand and are billed by usage", fact1s:"Marketplace · On-demand",
-  fact2:"Supply comes from platform-verified machines with measured specs", fact2s:"Supply intake · Measured",
-  fact3:"Usage is metered and settled on-platform, with per-entry traceability", fact3s:"Metering · Traceable entries",
-  fact2nd:"Enterprise contracts, unified delivery liability, SLA and consolidated billing are still in planning and are not committed at this stage.",
   formTitle:"Submit a request", formLead:"Fields marked * are required. Submission starts an offline onboarding flow; it creates no order and no charge.", opt:"Optional",
   fModel:"Workload type", fModelPh:"Select primary use", oTraining:"Model training", oInference:"Inference", oRender:"Rendering / graphics", oOther:"Other",
   fModelOther:"Other workload detail", fModelOtherPh:"Describe the workload",
@@ -139,10 +132,10 @@ en:{
   fCards:"Estimated GPUs", fCardsPh:"e.g. 8", fPeriod:"Term", fPeriodPh:"Select term", pWeek:"Weekly", pMonth:"Monthly", pQuarter:"Quarterly", pLong:"Long-term / unsure",
   fBudget:"Budget range (USD)", fBudgetPh:"e.g. 20000 – 50000", fBudgetPh2:"Used for matching; not a quotation.",
   fEmail:"Contact email", fEmailPh:"name@company.com",
-  fName:"Contact name", fNamePh:"", fNote:"Requirements", fNotePh:"Software stack, network, data compliance, etc.",
+  fCompany:"Company / Organization", fCompanyPh:"e.g. Acme AI Ltd", fName:"Contact name", fNamePh:"", fNote:"Requirements", fNotePh:"Software stack, network, data compliance, etc.",
   errSummary:"The following fields need attention",
-  errMsg:{ "model.required":"Select a workload type", "modelOther.required":"Describe the workload", "gpu.required":"Select a GPU model", "cards.invalid":"Enter GPU count (integer 1–10000)", "period.required":"Select a term", "email.invalid":"Enter a valid email" },
-  submit:"Submit request", reset:"Clear form", sentTitle:"Request received", sentLead:"Your request is in; sales and the solution team will follow up.",
+  errMsg:{ "model.required":"Select a workload type", "modelOther.required":"Describe the workload", "gpu.required":"Select a GPU model", "cards.invalid":"Enter GPU count (integer 1–{max})", "period.required":"Select a term", "email.invalid":"Enter a valid email" },
+  submit:"Submit request", reset:"Clear form", resetConfirm:"Clear the form?", cancel:"Cancel", sentTitle:"Request received", sentLead:"Your request is in; sales and the solution team will follow up.",
   sentNo:"Reference no.", sentNext:"What happens next", sentS1:"1 · Sales follow-up: workload, scale and compliance requirements", sentS2:"2 · Solution confirmation: model, term, deployment and billing plan", sentS3:"3 · Offline contracting: contract and delivery confirmed offline",
   again:"Submit another", backHome:"Back to home",
 }
@@ -150,32 +143,18 @@ en:{
 
 /* ---- 邮箱格式校验（与主站 auth 口径一致，演示级） ---- */
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CARDS_MAX = 10000;   /* 上限单点定义：校验与错误文案共用（文案经 {max} 占位替换） */
 const readLS = (k, d=null) => { try { const v = sessionStorage.getItem(k); return v==null?d:JSON.parse(v); } catch { return d; } };
 const writeLS = (k, v) => { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} };
-const EMPTY_DRAFT = {model:"",modelOther:"",gpu:"",cards:"",period:"",budget:"",email:"",name:"",note:""};
+const EMPTY_DRAFT = {model:"",modelOther:"",gpu:"",cards:"",period:"",budget:"",company:"",email:"",name:"",note:""};
 /* 草稿信封带版本号：字段增删时旧草稿可被识别并安全丢弃（旧结构无 v 字段） */
-const readDraft = () => { const r = readLS(DRAFT_KEY, null); return (r && r.v===1 && r.draft) ? r.draft : null; };
+const readDraft = () => { const r = readLS(DRAFT_KEY, null); return (r && r.v===1 && r.draft) ? {...EMPTY_DRAFT, ...r.draft} : null; };
 
 /* 必填标记：符号本身即非颜色信号（WCAG 1.4.1 不违规），红色只作强化；读屏靠 required 属性播报，故对符号 aria-hidden */
 const Star = () => <span aria-hidden="true" className="ml-0.5 text-[var(--color-error)]">*</span>;
 /* 选填标记：与红 * 对称，落在 label 上而非 placeholder（placeholder 一经输入即消失，不能承载约束）；
    显式前置空格：ml 只管视觉，缺空格会让可访问名拼成「Budget range (USD)Optional」 */
 const OptMark = ({T}) => <span className="ml-0.5 text-[12px] font-normal text-[var(--color-text-faint)]">{" "}{T.opt}</span>;
-
-/* 能力面板：只依赖 T（语言），memo 后不随表单 draft 每次按键重渲染 */
-const FactsPanel=React.memo(function FactsPanel({T}){
- return (
-  <section className="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-   <h2 className="text-[16px] font-semibold">{T.factsTitle}</h2>
-   <ul className="mt-3 grid gap-3 md:grid-cols-3">
-    {[ [T.fact1,T.fact1s], [T.fact2,T.fact2s], [T.fact3,T.fact3s] ].map(([d,s],i)=>(
-     <li key={i} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-3.5">
-      <p className="text-[13px] leading-5 text-[var(--color-text-secondary)]">{d}</p>
-      <p className="mt-1.5 text-[11px] text-[var(--color-text-faint)]">{s}</p>
-     </li>))}
-   </ul>
-   <p className="mt-3.5 rounded-lg border border-[var(--color-warning)]/50 bg-[var(--color-warning)]/10 px-3.5 py-2.5 text-[13px] leading-5 text-[var(--color-text-secondary)]">{T.fact2nd}</p>
-  </section>);});
 
 function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.getItem(LANG_KEY)==="en"?"en":"zh"; }catch{ return "zh"; } });
   const T = I18N[lang];
@@ -186,6 +165,7 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
   const [draft,setDraft]=useState(()=>readDraft() || {...EMPTY_DRAFT});
   const [sent,setSent]=useState(()=>readLS(ENT_KEY, null));
   const [err,setErr]=useState({});
+  const [armReset,setArmReset]=useState(false);
 
   useEffect(()=>{ document.documentElement.classList.toggle("dark",dark); },[dark]);
   useEffect(()=>{ try{ localStorage.setItem(LANG_KEY,lang); }catch{} },[lang]);
@@ -193,7 +173,7 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
   useEffect(()=>{ try{ document.documentElement.lang = lang==="zh"?"zh-CN":"en"; }catch(e){} },[lang]);
   useEffect(()=>{ if(!sent) writeLS(DRAFT_KEY, {v:1, draft}); },[draft, sent]);
 
-  const set=(k,v)=>setDraft(d=>({...d,[k]:v}));
+  const set=(k,v)=>{ setArmReset(false); setDraft(d=>({...d,[k]:v})); };
   /* err 存错误码而非文案：文案随当前语言在渲染期解析，
      否则 validate() 落的是当时语言，切语言后错误仍是上一种语言 */
   const validate=()=>{
@@ -201,20 +181,20 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
     if(!draft.model) e.model="model.required";
     if(draft.model==="other" && !draft.modelOther.trim()) e.modelOther="modelOther.required";
     if(!draft.gpu) e.gpu="gpu.required";
-    const n=parseInt(draft.cards,10);
-    if(!draft.cards.trim() || Number.isNaN(n) || n<1 || n>10000) e.cards="cards.invalid";
+    const c=draft.cards.trim(), n=parseInt(c,10);
+    if(!/^\d+$/.test(c) || n<1 || n>CARDS_MAX) e.cards="cards.invalid";
     if(!draft.period) e.period="period.required";
     if(!EMAIL_RE.test(draft.email.trim())) e.email="email.invalid";
     setErr(e); return Object.keys(e).length===0;
   };
   /* 码 → 当前语言文案；未知码回退为空（不把码本身显示给用户） */
-  const msg = c => c ? (T.errMsg[c] || "") : "";
+  const msg = c => c ? (T.errMsg[c] || "").replace("{max}", CARDS_MAX) : "";
   const submit=(ev)=>{ ev.preventDefault(); if(!validate()) return;
     const ref="REQ-"+Date.now().toString(36).toUpperCase().slice(-6);
-    const rec={v:1, draft:{...draft}, ref, at:Date.now()};   // 冗余 lang 字段已删（渲染跟随当前语言，不按提交时语言回显）
+    const rec={v:1, draft:{...draft, modelOther:draft.modelOther.trim(), cards:draft.cards.trim(), budget:draft.budget.trim(), company:draft.company.trim(), email:draft.email.trim(), name:draft.name.trim(), note:draft.note.trim()}, ref, at:Date.now()};   // 冗余 lang 字段已删（渲染跟随当前语言，不按提交时语言回显）
     writeLS(ENT_KEY,rec); try{ sessionStorage.removeItem(DRAFT_KEY); }catch{} setSent(rec);
   };
-  const reset=()=>{ setDraft({...EMPTY_DRAFT}); setErr({}); writeLS(DRAFT_KEY,null); };
+  const reset=()=>{ setDraft({...EMPTY_DRAFT}); setErr({}); writeLS(DRAFT_KEY,null); try{ sessionStorage.removeItem(ENT_KEY); }catch{} };
 
   /* req＝字段约束（与 validate() 的必填判断一一对应），只提供程序化语义；
      提交闸门仍是 validate()，故 form 保留 noValidate 避免原生气泡与 role="alert" 汇总双报错 */
@@ -223,7 +203,7 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
       <label htmlFor={id} className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{label}{req && <Star/>}</label>
       <select id={id} required={req} value={val} onChange={e=>onChange(e.target.value)}
         aria-invalid={!!errTxt} aria-describedby={errTxt?`${id}-err`:undefined}
-        className={"mt-1.5 w-full rounded-lg border bg-[var(--color-surface)] px-3 py-2 text-[14px] text-[var(--color-text)] outline-none focus:border-[var(--color-accent)] "+(errTxt?"border-[var(--color-error)]":"border-[var(--color-border-strong)]")}>
+        className={"mt-1.5 w-full rounded-lg border bg-[var(--color-surface)] px-3 py-2 text-[14px] text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] "+(errTxt?"border-[var(--color-error)]":"border-[var(--color-border-strong)]")}>
         {opts.map(o=><option key={o.v} value={o.v}>{o.t}</option>)}
       </select>
       {errTxt && <p id={`${id}-err`} className="mt-1 text-[12px] text-[var(--color-error)]">{errTxt}</p>}
@@ -234,14 +214,14 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
       <label htmlFor={id} className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{label}{req && <Star/>}</label>
       <input id={id} type={type} required={req} value={val} placeholder={ph} onChange={e=>onChange(e.target.value)}
         aria-invalid={!!errTxt} aria-describedby={errTxt?`${id}-err`:undefined}
-        className={"mt-1.5 w-full rounded-lg border bg-[var(--color-surface)] px-3 py-2 text-[14px] text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-accent)] "+(errTxt?"border-[var(--color-error)]":"border-[var(--color-border-strong)]")}/>
+        className={"mt-1.5 w-full rounded-lg border bg-[var(--color-surface)] px-3 py-2 text-[14px] text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-focus)] "+(errTxt?"border-[var(--color-error)]":"border-[var(--color-border-strong)]")}/>
       {errTxt && <p id={`${id}-err`} className="mt-1 text-[12px] text-[var(--color-error)]">{errTxt}</p>}
     </div>
   );
 
   return (<div className="min-h-screen">
    <a className="skip-link" href="#ent-main">{T.skipMain}</a>
-   {/* 顶栏：品牌 + 语言/主题 + 返回 */}
+   {/* 顶栏：品牌（可达首页）+ 语言/主题 */}
    <header className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur">
      <div className="mx-auto flex max-w-[1100px] items-center justify-between px-5 py-3">
        <a href="./index.html" className="tap flex items-center gap-2 text-[16px] font-bold tracking-tight">
@@ -253,7 +233,6 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
            className="tap rounded-md px-2.5 py-1.5 text-[12px] font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]">{lang==="zh"?"EN":"中文"}</button>
          <button onClick={toggleTheme} aria-pressed={dark} aria-label={T.theme} title={T.theme}
            className="tap rounded-md px-2.5 py-1.5 text-[14px] hover:bg-[var(--color-surface-alt)]">{dark?"☀":"🌙"}</button>
-         <a href="./index.html" className="tap rounded-md border border-[var(--color-border-strong)] px-2.5 py-1.5 text-[12px] font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]">{T.back}</a>
        </div>
      </div>
    </header>
@@ -262,9 +241,6 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
     <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--color-accent-on-tint)]">{T.heroKicker}</p>
     <h1 className="mt-1.5 text-[24px] font-bold tracking-tight md:text-[34px]">{T.heroTitle}</h1>
     <p className="mt-2 max-w-[62ch] text-[14px] leading-6 text-[var(--color-text-muted)]">{T.heroLead}</p>
-
-    {/* 当前可用能力：memo 隔离，仅随语言变化重渲染，不随表单每次按键重渲染（P3-1） */}
-    <FactsPanel T={T}/>
 
     { sent ? (
      /* 已受理态 */
@@ -295,7 +271,7 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
          {T.errSummary}：{Object.keys(err).map(k=>msg(err[k])).filter(Boolean).join("；")}
         </div>)}
        <form onSubmit={submit} noValidate className="mt-5 grid gap-4 md:grid-cols-2">
-         {sel("model",T.fModel,draft.model,v=>set("model",v),[{v:"",t:T.fModelPh},{v:"training",t:T.oTraining},{v:"inference",t:T.oInference},{v:"render",t:T.oRender},{v:"other",t:T.oOther}],msg(err.model),true)}
+         {sel("model",T.fModel,draft.model,v=>{ set("model",v); if(v!=="other") setErr(e=>{ if(!("modelOther" in e)) return e; const {modelOther:_drop,...rest}=e; return rest; }); },[{v:"",t:T.fModelPh},{v:"training",t:T.oTraining},{v:"inference",t:T.oInference},{v:"render",t:T.oRender},{v:"other",t:T.oOther}],msg(err.model),true)}
          {/* 该字段仅在 model==="other" 时渲染 → 字段存在即必填，红 * 不会误标为常显必填 */}
          {draft.model==="other" && inp("modelOther",T.fModelOther,draft.modelOther,v=>set("modelOther",v),T.fModelOtherPh,msg(err.modelOther),{req:true})}
          {sel("gpu",T.fGpu,draft.gpu,v=>set("gpu",v),[{v:"",t:T.fGpuPh},{v:"any",t:T.gAny},{v:"h100",t:T.gH100},{v:"h200",t:T.gH200},{v:"a100",t:T.gA100},{v:"l40s",t:T.gL40S}],msg(err.gpu),true)}
@@ -304,19 +280,25 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
          <div>
            <label htmlFor="budget" className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{T.fBudget}<OptMark T={T}/></label>
            <input id="budget" value={draft.budget} placeholder={T.fBudgetPh} onChange={e=>set("budget",e.target.value)}
-             className="mt-1.5 w-full rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-[14px] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-accent)]"/>
+             className="mt-1.5 w-full rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-[14px] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-focus)]"/>
            <p className="mt-1 text-[11px] text-[var(--color-text-faint)]">{T.fBudgetPh2}</p>
          </div>
+         {inp("company",T.fCompany,draft.company,v=>set("company",v),T.fCompanyPh)}
          {inp("email",T.fEmail,draft.email,v=>set("email",v),T.fEmailPh,msg(err.email),{type:"email",req:true})}
          {inp("name",T.fName,draft.name,v=>set("name",v),T.fNamePh)}
          <div className="md:col-span-2">
            <label htmlFor="note" className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{T.fNote}<OptMark T={T}/></label>
            <textarea id="note" rows={3} value={draft.note} placeholder={T.fNotePh} onChange={e=>set("note",e.target.value)}
-             className="mt-1.5 w-full rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-[14px] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-accent)]"/>
+             className="mt-1.5 w-full rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-[14px] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-focus)]"/>
          </div>
          <div className="md:col-span-2 flex flex-wrap items-center gap-2.5">
            <button type="submit" className="tap rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[var(--color-accent-hover)]">{T.submit}</button>
-           <button type="button" onClick={reset} className="tap rounded-lg border border-[var(--color-border-strong)] px-4 py-2.5 text-[14px] font-medium hover:bg-[var(--color-surface-alt)]">{T.reset}</button>
+           {!armReset
+             ? <button type="button" onClick={()=>setArmReset(true)} className="tap rounded-lg border border-[var(--color-border-strong)] px-4 py-2.5 text-[14px] font-medium hover:bg-[var(--color-surface-alt)]">{T.reset}</button>
+             : <span className="flex items-center gap-2.5">
+                <button type="button" onClick={()=>{reset();setArmReset(false);}} className="tap rounded-lg border border-[var(--color-error)]/40 px-4 py-2.5 text-[14px] font-semibold text-[var(--color-error-on-tint)] hover:bg-[var(--color-error)]/10">{T.resetConfirm}</button>
+                <button type="button" onClick={()=>setArmReset(false)} className="tap rounded-lg border border-[var(--color-border-strong)] px-4 py-2.5 text-[14px] font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]">{T.cancel}</button>
+               </span>}
          </div>
        </form>
      </section>

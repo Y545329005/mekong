@@ -184,8 +184,6 @@ zh:{
   poNote:"批准即时扣减用户端宿主收益（在线实时生效、离线挂载补扣）；出金不产生 ledger 流水，下方对账表保持租客↔宿主入账口径",
   reconTitle:"双边对账（以 ledger 流水为准）", reconRent:"租客消费（host 源）", reconHost:"宿主净入账 (1−r)", reconPlat:"平台抽成 (r)", reconCheck:"守恒校验", reconOk:"通过（±0.01）", reconErr:"校验失败，差值", reconSplit:(a,b)=>`rate>0 共 ${a} 笔 · rate=0 共 ${b} 笔（切抽成前后分段记账）`,
   uEmail:"邮箱", uProvider:"注册方式", uRegAt:"注册时间", uRole:"状态", uBan:"封禁", uUnban:"解封", uBanned:"已封禁", uNormal:"正常", uCurrent:"当前登录", uBanTip:(e)=>`已封禁 ${e}（用户端即时登出并拦截登录）`, uUnbanTip:(e)=>`已解封 ${e}`,
-  kycTitle:"end-use 声明留痕", kycBody:"留痕为真实采集：声明确认时间、协议版本、四项勾选、注册通道（邮箱注册逐项收集；OAuth 首登如实标注）。受限方名单实时筛查仍属正式版范围——R4 缩窄，未虚构闭合。",
-  euVer:"协议版本", euChecks:"四项声明", euVia:"通道", euNoTrail:"无留痕（legacy 存档，未采集）", euOauthNote:"OAuth 首登视为接受 · 未逐项收集", euNever:"（新注册后此处出现留痕行）",
   genTitle:"演示数据生成器", genBody:"注入 2 个演示账号 + 1 台待审宿主机器（RTX 4090）+ 3 条历史流水（含 1 笔 rate=10% 的宿主收益）+ $40 余额。注入前自动快照当前现场，可一键还原。", genBtn:"注入演示数据", genDone:"已注入；用户端在线时会自动刷新", genSnap:"已快照当前现场", genNoSnap:"尚无快照", genRestore:"还原快照", genRestoreTip:"将把快照写回用户端两键，并通知用户端刷新。建议先关闭用户端标签页再还原（避免其内存态覆盖）", genRestored:"已还原快照，用户端已通知刷新",
   resetTitle:"重置 Admin 配置", resetBody:"清空下架/封禁/抽成/审计（不动用户端数据；用户端抽成即时回落为 0）", resetBtn:"重置配置", resetDone:"Admin 配置已重置",
   aTitle:"操作审计", aEmpty:"暂无操作记录", aAction:"动作", aDetail:"对象/明细", aTime:"时间",
@@ -212,8 +210,6 @@ en:{
   poNote:"Approving deducts the client's host earnings instantly (live when online, replayed on mount when offline); payouts create no ledger rows — the reconciliation table keeps the tenant↔host credit scope",
   reconTitle:"Two-sided reconciliation (from ledger)", reconRent:"Tenant spend (host source)", reconHost:"Host net (1−r)", reconPlat:"Platform commission (r)", reconCheck:"Conservation check", reconOk:"passed (±0.01)", reconErr:"FAILED, diff", reconSplit:(a,b)=>`${a} entries with rate>0 · ${b} with rate=0 (segmented at commission switch)`,
   uEmail:"Email", uProvider:"Provider", uRegAt:"Registered", uRole:"Status", uBan:"Ban", uUnban:"Unban", uBanned:"Banned", uNormal:"Normal", uCurrent:"Signed in", uBanTip:(e)=>`Banned ${e} (client logs out & blocks sign-in instantly)`, uUnbanTip:(e)=>`Unbanned ${e}`,
-  kycTitle:"end-use declaration trail", kycBody:"Trail is genuinely collected: consent time, statement version, the four checkbox answers, signup channel (per-item for email signup; OAuth first sign-in honestly marked as not itemized). Restricted-party screening at scale stays in the production build — R4 narrowed, not fabricated.",
-  euVer:"Version", euChecks:"Four declarations", euVia:"Channel", euNoTrail:"No trail (legacy archive, not collected)", euOauthNote:"OAuth first sign-in deemed accepted · not itemized", euNever:"(a trail row appears here after a fresh signup)",
   genTitle:"Demo data generator", genBody:"Injects 2 demo accounts + 1 host machine pending review (RTX 4090) + 3 ledger entries (incl. one hostEarn at rate=10%) + $40 balance. Snapshots the current scene first; one-click restore.", genBtn:"Inject demo data", genDone:"Injected; open client tabs will auto-refresh", genSnap:"Scene snapshotted", genNoSnap:"No snapshot yet", genRestore:"Restore snapshot", genRestoreTip:"Writes the snapshot back to the two client keys and asks the client to reload. Close client tabs first (their in-memory state would overwrite)", genRestored:"Snapshot restored; client reload requested",
   resetTitle:"Reset Admin config", resetBody:"Clears delist/ban/commission/audit (client data untouched; client commission falls back to 0 immediately)", resetBtn:"Reset config", resetDone:"Admin config reset",
   aTitle:"Audit log", aEmpty:"No operations yet", aAction:"Action", aDetail:"Target / detail", aTime:"Time",
@@ -228,7 +224,7 @@ const T = new Proxy({}, { get(_,k){ const v=I18N[_LANG]?.[k]; return v!==undefin
 /* ================= 演示数据注入定义（内容在本端定义，执行在用户端——只发消息不动对客键） ================= */
 const GEN_PAYLOAD = {
   balance: 40,
-  accounts: [ {email:"alice@demo.dev", pwd:"password123"}, {email:"bob@demo.dev", pwd:"password123"} ],
+  accounts: [ {email:"alice@demo.dev"}, {email:"bob@demo.dev"} ],
   hostMachines: [ { id:"m-hx-009", name:"HX-009 · RTX 4090", spec:"RTX 4090 ×1", gpuRam:23.9, memBw:1008, pcie:4.0, arch:"Ada", cpuCores:16, ram:64, netUp:280, netDown:940, dph:0.41, deposit:50, geoloc:"Shenzhen · CN", status:"listed", seed:false, net:0.05, sto:0.02, contracts:0 } ],
   ledger: [
     { t:-7200,  msgKey:"lgGpu",       sid:"i-445120", amt:6.30, hostEarn:1, rate:0.10 },
@@ -502,30 +498,6 @@ function Users({d,cfg,act}){
       </table>
       </div>
     </div>
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-     <div className="text-[14px] font-semibold">{T.kycTitle}</div>
-        <div className="table-scroll mt-3">
-        <table className="w-full text-[14px]">
-          <caption className="sr-only">{T.kycTitle}</caption>
-          <thead><tr><Th>{T.uEmail}</Th><Th>{T.uRegAt}</Th><Th>{T.euVer}</Th><Th>{T.euChecks}</Th><Th>{T.euVia}</Th></tr></thead>
-          <tbody>{(()=>{
-            const tr=d.st.endUseTrail;
-            if(tr) return (
-              <tr key="trail">
-                <Td cls="mono">{tr.email||cur||"—"}</Td>
-                <Td cls="mono text-[var(--color-text-faint)]">{fmtDate(tr.t)}</Td>
-                <Td cls="mono">{tr.v||"—"}</Td>
-                <Td cls="mono">{Array.isArray(tr.checks)? tr.checks.map(b=>b?"✓":"✗").join(" ") : <span className="text-[var(--color-text-muted)]">{T.euOauthNote}</span>}</Td>
-                <Td cls="mono">{tr.via||"—"}</Td>
-              </tr>);
-            if(cur) return (<tr key="legacy"><Td cls="mono text-[var(--color-text-faint)]" >{cur}</Td><Td colSpan={4} cls="text-[var(--color-text-faint)]">{T.euNoTrail}</Td></tr>);
-            return (<tr key="none"><Td colSpan={5} cls="text-[var(--color-text-faint)]">{T.euNever}</Td></tr>);
-          })()}</tbody>
-        </table>
-        </div>
-        <p className="mt-3 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{T.kycBody}</p>
-        <div className="mono mt-2 text-[13px] text-[var(--color-text-faint)]">accepted = {String(!!st.accepted)}{cur? ` · ${cur}`:""}</div>
-      </div>
   </div>);
 }
 
@@ -633,7 +605,7 @@ function App(){
             hostMachines:[...GEN_PAYLOAD.hostMachines,...(Array.isArray(s.hostMachines)?s.hostMachines:[])],
             ledger:trimLedger([...GEN_PAYLOAD.ledger,...(Array.isArray(s.ledger)?s.ledger:[])])};
           try{ localStorage.setItem(STORE_KEY,JSON.stringify(merged)); }catch(e){}
-          const a=loadAccounts(); GEN_PAYLOAD.accounts.forEach(x=>{ if(!a[x.email]) a[x.email]={pwd:x.pwd,provider:"email",createdAt:Date.now()}; });
+          const a=loadAccounts(); GEN_PAYLOAD.accounts.forEach(x=>{ if(!a[x.email]) a[x.email]={provider:"email",createdAt:Date.now()}; });
           try{ localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(a)); }catch(e){}
           setStore(loadStore()); accounts=loadAccounts();
         }else{ send({type:"inject",payload:GEN_PAYLOAD}); }
