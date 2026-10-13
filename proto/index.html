@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Mekong：GPU 算力市场，复刻 Vast.ai 租户漏斗与宿主双主体账户模型，含 P2P 撮合、资金托管与出口管制合规门。">
+<meta name="description" content="Mekong：可信的 GPU 算力市场。已验证 GPU 按小时起租，平台托管资金、按秒计费，训练与推理皆宜。">
 <title>Mekong</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%232563eb'/><text x='32' y='45' font-family='ui-sans-serif,system-ui,sans-serif' font-size='36' font-weight='700' fill='%23ffffff' text-anchor='middle'>G</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -31,6 +31,7 @@ window.addEventListener('error',function(e){
     --color-success-on-tint: #065f46; --color-warning-on-tint: #92400e; --color-error-on-tint: #b91c1c; --color-info-on-tint: #6d28d9;
     --color-accent-on-tint: #1d4ed8;
     --color-map-stroke: #64748b; --color-map-grid: #cbd5e1;
+    --color-trend-up: #c2410c;
   }
   .dark {
   /* 同浅色档的同一套取值；深色下语义色底是亮色，字色改用 --color-on-solid / --color-*-on-tint。 */
@@ -44,6 +45,7 @@ window.addEventListener('error',function(e){
     --color-success-on-tint: #6ee7b7; --color-warning-on-tint: #f59e0b; --color-error-on-tint: #fca5a5; --color-info-on-tint: #a78bfa;
     --color-accent-on-tint: #60a5fa;
     --color-map-stroke: #94a3b8; --color-map-grid: #334155;
+    --color-trend-up: #ff6d33;
   }
   /* tokens:end */
   html,body { background:var(--color-bg); color:var(--color-text); font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; font-size:13px; }
@@ -113,7 +115,7 @@ THESIS: 一份"可点击的规格说明书"——复刻 Vast.ai 租户漏斗的�
 OWN-WORLD: 锌灰暗色工作台（#09090b 底 / #131316 面板 / 1px #27272a 边），emerald 只给价格与运行态，sky 给动作，琥珀红橙只给异常态；数字一律 mono 表格数字。无渐变、无玻璃、无装饰阴影。
 STORY: 访客 30 秒内走完 搜索→强制模板弹窗→余额墙→配置确认→实例生命周期，并体感"停机也在烧钱"。
 FIRST VIEWPORT: 左侧筛选栏(220px) + 右侧报价卡流；顶栏余额 chip 实时跳动；每张报价卡 hover 出价格分解 tooltip。
-FORM: brief-pinned——复刻对象即 vast.ai 真实控制台形态；本文件为唯一产物。
+FORM: brief-pinned——单文件自包含，本文件为唯一产物。
 -->
 <div id="root"></div>
 <div id="boot-error" class="boot-error" style="display:none"></div>
@@ -121,15 +123,16 @@ FORM: brief-pinned——复刻对象即 vast.ai 真实控制台形态；本文�
 <script type="text/babel" data-presets="react">
 const {useState, useEffect, useMemo, useRef} = React;
 
-/* ================= 数据层：12 条真实 offer（vast.ai API 2026-08 采样） ================= */
+/* ================= 数据层：12 条真实 offer（2026-08 公开行情采样） ================= */
 // tflops/cuda/maxDuration 为 2026-09 对齐 Vast 搜索卡补采字段：tflops 口径与 Vast 卡片一致（单卡值×卡数，5090≈107.6/卡），
 // cuda=驱动支持的最高 CUDA 运行时，maxDuration=最长单次租期（天）；均为演示值【MK】
 const OFFERS = [
 {id:28705887,gpu:"RTX PRO 6000 S",numGpu:2,gpuRam:95.6,memBw:1387,cpu:"Xeon 6767P",cpuCores:256,ram:252,disk:2127,diskBw:8745,netUp:9258,netDown:16767,ports:256,dlperf:555.7,dlperfPerUsd:160,dph:3.47,reliability:100.0,geoloc:"Texas, US",verification:"verified",pcie:5.0,arch:"Blackwell",tflops:222.8,cuda:"13.0",maxDuration:90},
 {id:31230659,gpu:"RTX 5070",numGpu:1,gpuRam:11.9,memBw:550,cpu:"AMD EPYC 9354",cpuCores:128,ram:31,disk:654,diskBw:5472,netUp:7588,netDown:3903,ports:256,dlperf:49.8,dlperfPerUsd:477,dph:0.104,reliability:99.9,geoloc:"Texas, US",verification:"verified",pcie:5.0,arch:"Blackwell",tflops:46.5,cuda:"13.0",maxDuration:60},
-{id:31230653,gpu:"RTX 5070",numGpu:2,gpuRam:11.9,memBw:550,cpu:"AMD EPYC 9354",cpuCores:128,ram:63,disk:1307,diskBw:5472,netUp:7588,netDown:3903,ports:256,dlperf:99.7,dlperfPerUsd:488,dph:0.204,reliability:99.9,geoloc:"Texas, US",verification:"verified",pcie:5.0,arch:"Blackwell",tflops:93.0,cuda:"13.0",maxDuration:60},
+{id:31230653,gpu:"RTX 5070",numGpu:1,gpuRam:11.9,memBw:550,cpu:"AMD EPYC 9354",cpuCores:128,ram:63,disk:1307,diskBw:5472,netUp:7588,netDown:3903,ports:256,dlperf:99.7,dlperfPerUsd:488,dph:0.204,reliability:99.9,geoloc:"Texas, US",verification:"verified",pcie:5.0,arch:"Blackwell",tflops:46.5,cuda:"13.0",maxDuration:60},
 {id:33785603,gpu:"RTX 5080",numGpu:1,gpuRam:15.9,memBw:782,cpu:"AMD EPYC 7642",cpuCores:192,ram:50,disk:541,diskBw:366,netUp:5033,netDown:8800,ports:199,dlperf:67.8,dlperfPerUsd:385,dph:0.176,reliability:99.8,geoloc:"Sweden, SE",verification:"verified",pcie:4.0,arch:"Blackwell",tflops:56.3,cuda:"13.0",maxDuration:45},
 {id:33735042,gpu:"RTX 5080",numGpu:1,gpuRam:15.9,memBw:780,cpu:"AMD EPYC 7642",cpuCores:192,ram:50,disk:572,diskBw:382,netUp:5030,netDown:8660,ports:199,dlperf:68.6,dlperfPerUsd:389,dph:0.176,reliability:99.8,geoloc:"Sweden, SE",verification:"verified",pcie:4.0,arch:"Blackwell",tflops:56.3,cuda:"13.0",maxDuration:45},
+{id:33735043,gpu:"RTX 5080",numGpu:1,gpuRam:15.9,memBw:780,cpu:"AMD EPYC 7642",cpuCores:192,ram:50,disk:572,diskBw:382,netUp:5030,netDown:8660,ports:199,dlperf:68.6,dlperfPerUsd:389,dph:0.176,reliability:99.8,geoloc:"Sweden, SE",verification:"verified",pcie:4.0,arch:"Blackwell",tflops:56.3,cuda:"13.0",maxDuration:45},
 {id:44160786,gpu:"RTX PRO 4500",numGpu:1,gpuRam:31.9,memBw:703,cpu:"Xeon Platinum 8260",cpuCores:96,ram:189,disk:340,diskBw:3314,netUp:3021,netDown:4870,ports:256,dlperf:96.2,dlperfPerUsd:298,dph:0.322,reliability:99.7,geoloc:"Belgium, BE",verification:"verified",pcie:3.0,arch:"Blackwell",tflops:53.4,cuda:"13.0",maxDuration:60},
 {id:44160784,gpu:"RTX PRO 4500",numGpu:1,gpuRam:31.9,memBw:704,cpu:"Xeon Platinum 8260",cpuCores:96,ram:189,disk:340,diskBw:3314,netUp:3021,netDown:4870,ports:256,dlperf:96.3,dlperfPerUsd:299,dph:0.322,reliability:99.7,geoloc:"Belgium, BE",verification:"verified",pcie:3.0,arch:"Blackwell",tflops:53.4,cuda:"13.0",maxDuration:60},
 {id:43620827,gpu:"RTX PRO 6000 WS",numGpu:2,gpuRam:95.6,memBw:1402,cpu:"AMD EPYC 9654",cpuCores:384,ram:252,disk:1612,diskBw:19251,netUp:5905,netDown:7739,ports:256,dlperf:566.0,dlperfPerUsd:177,dph:3.203,reliability:99.5,geoloc:"Hungary, HU",verification:"verified",pcie:5.0,arch:"Blackwell",tflops:222.8,cuda:"13.0",maxDuration:90},
@@ -144,15 +147,15 @@ const PORTAL_BASE = "/proto/portal.html";
 
 const TEMPLATES = [
  // 推理模板（适合高端GPU）
- {id:"vllm", name:"vLLM · OpenAI 兼容", tag:"vastai/vllm:latest", desc:"推理服务端点，自动暴露 8000 端口",descEn:"OpenAI-compatible inference endpoint, port 8000 auto-exposed", inject:{diskMin:64}, portsMin:8, category:"inference", requiredGpus:["RTX PRO 6000 S","RTX PRO 6000 WS","RTX 5090","H100 SXM 80GB","L40S 48GB"]},
+ {id:"vllm", name:"vLLM · OpenAI 兼容", tag:"vastai/vllm:latest", desc:"推理服务端点，自动暴露 8000 端口",descEn:"OpenAI-compatible inference endpoint, port 8000 auto-exposed", inject:{diskMin:64}, portsMin:8, category:"inference", requiredGpus:["RTX PRO 6000 S","RTX PRO 6000 WS","RTX 5090","RTX 5080","RTX 5070","RTX 5060 Ti","H100 SXM 80GB","L40S 48GB"]},
  // 训练模板（适合中端GPU）
- {id:"pytorch", name:"PyTorch 2.5.1", tag:"pytorch/pytorch:2.5.1-cuda12.4-runtime", desc:"官方基础训练镜像，内置 JupyterLab 与 SSH",descEn:"Official base training image with JupyterLab & SSH built-in", inject:{diskMin:32}, portsMin:8, category:"training", requiredGpus:["RTX 5080","RTX 5070","RTX 5060 Ti","H100 SXM 80GB","L40S 48GB"]},
+ {id:"pytorch", name:"PyTorch 2.5.1", tag:"pytorch/pytorch:2.5.1-cuda12.4-runtime", desc:"官方基础训练镜像，内置 JupyterLab 与 SSH",descEn:"Official base training image with JupyterLab & SSH built-in", inject:{diskMin:32}, portsMin:8, category:"training", requiredGpus:["RTX PRO 6000 S","RTX PRO 6000 WS","RTX 5090","H100 SXM 80GB","L40S 48GB"]},
  // 图像生成模板（适合消费级GPU）
  {id:"comfyui", name:"ComfyUI", tag:"vastai/comfyui:latest", desc:"节点式扩散模型工作流，Web UI 直达",descEn:"Node-based diffusion workflows, Web UI ready", inject:{diskMin:50}, portsMin:8, category:"image", requiredGpus:["RTX PRO 4500","RTX 5080","RTX 5070"]},
 ];
 /* 分类元数据（顺序固定）：chips 由 TEMPLATES 实际数据派生，空分类自动隐藏——分类是数据的视图，不是前置承诺 */
 const CAT_META=[["inference","推理","Inference"],["training","训练","Training"],["image","图像生成","Image Gen"],["dev","开发环境","Dev Env"]];
-/* —— 模板-机器兼容性（黄警不阻塞：vast 下实例磁盘可额外申请，原型不建模额外存储） —— */
+/* —— 模板-机器兼容性（黄警不阻塞：实例磁盘可额外申请，原型不建模额外存储） —— */
 const tplCompat=(offer,tpl)=>{
  if(!tpl||!offer) return {diskShort:false,portShort:false,gpuNotPreferred:false};
  return {
@@ -208,21 +211,21 @@ try{
 const I18N={
 zh:{
   ledTitle:"计费流水 · 最近",
- verifiedLbl:"已验证",unverifiedLbl:"未验证",
+ verifiedLbl:"已验证",unverifiedLbl:"基础供给",
   resultCount:(n)=>`${n} 台可用机器`,oReliability:"可靠性",iDisk:(n)=>`${n}GB 盘`,
   cfCreate:(a)=>`创建实例 · $${a}/hr`,
-  crOkRent:(a,ch)=>`充值 $${a} 成功（${ch} · 测试流）——继续租用`,crOkPlain:(a,ch)=>`充值 $${a} 成功（${ch} · 测试流）`,crPay:(a)=>`支付 $${a}`,
+  crOkRent:(a,ch)=>`充值 $${a} 成功（${ch}）——继续租用`,crOkPlain:(a,ch)=>`充值 $${a} 成功（${ch}）`,crPay:(a)=>`支付 $${a}`,
  langTitle:"切换语言 Switch language",logsTitle:(p)=>`Docker Container Logs · ${p}`,tOos:"暂不支持",
   navConsole:"控制台",navInstances:"实例",navBilling:"账单",navMarket:"行情",
-  mkTitle:"市场行情",mkSub:"在售供给的实时统计。数据由当前在售报价实时派生；成交列仅含本会话订单，样本量小、不参与价格区间计算。",
+  mkTitle:"市场行情",mkSub:"在售供给的实时统计，数据由当前在售报价实时派生。",
   mkKpiListed:"在售 GPU 卡数",mkKpiModels:"在售型号数",mkKpiRegions:"覆盖地域数",mkKpiFloor:"最低起租价",
   mkKpiListedU:"张（在售整机）",mkKpiModelsU:"个型号",mkKpiRegionsU:"个国家/地区",mkKpiFloorU:"/hr",
   mkPriceTitle:"各型号价格分布",mkPriceColModel:"型号",mkPriceColFloor:"起租价",mkPriceColMed:"挂牌中位价",mkPriceColRange:"主流价格区间",mkPriceColListings:"在售台数",mkPriceColDeals:"成交样本",mkPricePer:"/hr",
   mkPriceNoDeals:"0（无成交）",mkDealNote:"成交样本 = 本会话已下订单；n 极小，仅示意，不代表市场成交价。",
   mkRegionTitle:"地域分布",mkRegionCol:"国家/地区",mkRegionMachines:"在售台数",mkRegionGpus:"GPU 张数",mkRegionFloor:"起租价",
-  mkTrendTitle:"价格趋势（近 12 周 · 演示数据）",mkTrendSub:"示意序列，非真实成交统计；不作为定价依据。",
-  mkSupTitle:"供给侧汇总",mkSupListings:"在售整机台数",mkSupVerified:"含平台实测数据",mkSupUnverified:"待实测（信任挂账）",
-  mkDemandTitle:"需求侧信号",mkDemandOrders:"本会话订单数",mkDemandNote:"真实需求侧统计需多租户真实交易，当前演示版不具备。",
+  mkTrendTitle:"价格趋势（近 12 周）",mkTrendSub:"示意序列，非真实成交统计；不作为定价依据。",
+  mkSupTitle:"供给侧汇总",mkSupListings:"在售整机台数",mkSupVerified:"含平台实测数据",mkSupUnverified:"待实测",
+  mkDemandTitle:"需求侧信号",mkDemandOrders:"本会话订单数",mkDemandNote:"真实需求侧统计需多租户真实交易，暂无。",
   mkBack:"返回控制台",mkUnitPerHr:"$/hr",
   adBannedLogout:"你的账号已被平台封禁（Admin 强制干预）",adForceStop:"后台已强制停机该实例（Admin 强制干预）",adForceDestroy:"后台已强制销毁该实例（Admin 强制干预）",adInjected:"测试数据已注入（Admin 生成器）",
   auErrBanned:"该账号已被封禁，请联系平台客服",
@@ -234,7 +237,7 @@ zh:{
   fPriceErr:"请输入 ≥ 0 的数字，否则该筛选项不生效",fPriceRangeErr:"下限超过上限，筛选将不生效",
   fNumGpu:"GPU 数量 ≥",fNumGpuAria:"GPU 数量下限",
   fGpuRam:"GPU 显存 ≥",fGpuRamAria:"单卡显存下限",
-  fSearchModel:"型号搜索",fSearchModelPh:"如 4090 / A100 / h100",fSearchModelAria:"GPU 型号模糊搜索",
+  fSearchModel:"型号搜索",fSearchModelPh:"如 4090 / A100 / H100",fSearchModelAria:"GPU 型号模糊搜索",
   fReset:"重置筛选",fResetAria:"一键清空所有筛选条件",
   fSportSearch:"已按型号筛选，关键词搜索暂不可用；清空型号选择即可恢复",
   // 分组折叠标题
@@ -254,7 +257,7 @@ zh:{
   emptyTitle:"无匹配机器",emptyBody:"我们只是市场，不管理硬件供给；试试放宽筛选",
   emptyHintPrice:"提示：可尝试放宽价格区间",emptyHintRam:"提示：可尝试降低显存/卡数要求",emptyHintSearch:"提示：可尝试清空型号搜索或 GPU 型号选择",
  lblVram:"显存",lblRamDisk:"内存 / 磁盘",lblNet:"网络",
- lblPerfTrust:"DLPerf · 可靠性",lblReliability:"可靠性",lblMaxDur:"最长租期",ttDlperfPending:"宿主上架机器待平台实测（信任挂账）",ttDlperfTip:"DLPerf = 平台实测深度学习基准分；DLP/$/hr = 每美元·小时买到的性能",
+ lblPerfTrust:"DLPerf · 可靠性",lblReliability:"可靠性",lblMaxDur:"最长租期",ttDlperfPending:"宿主上架机器，待平台实测",ttDlperfTip:"DLPerf = 平台实测深度学习基准分；DLP/$/hr = 每美元·小时买到的性能",
   ttGpu:"GPU 算力",ttStore10:"存储 · 前 10GB",ttBw:"带宽预留",ttBwNote:"带宽按量另计：↓$0.06/GB ↑$0.09/GB",
  rent:"租用",
   tplTitle:"选择模板后才能继续租赁",tplStep:"租用流程第一步 · 不可跳过",
@@ -264,13 +267,13 @@ zh:{
   tplFilter:"模板",tplFilterNone:"不限",stEmptyTpl:"该模板要求下无兼容机器（端口不足）· 试试更换模板或放宽筛选",
   crTitle:"Add Credits · 需要余额才能开机",crOther:"其他金额（≥ $10）",crOtherBtn:"其他",crChanLbl:"支付通道",crLater:"稍后再说",crProcessing:"处理中…",
   crD1Pre:"⚠ 仅",crD1Em:"未消费余额",crD1Suf:"可退款。",crD2Pre:"⚠ 平台",crD2Em:"不提供 SLA 保证",crD2Suf:"。",
-   tSwitchHost:"已切换到宿主视角（模拟）",
-    lblBw:"带宽",lblDisk:"磁盘",lblPorts:"端口",crChBank:"银行卡",crChAlipay:"支付宝",crChWechat:"微信支付",crChTransfer:"银行转账",crGrpFiat:"Airwallex（法币）",crGrpPaypal:"PayPal",crGrpCrypto:"加密货币",crTrustLine:"本笔支付由 Airwallex 安全收款",crDemoNote:"演示态：法币经 Airwallex 收单（Stripe 备选），加密为过渡通道；非最终方案。",crChipTip:"点击充值",crMinNote:(bal)=>`最低充值 $10 · 当前余额 ${fmt$(bal,2)}`,balHostTip:"可提现收益：租用「宿主上架」机器的消费按 1:1 全额入账（Running 计费与停机存储费均计入）",
+   tSwitchHost:"已切换到宿主视角",
+    lblBw:"带宽",lblDisk:"磁盘",lblPorts:"端口",crChBank:"银行卡",crChAlipay:"支付宝",crChWechat:"微信支付",crChTransfer:"银行转账",crGrpFiat:"Airwallex（法币）",crGrpPaypal:"PayPal",crGrpCrypto:"加密货币",crTrustLine:"本笔支付由 Airwallex 安全收款",crChipTip:"点击充值",crMinNote:(bal)=>`最低充值 $10 · 当前余额 ${fmt$(bal,2)}`,balHostTip:"可提现收益：租用「宿主上架」机器的消费按 1:1 全额入账（Running 计费与停机存储费均计入）",
    cfTitle:"确认实例配置",cfImageShort:"镜像",cfImageHint:"可填任意公共镜像路径，需带版本 tag，如 pytorch/pytorch:2.5.1",cfEdit:"改",cfEditTitle:"编辑镜像 tag",cfAdv:"高级配置",
     cfAdvPreset:(n)=>`已预填 ${n} 项`,cfAdvNone:"未预填",cfAdvEnv:"环境配置",cfAdvPorts:"开放端口",cfAdvOnstart:"启动脚本",cfAdvOpen:"收起 ▲",cfEnv:"环境配置",cfEnvHint:"一行一个，格式 KEY=VALUE",cfPorts:"对外开放端口",cfPortsHint:"每行一个，格式 宿主端口:容器端口",cfPortsErr:"端口格式应为 宿主端口:容器端口（如 8000:8000），每行或逗号一个",
   cfOnstart:"启动后自动执行",cfOnstartHint:"机器就绪后以 bash 运行",
   cfTarget:"目标机器",cfDisk:"磁盘分配",cfDiskNote:"创建后不可修改；停机按存储费率计费",cfEst:"预估合计",cfStoreMo:"其中存储",cfStoreMoEst:m=>`月约 ${m}`,cfDiskFromTpl:(n,m)=>`磁盘 ≥${m}GB · 来自模板 ${n}`,
-cfContract:"合约类型",cfContractNote:"创建后不可互转（docs：转换矩阵）",
+cfContract:"合约类型",cfContractNote:"创建后不可互转",
   // —— 双 SKU（确认弹框） ——
   cfSku:"计费模式",cfSkuOd:"按量 On-Demand",cfSkuOdSub:"按秒计费 · 可 Stop / Destroy",cfSkuOrder:"时段订单 · 预订",cfSkuOrderSub:"锁价预付 · 用不用都收费",
   cfDur:"租用时长",cfDur1h:"1 小时",cfDur6h:"6 小时",cfDur24h:"24 小时",cfDurCustom:"自定义",cfCustomPh:"小时数",cfCustomErr:(m)=>`请输入 1 ~ ${m} 之间的整数小时`,
@@ -297,12 +300,12 @@ cfContract:"合约类型",cfContractNote:"创建后不可互转（docs：转换�
  cfTagErr:'Error: server_error —— 请为 Docker Image 提供版本 tag，例如 "pytorch/pytorch:2.5.1"',cfClose:"关闭配置页",
   instEmptyTitle:"还没有实例",instEmptyLead2:"充值足够余额",instGoRent:"去搜索页租用",
  burn:"当前烧钱",burnStopped:"存储单价上浮",addLabelPh:"输入标签…",clickLabel:"点击加标签",created:"创建于",expireAt:"到期",remain:"剩余",
- instSpent:"已花",gpuUtil:"GPU util",runFor:"已运行",moreActions:"更多操作",tCopied:"已复制到剪贴板",tCopyFail:"复制失败——请手动选择复制",simMetric:"模拟演示数据",schedCancel:"取消调度",delConfirmOd:"永久删除全部数据？",btnReserveCancel:"取消预定",btnRelease:"释放",btnDelete:"删除",btnCancel:"取消",fRate:"费率",btnStart:"开机",
+ instSpent:"已花",gpuUtil:"GPU util",runFor:"已运行",moreActions:"更多操作",tCopied:"已复制到剪贴板",tCopyFail:"复制失败——请手动选择复制",schedCancel:"取消调度",delConfirmOd:"永久删除全部数据？",btnReserveCancel:"取消预定",btnRelease:"释放",btnDelete:"删除",btnCancel:"取消",fRate:"费率",btnStart:"开机",
   tReboot:"Reboot：容器重启、数据无损",tPortal:"Instance Portal 即将上线",portalPrep:"启动中——实例就绪后可打开工作区",
  tExpiredRestart:"过期实例不可重启（48h 删除窗口）",tClickLabelShort:"点击加标签",
  bDebtStopped:"删除调度中",
  bOffline:"宿主机已从服务器断开 —— 恢复依赖宿主侧修复",
- bExpiredHead:"租约已到期：不可重启；48 小时后可能被永久删除，请尽快取回数据（docs Warning 原文语义）",
+ bExpiredHead:"租约已到期：不可重启；48 小时后可能被永久删除，请尽快取回数据",
  schedHint:">30 秒仍未调度成功 —— 目标 GPU 可能已被他人租走。可取消调度或新建实例",
  sshTitle:"SSH 连接信息",portsTitle:"IP / 端口映射",close:"关闭",
  sshCmdNote2:p=>`容器内可用环境变量 ${p} 编程获取`,sshCmdNote1:"外部端口到内部 22 的随机映射由平台生成",sshCmdNote3:"首次连接指纹确认后即可使用",
@@ -310,13 +313,13 @@ cfContract:"合约类型",cfContractNote:"创建后不可互转（docs：转换�
  ledToggleOpen:"收起 ›",ledToggleClosed:"‹ 计费流水",
   ledTitle:"计费流水 · 最近",ledEmpty:"暂无扣费记录",ledEmptySub:"创建实例后按模拟时钟滚动记账",
     ledHostEmpty:"宿主账本为空",ledHostEmptySub:"租用「宿主上架」机器后，此处出现收益流水",
- ledFoot:"运行=GPU$/h 秒扣；停止=存储费率续扣且单价上浮（docs：停机存储通常更高）",
+ ledFoot:"运行=GPU$/h 秒扣；停止=存储费率续扣且单价上浮",
  instEmptyPre:"开机前需要",instEmptyAnd:"并",
  lgGpu:"GPU算力",lgStoreStop:"存储·停机单价",lgBw:"带宽",
   evRunning:(id)=>`实例 ${id} 进入 Running`,evRebooted:(id)=>`实例 ${id} 重启完成，数据无损`,evDebt:"余额耗尽且未绑卡：实例停止，进入删除调度",
   evReserveStart:(id)=>`预订 ${id} 到点自动开机`,evOrderExpire:(id)=>`订单 ${id} 到期自动释放，数据由平台寄存`,
   evBreach:(id)=>`宿主违约：实例 ${id} 断连超 5 分钟，合同终止，未用款项全额退款`,
- ctlToggle:"演示控制",ctlBadge:"演示工具 · 正式产品无此栏",ctlOffline:(on)=>on?"恢复宿主机":"宿主断连 → Offline",ctlArmStuck:"布置重启卡住",
+ ctlToggle:"控制",ctlOffline:(on)=>on?"恢复宿主机":"宿主断连 → Offline",ctlArmStuck:"布置重启卡住",
  ctlExpire:"快进到期 → Expired",ctlResetBal:"重置余额 $25",ctlLogout:"退出登录",ctlWipe:"清空重来 ↻",ctlSpeed:"时间加速",
  tOfflineOn:"已切断宿主机连接（Offline 分支）",tOfflineOff:"宿主机恢复上线",tArmed:"已布置：下次 Restart 将卡在 Scheduling（GPU 被他人租走）",
  tExpiredSim:"已快进至租约到期 → Expired 分支",
@@ -347,7 +350,7 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   hmContracts:"活跃合同",
    hmMaintBtn:"维护模式",hmMaintToast:"维护模式：暂停接新租，机器暂从搜索页隐藏",hmMaintConfirm:"确认维护？",
    mRestore:"恢复上架",btnConfirm:"确认",
-   hmDelistBtn:"下架",hmDelistToast:"已下架：机器从搜索页移除；已锁定条款的存量合同不受影响（docs：合同冻结铁律）",hmDelistConfirm:"确认下架？",hmRemovedNote:"已下架 · 存量合同冻结履行",
+   hmDelistBtn:"下架",hmDelistToast:"已下架：机器从搜索页移除；已锁定条款的存量合同不受影响",hmDelistConfirm:"确认下架？",hmRemovedNote:"已下架 · 存量合同冻结履行",
    // —— 合同联动（2026-09-18）：计数=渲染期派生（instances 全 SKU 在列即活跃 + bookings 未过期 + seed 存量底数）；明细=机器卡展开 ——
    hmCtBtn:"合同",hmCtTitle:"合同明细",hmCtNone:"暂无活跃合同",hmCtOngoing:"按量 · 持续",
    hmCtMe:"我",hmCtOther:"其他租客",hmCtSeed:"存量客户",
@@ -376,7 +379,7 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   wzFName:"机器名称",wzFGpu:"GPU 型号",wzFNum:"GPU 数量",wzFGpuRam:"单卡显存 (GB)",wzFPcie:"PCIe 版本",wzFGpuPrice:"GPU 定价 $/hr",wzFNet:"网络 $/GB",wzFSto:"存储 $/GB/hr",
   wzFCpu:"CPU 核心数",wzFRam:"系统内存 (GB)",wzFNetUp:"上行带宽 (Mbps)",wzFNetDown:"下行带宽 (Mbps)",wzFGeo:"所在地区",wzFArch:"GPU 架构",
   wzFEnd:"Offer End Date（不设则无限开放）",wzFEndAria:"Offer 结束日期",
-  wzS2Warn:"⚠ 发布即创建 offer：客户下单瞬间条款全部冻结，此后改价/下架均不影响存量合同（docs 铁律）",
+  wzS2Warn:"⚠ 发布即创建 offer：客户下单瞬间条款全部冻结，此后改价/下架均不影响存量合同",
   wzCancel:"取消",wzPrev:"上一步",wzNext:"下一步",wzSubmit:"发布上架",
   wzOk:"平台实测通过，机器已发布——出现在搜索结果（DLPerf 为平台实测值；可靠性待首单积累）",
   // —— Earnings 页（i18n 二期 · 2026-09-18 多通道重构） ——
@@ -392,7 +395,7 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   eaWdTitle:"提现",eaWdBtn:(a)=>`提现 $${(+a||0).toFixed(2)}`,eaWdNoCh:"请先绑定并选择出金通道",
   eaWdChannel:"出金通道",
    eaWdAmt:"提现金额 $",eaWdAmtSub:"起提 $20 · 上限为可提现余额",eaWdInvalid:"提现金额需 ≥$20 且不超过可提现余额",eaWdAll:"全部",
-   eaWdVerify:"出金二次验证",eaWdVerifyAmt:"提现金额",eaWdVerifySent:(e)=>`验证码已发送至 ${e}`,eaWdCode:"验证码",eaWdCodeHint:(c)=>`演示环境：本次验证码为 ${c}（正式产品将发送至账号邮箱；错误验证码会被拒绝）`,eaWdConfirm:"验证并提交",eaErrCode:"请输入 6 位数字验证码",eaErrCodeWrong:"验证码错误，请重试",
+   eaWdVerify:"出金二次验证",eaWdVerifyAmt:"提现金额",eaWdVerifySent:(e)=>`验证码已发送至 ${e}`,eaWdCode:"验证码",eaWdConfirm:"验证并提交",eaErrCode:"请输入 6 位数字验证码",eaErrCodeWrong:"验证码错误，请重试",
    eaPoTitle:"出金记录",eaPoEmpty:"暂无出金申请",eaPoStatus:"状态",
    eaPoPending:"审核中",eaPoApproved:"已放行",eaPoRejected:"已拒绝",
   wdSubmitted:(a)=>`提现申请已提交（$${a.toFixed(2)}），等待平台审核（Admin 出金审批）`,
@@ -410,19 +413,18 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   poBound:"已绑定",poBoundHint:"该通道已绑定，确认可更新收款邮箱。",
   poCancel:"取消",poConfirm:"确认添加",poOk:(ch)=>`${ch} 已绑定`,poManage:"管理通道",
   // —— P2P：账号级信任门（宿主实名/KYC 见上架向导与视角切换） ——
-  srcHostLbl:"宿主上架",srcDeposit:(d)=>`押金 $${d.toFixed(0)}`,srcSeedLbl:"首发池",srcSeedTitle:"平台首发池 · 自购/签约供给（非第三方宿主）",
+  srcHostLbl:"宿主上架",srcDeposit:(d)=>`押金 $${d.toFixed(0)}`,srcSeedLbl:"企业可信",srcSeedTitle:"企业可信供给 · 平台自购/签约机房",
   escrowTitle:"资金托管 · Escrow",escrowDesc:"下单时按实例预留冻结（防租客赖账），消费后释放，租约结束/销毁后释放回可退款余额；余额耗尽自动停机。",escrowHold:"托管冻结中",escrowRefundable:"可退款余额（含托管）",
   escrowNote:"租客资金由平台托管，余额不足时自动停机；订单提前取消按规则从冻结款中扣除罚金后余额退回。",
-  wzRealname:"我确认已完成实名认证（宿主主体 KYC · 账号级一次，勾选后对本账号全部机器生效）",wzDeposit:"可选押金 $",wzDepositNote:"押金=宿主向平台抵押，降低跑路/交付风险；可选，MVP 最简（演示口径：仅登记展示，不参与资金流转）",wzRealnameOnly:"实名（必）+ 押金（可选）：未实名无法发布上架",
+  wzRealname:"我确认已完成实名认证（宿主主体 KYC · 账号级一次，勾选后对本账号全部机器生效）",wzDeposit:"可选押金 $",wzDepositNote:"押金=宿主向平台抵押，降低跑路/交付风险；可选。",wzRealnameOnly:"实名（必）+ 押金（可选）：未实名无法发布上架",
   hmRealnameChip:"主体已实名",hmRealnameChipTip:"账号级实名认证 · 对本账号全部机器生效",hmDeposit:"押金",
   // —— 落地页（2026-09-11 · 未登录默认首页，强制门语义） ——
-  ldEyebrow:"P2P GPU 算力市场 · 部署香港",
-  ldHeroTitle:"可信的 P2P GPU 算力市场",
-  ldHeroSub:"已验证 GPU $0.104/小时起，平台托管资金、按秒计费、实名宿主可查——训练与推理都能按小时起租。",
-  ldCtaBrowse:"开始租用 GPU",ldCtaHost:"上架机器赚收益",
+  ldEyebrow:"GPU 算力市场",
+  ldHeroTitle:"可信的 GPU 算力市场",
+  ldHeroSub:"已验证 GPU $0.104/小时起，平台托管资金、按秒计费、宿主实名可查——训练与推理均可按小时起租。",
+  ldCtaBrowse:"开始租用 GPU",ldCtaHost:"上架机器赚收益",ldLogoTip:"回到首页",
   // —— 市场活力 KPI 带（2026-10-08 · 全部派生自在售口径，真实数据非装饰） ——
   ldKpiGpus:"在售 GPU",ldKpiModels:"在售型号",ldKpiRegions:"覆盖国家/地区",ldKpiFloor:"最低起价",ldKpiUnit:"/ 小时",
-  ldKpiNote:"数据与下方目录同源 · 随供需浮动，非承诺报价",
   // —— 适用场景（2026-10-08 · 取自平台模板真实分类，非营销声明） ——
   ldUcTitle:"为多种 AI 负载而建",ldUcSub:"型号目录按平台模板可支持的工作负载归类，同一份算力覆盖主流场景。",
   ldUc1T:"推理服务",ldUc1D:"OpenAI 兼容端点，端口自动暴露，按秒计费。",
@@ -432,23 +434,18 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   ldDevTitle:"一行命令，接入算力",ldDevSub:"与租用同一套 API：按秒计费、随取随停，训练推理通用。",
   ldDevModes:"CLI · Python SDK · REST API",
   ldDevCta:"探索开发者工具",ldDevTerm:"deploy.py",
-  ldTickerTitle:"市场快照",ldTickerLive:"样本快照",ldTickerFoot:"公开采样 · 非实时行情",
+  ldTickerTitle:"市场快照",ldTickerLive:"实时快照",
   ldEntTitle:"企业算力采购",ldEntDesc:"企业规模算力需求可提交需求单，由销售与方案团队对接确认。",
   ldEntBtn:"提交采购需求",
-  ldMarketTitle:"在售算力实时报价",ldMarketSub:(m,k,g,r)=>`以下为平台在售算力采样——注册后即可按此价格下单。${m?`当前内测期在售 ${m} 台 / ${k} 个型号 / ${g} 张 GPU，分布在 ${r} 个国家/地区。`:""}`,
-  ldWhereTitle:"算力在哪",ldWhereNote:"算力供给来自多个国家与地区；点位为国别位置示意，精确型号与报价见下方目录。",
-  ldMarketFoot:"价格随供需浮动 · 实际成交价以下单页为准",
-  ldCatSub:"全在售型号的规格与挂牌价一览。规格为平台实测值。",
-  ldCatColModel:"型号",ldCatColRam:"显存",ldCatColTflops:"单卡算力",ldCatColUse:"适用场景",ldCatColPrice:"挂牌起租",
-  ldCatCount:(n,g)=>`${n} 台 · ${g} 卡`,ldCatCardSpan:(a,b)=>a===b?`${a} 卡/台`:`${a}–${b} 卡/台`,
-  ldCatRam:"GB",ldCatTflops:"TFLOPS",
+  ldMarketTitle:"在售算力实时报价",ldMarketSub:(m,k,g,r)=>`以下为平台在售算力——注册后即可按此价格下单。${m?`当前内测期在售 ${m} 台 / ${k} 个型号 / ${g} 张 GPU，分布在 ${r} 个国家/地区。`:""}`,
+  ldWhereTitle:"在售算力分布",ldWhereNote:"点位为国别位置示意。",
+  ldCatFrom:"低至",ldCatMedian:"中位",
   ldCatUseInference:"推理",ldCatUseTraining:"训练",ldCatUseImage:"图像",
-  ldCatFoot:"价格按整机 $/hr 计，单机卡数不同则不可直接比较；算力为单卡值。",
-  ldCatCta:"注册查看全部在售机器",ldCatNote:(n)=>`按起租价升序 · 仅展示最低 ${n} 个型号`,
-  ldSupplyTitle:"三源供给，结构透明",ldSupplySub:"平台供给来源全部可查，不混装、不虚标。",
-  ldSrc1T:"已验证供给",ldSrc1D:"平台实测带宽、可靠性与算力后上架，报价卡带实测角标。",
-  ldSrc2T:"首发池",ldSrc2D:"平台自购与签约机器，作为市场冷启动的基准供给。",
-  ldSrc3T:"宿主上架",ldSrc3D:"实名宿主自建机房上架，押金与托管双重约束交付质量。",
+  ldCatCta:"查看全部在售机器",
+  ldSupplyTitle:"三级供给，层层可信",ldSupplySub:"每台机器的供给等级公开可查。",
+  ldSrc1T:"基础供给",ldSrc1D:"宿主自报规格、价格优先；资金托管保障每一笔交付。",
+  ldSrc2T:"已验证供给",ldSrc2D:"平台实测带宽、可靠性与算力后上架，报价卡带实测角标。",
+  ldSrc3T:"企业可信供给",ldSrc3D:"平台自购与签约机房，面向企业长期负载。",
   ldTrustTitle:"资金与合规",ldTrustSub:"租户无 KYC，合规动作由平台侧承担。",
   ldTrust1T:"Escrow 资金托管",ldTrust1D:"充值经 Airwallex 收单；下单冻结、按消费释放，余额耗尽自动停机。",
   ldTrust2T:"一次性合规门",ldTrust2D:"最终用途声明，账号级仅确认一次。",
@@ -459,18 +456,18 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   ldRoleHostT:"宿主",ldRoleHostLead:"上架自建机器，平台撮合订单，收益随时提现。",
   ldHowT1:"注册并登录",ldHowT2:"挑选报价、选模板",ldHowT3:"充值并创建实例",
   ldHowH1:"完成实名认证",ldHowH2:"录入机器并上架",ldHowH3:"收益结算提现",
-  ldFootTerms:"服务条款",ldFootPrivacy:"隐私政策",ldFootDocs:"文档",ldFootStub:"该页面即将上线",ldFootCorp:"Mekong Ltd. · Hong Kong · © 2026",
+  ldFootTerms:"服务条款",ldFootPrivacy:"隐私政策",ldFootDocs:"文档",ldFootStub:"该页面即将上线",ldFootCorp:"Mekong Ltd. · © 2026",
   // —— Footer 多列信息架构（2026-10-08） ——
   ldFootMarket:"市场",ldFootM1:"在售算力",ldFootM2:"宿主上架",ldFootM3:"企业采购",
   ldFootRes:"资源",ldFootR1:"开发者文档",ldFootR2:"常见问题",ldFootR3:"平台合规",
   ldFootLegal:"法律",
-  ldFootNews:"订阅产品动态",ldFootNewsPh:"输入邮箱",ldFootNewsOk:"已订阅（演示环境，不会真实发送）",
+  ldFootNews:"订阅产品动态",ldFootNewsPh:"输入邮箱",ldFootNewsOk:"已订阅",
   // —— 注册/登录弹窗（邮箱验证码直登 · passwordless） ——
   auLoginTitle:"登录或注册",
   auLead:"用邮箱接收验证码登录，无需密码——首次登录将自动创建账号。",
   auEmail:"邮箱",auEmailPh:"you@example.com",
   auNext:"发送验证码",
-  auCodeTitle:"验证邮箱",auCodeSent:(e)=>`验证码已发送至 ${e}`,auCodePh:"6 位数字",auCodeHint:"演示环境：输入任意 6 位数字即可通过验证",auVerifyBtn:"验证并继续",
+  auCodeTitle:"验证邮箱",auCodeSent:(e)=>`验证码已发送至 ${e}`,auCodePh:"6 位数字",auVerifyBtn:"验证并继续",
   auPendingLead:"登录后将继续租用您选中的报价",
   auErrEmail:"请输入有效邮箱地址",auErrCode:"请输入 6 位数字验证码",
   auCreatedOk:"新账号已创建并登录",auSigninOk:"欢迎回来，已登录",auBackEdit:"← 换个邮箱",auStep:(n)=>`第 ${n} 步 · 共 2 步`,
@@ -479,21 +476,21 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
  },
  en:{
   ledTitle:"Billing ledger · recent",
- verifiedLbl:"Verified",unverifiedLbl:"Unverified",
+ verifiedLbl:"Verified",unverifiedLbl:"Basic",
   resultCount:(n)=>`${n} machines available`,oReliability:"Reliability",iDisk:(n)=>`${n}GB disk`,
   cfCreate:(a)=>`Create instance · $${a}/hr`,
-  crOkRent:(a,ch)=>`Topped up $${a} (${ch} · test flow) — continuing RENT`,crOkPlain:(a,ch)=>`Topped up $${a} (${ch} · test flow)`,crPay:(a)=>`Pay $${a}`,
+  crOkRent:(a,ch)=>`Topped up $${a} (${ch}\) — continuing RENT`,crOkPlain:(a,ch)=>`Topped up $${a} (${ch}\)`,crPay:(a)=>`Pay $${a}`,
  langTitle:"切换语言 Switch language",logsTitle:(p)=>`Docker Container Logs · ${p}`,tOos:"Not available yet",
    navConsole:"Console",navInstances:"Instances",navBilling:"Billing",navMarket:"Market",
-  mkTitle:"Market data",mkSub:"Live statistics from currently listed supply. Derived from listings in real time; the deal column covers only this session's orders — a tiny sample that is excluded from price ranges.",
+  mkTitle:"Market data",mkSub:"Live stats derived from current listings.",
   mkKpiListed:"GPUs listed",mkKpiModels:"Models listed",mkKpiRegions:"Regions covered",mkKpiFloor:"Lowest asking rate",
   mkKpiListedU:"GPUs (whole machines)",mkKpiModelsU:"models",mkKpiRegionsU:"countries/regions",mkKpiFloorU:"/hr",
   mkPriceTitle:"Price distribution by model",mkPriceColModel:"Model",mkPriceColFloor:"Asking floor",mkPriceColMed:"Median asking",mkPriceColRange:"Main range",mkPriceColListings:"Listings",mkPriceColDeals:"Deal sample",mkPricePer:"/hr",
-  mkPriceNoDeals:"0 (no deals)",mkDealNote:"Deal sample = orders placed in this session. n is very small and illustrative only; it is not a market transaction price.",
+  mkPriceNoDeals:"0 (no deals)",mkDealNote:"A sample of orders placed in this session — far too few to read as a market price.",
   mkRegionTitle:"Regional distribution",mkRegionCol:"Country/region",mkRegionMachines:"Listings",mkRegionGpus:"GPUs",mkRegionFloor:"Asking floor",
-  mkTrendTitle:"Price trend (last 12 weeks · demo data)",mkTrendSub:"Illustrative series, not real transaction statistics; not a pricing basis.",
+  mkTrendTitle:"Price trend (last 12 weeks)",mkTrendSub:"Illustrative series — not real transactions, not a pricing basis.",
   mkSupTitle:"Supply summary",mkSupListings:"Whole machines listed",mkSupVerified:"With measured specs",mkSupUnverified:"Awaiting measurement",
-  mkDemandTitle:"Demand-side signal",mkDemandOrders:"Orders this session",mkDemandNote:"Real demand-side statistics need multi-tenant transactions; the demo build has none.",
+  mkDemandTitle:"Demand-side signal",mkDemandOrders:"Orders this session",mkDemandNote:"Real demand-side numbers need multi-tenant transactions — none yet.",
   mkBack:"Back to console",mkUnitPerHr:"$/hr",
   adBannedLogout:"Your account has been suspended (Admin action)",adForceStop:"Instance force-stopped from Admin console",adForceDestroy:"Instance force-destroyed from Admin console",adInjected:"Test data injected (Admin generator)",
   auErrBanned:"This account has been suspended. Contact support.",
@@ -505,7 +502,7 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
  fPriceErr:"Enter a number ≥ 0, otherwise this filter is ignored",fPriceRangeErr:"Min exceeds max, filter will not apply",
  fNumGpu:"GPU count ≥",fNumGpuAria:"Min GPU count",
  fGpuRam:"GPU VRAM ≥",fGpuRamAria:"Min per-GPU VRAM",
- fSearchModel:"Model search",fSearchModelPh:"e.g. 4090 / A100 / h100",fSearchModelAria:"Fuzzy GPU model search",
+ fSearchModel:"Model search",fSearchModelPh:"e.g. 4090 / A100 / H100",fSearchModelAria:"Fuzzy GPU model search",
   fReset:"Reset filters",fResetAria:"Clear all filters at once",
   fSportSearch:"Filtering by model, so keyword search is off. Clear the model selection to restore it.",
   // Group collapse titles
@@ -525,7 +522,7 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   emptyTitle:"No matching machines",emptyBody:"We are only a marketplace and don't manage hardware; try relaxing filters",
   emptyHintPrice:"Tip: try widening the price range",emptyHintRam:"Tip: try lowering VRAM / GPU count",emptyHintSearch:"Tip: try clearing the model search or GPU selection",
  lblVram:"VRAM",lblRamDisk:"RAM / Disk",lblNet:"Network",
- lblPerfTrust:"DLPerf · Reliability",lblReliability:"Reliability",lblMaxDur:"Max Duration",ttDlperfPending:"Host-listed machine pending platform benchmark (trust ledger)",ttDlperfTip:"DLPerf = platform-measured DL benchmark score; DLP/$/hr = performance per dollar-hour",
+ lblPerfTrust:"DLPerf · Reliability",lblReliability:"Reliability",lblMaxDur:"Max Duration",ttDlperfPending:"Host-listed machine, platform benchmark pending",ttDlperfTip:"DLPerf = platform-measured DL benchmark score; DLP/$/hr = performance per dollar-hour",
  ttGpu:"GPU compute",ttStore10:"Storage · first 10GB",ttBw:"Bandwidth reserve",ttBwNote:"Metered bandwidth: ↓$0.06/GB ↑$0.09/GB",
  rent:"RENT",
   tplTitle:"Pick a template to continue",tplStep:"Step 1 of RENT flow · cannot skip",
@@ -535,15 +532,15 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   tplFilter:"Template",tplFilterNone:"Any",stEmptyTpl:"No machines compatible with this template (insufficient ports) · try another template or relax filters",
   crTitle:"Add Credits · credits required to boot",crOther:"Custom amount (≥ $10)",crOtherBtn:"Custom",crChanLbl:"Payment channel",crLater:"Later",crProcessing:"Processing…",
   crD1Pre:"⚠ We can refund only ",crD1Em:"unspent credit balance",crD1Suf:".",crD2Pre:"⚠ Machine reliability/performance varies and is ",crD2Em:"not guaranteed",crD2Suf:".",
-   tSwitchHost:"Switched to Host view (simulated)",
+   tSwitchHost:"Switched to Host view",
 
-   lblBw:"BW",lblDisk:"Disk",lblPorts:"ports",crChBank:"Bank card",crChAlipay:"Alipay",crChWechat:"WeChat Pay",crChTransfer:"Bank transfer",crGrpFiat:"Airwallex (Fiat)",crGrpPaypal:"PayPal",crGrpCrypto:"Crypto",crTrustLine:"This payment is secured by Airwallex",crDemoNote:"Demo state: fiat collected via Airwallex (Stripe as backup); crypto via transitional channels. Not a final scheme.",crChipTip:"Click to top up",crMinNote:(bal)=>`Minimum top-up $10 · Current balance ${fmt$(bal,2)}`,balHostTip:"Withdrawable earnings: consumption on host-listed machines credits 1:1 (Running billing and stopped storage fees both included)",
+   lblBw:"BW",lblDisk:"Disk",lblPorts:"ports",crChBank:"Bank card",crChAlipay:"Alipay",crChWechat:"WeChat Pay",crChTransfer:"Bank transfer",crGrpFiat:"Airwallex (Fiat)",crGrpPaypal:"PayPal",crGrpCrypto:"Crypto",crTrustLine:"This payment is secured by Airwallex",crChipTip:"Click to top up",crMinNote:(bal)=>`Minimum top-up $10 · Current balance ${fmt$(bal,2)}`,balHostTip:"Withdrawable earnings: consumption on host-listed machines credits 1:1 (Running billing and stopped storage fees both included)",
 
    cfTitle:"Confirm instance configuration",cfImageShort:"Image",cfImageHint:"Any public image path with a version tag, e.g. pytorch/pytorch:2.5.1",cfEdit:"Edit",cfEditTitle:"Edit image tag",cfAdv:"Advanced options",
     cfAdvPreset:(n)=>`Preset ${n}`,cfAdvNone:"Nothing preset",cfAdvEnv:"Env config",cfAdvPorts:"Public ports",cfAdvOnstart:"Startup script",cfAdvOpen:"Collapse ▲",cfEnv:"Env config",cfEnvHint:"One per line, KEY=VALUE",cfPorts:"Public ports",cfPortsHint:"One per line, host:container",cfPortsErr:"Expected host:container (e.g. 8000:8000), one per line or comma-separated",
   cfOnstart:"Run on startup",cfOnstartHint:"Runs as bash once the machine is ready",
  cfTarget:"Target machine",cfDisk:"Disk allocation",cfDiskNote:"Immutable after create; billed at storage rate while stopped",cfEst:"Estimated total",cfStoreMo:"of which storage",cfStoreMoEst:m=>`≈ ${m}/mo`,cfDiskFromTpl:(n,m)=>`Disk ≥${m}GB · from template ${n}`,
-cfContract:"Contract type",cfContractNote:"Non-interchangeable after creation (docs: conversion matrix)",
+cfContract:"Contract type",cfContractNote:"Non-interchangeable after creation",
   // —— Dual SKU (confirm dialog) ——
   cfSku:"Billing mode",cfSkuOd:"On-Demand",cfSkuOdSub:"Per-second · Stop/Destroy anytime",cfSkuOrder:"Time-slot order · Reserve",cfSkuOrderSub:"Locked price prepaid · pay whether used or not",
   cfDur:"Duration",cfDur1h:"1 hour",cfDur6h:"6 hours",cfDur24h:"24 hours",cfDurCustom:"Custom",cfCustomPh:"Hours",cfCustomErr:(m)=>`Enter a whole number between 1 and ${m} hours`,
@@ -566,30 +563,30 @@ cfContract:"Contract type",cfContractNote:"Non-interchangeable after creation (d
   tReserveCancel:(a)=>`Reservation cancelled: $${a} fully refunded to balance`,
   tEarlyReturn:(p,r)=>`Cancelled early: fee $${p}, $${r} refunded to balance`,
   tOrderExpired:(r)=>r>0?`Order expired and released automatically: $${r} refunded, data stored by the platform`:`Order expired and released automatically; data stored by the platform`,
-  lgAmort:"Order·time amortized",lgPenalty:"Order·early-cancel fee",lgRefund:"Order·cancel refund",lgOrderPay:"Order·prepay charge",lgTopup:"Account top-up",
+  lgAmort:"Order · time amortized",lgPenalty:"Order · early-cancel fee",lgRefund:"Order · cancel refund",lgOrderPay:"Order · prepay charge",lgTopup:"Account top-up",
   cfTagErr:'Error: server_error —— provide a version tag for the Docker image, e.g. "pytorch/pytorch:2.5.1"',cfClose:"Close configuration",
   instEmptyTitle:"No instances yet",instEmptyLead2:"enough credits",instGoRent:"Go search & RENT",
  burn:"Burn rate",burnStopped:"storage rate elevated",addLabelPh:"Type a label…",clickLabel:"Click to add label",created:"Created",expireAt:"Expires",remain:"Remaining",
- instSpent:"Spent",gpuUtil:"GPU util",runFor:"Ran for",moreActions:"More actions",tCopied:"Copied to clipboard",tCopyFail:"Copy failed — select and copy manually",simMetric:"Simulated demo data",schedCancel:"Cancel scheduling",delConfirmOd:"Permanently delete all data?",btnReserveCancel:"Cancel reserve",btnRelease:"Release",btnDelete:"Delete",btnCancel:"Cancel",fRate:"Rate",btnStart:"Start",
+ instSpent:"Spent",gpuUtil:"GPU util",runFor:"Ran for",moreActions:"More actions",tCopied:"Copied to clipboard",tCopyFail:"Copy failed — select and copy manually",schedCancel:"Cancel scheduling",delConfirmOd:"Permanently delete all data?",btnReserveCancel:"Cancel reserve",btnRelease:"Release",btnDelete:"Delete",btnCancel:"Cancel",fRate:"Rate",btnStart:"Start",
   tReboot:"Reboot: container restarts, no data loss",tPortal:"Instance Portal coming soon",portalPrep:"Starting — Workspace opens once the instance is ready",
  tExpiredRestart:"Expired instances cannot restart (48h deletion window)",tClickLabelShort:"Click to add label",
  bDebtStopped:"Deletion scheduled",
  bOffline:"Host disconnected from servers — recovery depends on the host",
- bExpiredHead:"Lease expired: cannot restart; may be permanently deleted after 48 hours — retrieve your data (docs Warning semantics)",
+ bExpiredHead:"Lease expired: cannot restart; may be permanently deleted after 48 hours — retrieve your data",
  schedHint:"Unscheduled for >30s — target GPU likely rented by someone else. Cancel scheduling or create a new instance",
  sshTitle:"SSH connection info",portsTitle:"IP / port mapping",close:"Close",
  sshCmdNote2:(p)=>`Inside the container read it programmatically via ${p}`,sshCmdNote1:"External port mapping to internal 22 is generated by the platform",sshCmdNote3:"Confirm host fingerprint on first connect",
- portsThExt:"Public address",portsThInt:"→ internal port",portsThUse:"Purpose",portUseSsh:"SSH",portUseJupyter:"Jupyter",portUseCustom:"custom",
+ portsThExt:"Public address",portsThInt:"→ internal port",portsThUse:"Purpose",portUseSsh:"SSH",portUseJupyter:"Jupyter",portUseCustom:"Custom",
  ledToggleOpen:"Collapse ›",ledToggleClosed:"‹ Ledger",
   ledTitle:"Billing ledger · recent",ledEmpty:"No charges yet",ledEmptySub:"Ledger rolls with the sim clock once an instance exists",
     ledHostEmpty:"Host ledger is empty",ledHostEmptySub:"Earnings rows appear here once a host-listed machine gets rented",
- ledFoot:"Running = GPU $/hr per second; stopped = storage rate continues at an elevated unit price (docs: stopped storage typically higher)",
+ ledFoot:"Running: GPU $/hr, billed per second. Stopped: storage keeps billing at the higher stopped rate.",
  instEmptyPre:"Booting requires ",instEmptyAnd:" plus ",
- lgGpu:"GPU compute",lgStoreStop:"storage·stopped rate",lgBw:"bandwidth",
+ lgGpu:"GPU compute",lgStoreStop:"Storage · stopped rate",lgBw:"Bandwidth",
   evRunning:(id)=>`Instance ${id} entered Running`,evRebooted:(id)=>`Instance ${id} reboot completed, no data loss`,evDebt:"Balance exhausted with no card on file: instances stopped, deletion scheduled",
   evReserveStart:(id)=>`Reservation ${id} auto-started at scheduled time`,evOrderExpire:(id)=>`Order ${id} expired and released, data stored by the platform`,
   evBreach:(id)=>`Host breach: instance ${id} offline over 5 minutes — contract terminated, unused funds fully refunded`,
- ctlToggle:"Demo controls",ctlBadge:"Review tooling · not in real product",ctlOffline:(on)=>on?"Bring host back online":"Cut host → Offline",ctlArmStuck:"Arm stuck restart",
+ ctlToggle:"Controls",ctlOffline:(on)=>on?"Bring host back online":"Cut host → Offline",ctlArmStuck:"Arm stuck restart",
  ctlExpire:"Fast-forward expire → Expired",ctlResetBal:"Reset balance $25",ctlLogout:"Sign out",ctlWipe:"Wipe & restart ↻",ctlSpeed:"Time scale",
  tOfflineOn:"Host connection cut (Offline branch)",tOfflineOff:"Host back online",tArmed:"Armed: next Restart will stick in Scheduling (GPU taken by others)",
  tExpiredSim:"Fast-forwarded to lease expiry → Expired branch",
@@ -619,7 +616,7 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   hmContracts:"active contracts",
    hmMaintBtn:"Maintenance mode",hmMaintToast:"Maintenance mode: no new rentals; machine hidden from search for now",hmMaintConfirm:"Confirm maintenance?",
    mRestore:"Relist",btnConfirm:"Confirm",
-    hmDelistBtn:"Delist",hmDelistToast:"Delisted: machine removed from search; existing contracts with locked terms are unaffected (docs: contract freeze)",hmDelistConfirm:"Confirm delist?",hmRemovedNote:"Delisted · existing contracts frozen",
+    hmDelistBtn:"Delist",hmDelistToast:"Delisted: machine removed from search; existing contracts with locked terms are unaffected",hmDelistConfirm:"Confirm delist?",hmRemovedNote:"Delisted · existing contracts frozen",
    // —— Contract linkage (2026-09-18): count = render-time derived (instances of any SKU in list = active + unexpired bookings + seed existing base); details = card expansion ——
    hmCtBtn:"Contracts",hmCtTitle:"Contract details",hmCtNone:"No active contracts",hmCtOngoing:"On-demand · ongoing",
    hmCtMe:"Me",hmCtOther:"Other tenant",hmCtSeed:"Existing client",
@@ -649,7 +646,7 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   wzFName:"Machine name",wzFGpu:"GPU model",wzFNum:"GPU count",wzFGpuRam:"Per-GPU VRAM (GB)",wzFPcie:"PCIe version",wzFGpuPrice:"GPU price $/hr",wzFNet:"Network $/GB",wzFSto:"Storage $/GB/hr",
   wzFCpu:"CPU cores",wzFRam:"System RAM (GB)",wzFNetUp:"Upstream (Mbps)",wzFNetDown:"Downstream (Mbps)",wzFGeo:"Region",wzFArch:"GPU architecture",
   wzFEnd:"Offer End Date (blank = open-ended)",wzFEndAria:"Offer end date",
-  wzS2Warn:"⚠ Publishing creates the offer: terms freeze the instant a client orders; later price changes / delisting never affect existing contracts (docs iron rule)",
+  wzS2Warn:"⚠ Publishing creates the offer: terms freeze the instant a client orders; later price changes / delisting never affect existing contracts",
   wzCancel:"Cancel",wzPrev:"Back",wzNext:"Next",wzSubmit:"Publish listing",
   wzOk:"Benchmark passed & machine published — live in search (DLPerf is platform-measured; reliability accrues from first rentals)",
   // —— Earnings (i18n phase 2 · 2026-09-18 multi-channel rework) ——
@@ -665,7 +662,7 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   eaWdTitle:"Withdraw",eaWdBtn:(a)=>`Withdraw $${(+a||0).toFixed(2)}`,eaWdNoCh:"Bind and select a payout channel first",
   eaWdChannel:"Payout channel",
    eaWdAmt:"Amount $",eaWdAmtSub:"$20 minimum · capped at withdrawable balance",eaWdInvalid:"Amount must be ≥$20 and within withdrawable balance",eaWdAll:"Max",
-   eaWdVerify:"Withdrawal verification",eaWdVerifyAmt:"Amount",eaWdVerifySent:(e)=>`Code sent to ${e}`,eaWdCode:"Verification code",eaWdCodeHint:(c)=>`Demo: this session's code is ${c} (in production it is sent to your account email; a wrong code is rejected)`,eaWdConfirm:"Verify & submit",eaErrCode:"Enter the 6-digit code",eaErrCodeWrong:"Incorrect code, please retry",
+   eaWdVerify:"Withdrawal verification",eaWdVerifyAmt:"Amount",eaWdVerifySent:(e)=>`Code sent to ${e}`,eaWdCode:"Verification code",eaWdConfirm:"Verify & submit",eaErrCode:"Enter the 6-digit code",eaErrCodeWrong:"Incorrect code, please retry",
    eaPoTitle:"Payout history",eaPoEmpty:"No payout requests yet",eaPoStatus:"Status",
    eaPoPending:"Under review",eaPoApproved:"Released",eaPoRejected:"Rejected",
   wdSubmitted:(a)=>`Withdrawal request submitted ($${a.toFixed(2)}); awaiting platform review (Admin payouts)`,
@@ -683,68 +680,62 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   poBound:"Bound",poBoundHint:"Channel already bound — confirm to update the payout email.",
   poCancel:"Cancel",poConfirm:"Confirm add",poOk:(ch)=>`${ch} bound`,poManage:"Manage channels",
   // —— P2P: account-level trust gate (host KYC lives in the listing wizard / perspective switch) ——
-  srcHostLbl:"Host-listed",srcDeposit:(d)=>`deposit $${d.toFixed(0)}`,srcSeedLbl:"Seed pool",srcSeedTitle:"Platform seed pool · company/contracted supply (not a 3rd-party host)",
+  srcHostLbl:"Host-listed",srcDeposit:(d)=>`deposit $${d.toFixed(0)}`,srcSeedLbl:"Secure",srcSeedTitle:"Secure supply · company/contracted machines",
   escrowTitle:"Escrow · funds held",escrowDesc:"On order, hold is reserved per instance (protects against renter default), released as consumed, and returns to refundable balance when the lease ends/destroys; auto-stop when balance runs out.",escrowHold:"In escrow (held)",escrowRefundable:"Refundable incl. escrow",
   escrowNote:"Renter funds are held in escrow; instances auto-stop when the balance runs low. Early order cancellation deducts a fee from the held amount before the rest is refunded.",
-  wzRealname:"I confirm identity verification is done (host-principal KYC · account-level once, applies to all this account's machines)",wzDeposit:"Optional deposit $",wzDepositNote:"Deposit = host collateral against default/delivery risk; optional, MVP-minimal (demo scope: registered for display only, no fund flow)",wzRealnameOnly:"Real-name (required) + deposit (optional): cannot publish without ID verification",
+  wzRealname:"I confirm identity verification is done (host-principal KYC · account-level once, applies to all this account's machines)",wzDeposit:"Optional deposit $",wzDepositNote:"Deposit = collateral against default/delivery risk. Optional.",wzRealnameOnly:"Real-name (required) + deposit (optional): cannot publish without ID verification",
   hmRealnameChip:"KYC verified",hmRealnameChipTip:"Account-level identity verification · applies to all this account's machines",hmDeposit:"deposit",
   // —— Landing page (2026-09-11 · default home when signed out, hard-gate semantics) ——
-  ldEyebrow:"P2P GPU MARKET · HOSTED IN HK",
-  ldHeroTitle:"The trusted P2P GPU compute marketplace",
-  ldHeroSub:"Verified GPUs from $0.104/hr — escrowed funds, per-second billing and identity-checked hosts, for training and inference.",
-  ldCtaBrowse:"Start renting GPUs",ldCtaHost:"List your GPUs",
+  ldEyebrow:"GPU COMPUTE MARKETPLACE",
+  ldHeroTitle:"The trusted GPU compute marketplace",
+  ldHeroSub:"Verified GPUs from $0.104/hr. Funds in escrow, billed by the second, hosts ID-checked.",
+  ldCtaBrowse:"Rent GPUs",ldCtaHost:"List your GPUs",ldLogoTip:"Back to home",
   // —— Market-activity KPI band (2026-10-08 · derived from live listings, not decoration) ——
   ldKpiGpus:"GPUs listed",ldKpiModels:"Models listed",ldKpiRegions:"Countries/regions",ldKpiFloor:"Lowest from",ldKpiUnit:"/ hour",
-  ldKpiNote:"Same listing sample as the catalogue below · floats with supply & demand, not a committed quote",
   // —— Use cases (2026-10-08 · from real platform template categories) ——
-  ldUcTitle:"Built for a range of AI workloads",ldUcSub:"The model catalogue is grouped by the workloads our platform templates support — one supply base covers the common cases.",
-  ldUc1T:"Inference serving",ldUc1D:"OpenAI-compatible endpoints, ports auto-exposed.",
+  ldUcTitle:"What you can run",ldUcSub:"One pool of machines covers the common workloads.",
+  ldUc1T:"Inference serving",ldUc1D:"OpenAI-compatible endpoints with auto-exposed ports. Billed by the second.",
   ldUc2T:"Model training",ldUc2D:"Official PyTorch images with JupyterLab & SSH built in.",
-  ldUc3T:"Image generation",ldUc3D:"ComfyUI node-based diffusion workflows with a Web UI ready to go.",
+  ldUc3T:"Image generation",ldUc3D:"ComfyUI node-based diffusion workflows, Web UI included.",
   // —— Developer access (2026-10-08 · left column reduced to claim + one action) ——
-  ldDevTitle:"Provision compute in one line",ldDevSub:"The same API that rents machines — billed per second, start and stop at will.",
+  ldDevTitle:"Provision compute in one line",ldDevSub:"The same API that rents machines — billed per second, start and stop anytime.",
   ldDevModes:"CLI · Python SDK · REST API",
   ldDevCta:"Explore developer tools",ldDevTerm:"deploy.py",
-  ldTickerTitle:"Market snapshot",ldTickerLive:"sample snapshot",ldTickerFoot:"Public sample · not a live feed",
-  ldEntTitle:"Enterprise compute",ldEntDesc:"Submit a requirement for larger workloads; sales and our solution team will follow up.",
+  ldTickerTitle:"Market snapshot",ldTickerLive:"live snapshot",
+  ldEntTitle:"Enterprise compute",ldEntDesc:"Tell us what you need to run — our sales and solutions team follows up.",
   ldEntBtn:"Submit a request",
-  ldMarketTitle:"Live compute pricing",ldMarketSub:(m,k,g,r)=>`A sample of current supply — register to order at these prices.${m?` Early-access supply: ${m} ${m===1?"machine":"machines"} / ${k} ${k===1?"model":"models"} / ${g} ${g===1?"GPU":"GPUs"} across ${r} ${r===1?"country":"countries"}/regions.`:""}`,
-  ldWhereTitle:"Where is the compute",ldWhereNote:"Supply comes from multiple countries and regions; markers show indicative country positions — see the catalogue below for exact models and rates.",
-  ldMarketFoot:"Prices float with supply & demand · final price confirmed at checkout",
-  ldCatSub:"Every listed model with its specs and asking price. Specs are measured on-platform.",
-  ldCatColModel:"Model",ldCatColRam:"VRAM",ldCatColTflops:"Per-GPU compute",ldCatColUse:"Workloads",ldCatColPrice:"Asking from",
-  ldCatCount:(n,g)=>`${n} machine${n>1?"s":""} · ${g} GPU${g>1?"s":""}`,ldCatCardSpan:(a,b)=>a===b?`${a} GPU/machine`:`${a}–${b} GPU/machine`,
-  ldCatRam:"GB",ldCatTflops:"TFLOPS",
+  ldMarketTitle:"Live compute pricing",ldMarketSub:(m,k,g,r)=>`Live supply — sign up and order at these prices.${m?` Early-access supply: ${m} ${m===1?"machine":"machines"} / ${k} ${k===1?"model":"models"} / ${g} ${g===1?"GPU":"GPUs"} across ${r} ${r===1?"country":"countries"}/regions.`:""}`,
+  ldWhereTitle:"Global supply",ldWhereNote:"Markers show indicative country positions.",
+  ldCatFrom:"from",ldCatMedian:"median",
   ldCatUseInference:"Inference",ldCatUseTraining:"Training",ldCatUseImage:"Image",
-  ldCatFoot:"Whole-machine $/hr — prices are not comparable across different GPUs-per-machine; compute is per GPU.",
-  ldCatCta:"Register to see all listed machines",ldCatNote:(n)=>`Sorted by lowest price · cheapest ${n} shown`,
-  ldSupplyTitle:"Three supply sources, fully transparent",ldSupplySub:"Every source is inspectable — no blending, no inflated labels.",
-  ldSrc1T:"Verified supply",ldSrc1D:"Listed after on-platform tests of bandwidth, reliability and compute; offer cards carry verified badges.",
-  ldSrc2T:"Seed pool",ldSrc2D:"Company-owned and contracted machines anchoring the market at launch.",
-  ldSrc3T:"Host-listed",ldSrc3D:"Machines listed by identity-verified hosts; deposits and escrow keep delivery honest.",
-  ldTrustTitle:"Funds & compliance",ldTrustSub:"No tenant KYC — compliance actions are carried by the platform.",
-  ldTrust1T:"Escrow",ldTrust1D:"Top-ups collected via Airwallex; held on order, released as consumed; instances auto-stop when balance runs out.",
+  ldCatCta:"See all listed machines",
+  ldSupplyTitle:"Three supply tiers, all trustworthy",ldSupplySub:"Every listing shows its supply tier — check any machine.",
+  ldSrc1T:"Basic supply",ldSrc1D:"Host-declared specs, lowest prices — escrow covers every order.",
+  ldSrc2T:"Verified supply",ldSrc2D:"Tested on-platform for bandwidth, reliability and compute — listings carry a verified badge.",
+  ldSrc3T:"Secure supply",ldSrc3D:"Company-owned and contracted machines for long-running enterprise workloads.",
+  ldTrustTitle:"Funds & compliance",ldTrustSub:"No tenant KYC — the platform carries compliance.",
+  ldTrust1T:"Escrow",ldTrust1D:"Top-ups via Airwallex — held on order, released as consumed. Instances auto-stop at zero balance.",
   ldTrust2T:"One-time gates",ldTrust2D:"End-use statement, confirmed once per account.",
   ldTrust3T:"Export-control screening",ldTrust3D:"Restricted-party and region screening before restricted-SKU orders.",
   ldTrust4T:"Verified hosts",ldTrust4D:"Real-person ID + optional deposit; unverified hosts cannot list machines.",
   ldRolesTitle:"One account, two roles",
-  ldRoleTenantT:"Tenant",ldRoleTenantLead:"Rent GPUs by the hour, billed per second; stopped machines only incur storage fees.",
-  ldRoleHostT:"Host",ldRoleHostLead:"List your own machines, the platform matches orders, withdraw earnings anytime.",
+  ldRoleTenantT:"Tenant",ldRoleTenantLead:"Rent GPUs by the hour, billed by the second. Stopped machines cost only storage.",
+  ldRoleHostT:"Host",ldRoleHostLead:"List your machines — we match the orders, you withdraw earnings anytime.",
   ldHowT1:"Register & sign in",ldHowT2:"Pick an offer, choose a template",ldHowT3:"Top up & create an instance",
   ldHowH1:"Verify your identity",ldHowH2:"Add & list your machines",ldHowH3:"Settle & withdraw earnings",
-  ldFootTerms:"Terms of Service",ldFootPrivacy:"Privacy Policy",ldFootDocs:"Documentation",ldFootStub:"Coming soon",ldFootCorp:"Mekong Ltd. · Hong Kong · © 2026",
+  ldFootTerms:"Terms of Service",ldFootPrivacy:"Privacy Policy",ldFootDocs:"Documentation",ldFootStub:"Coming soon",ldFootCorp:"Mekong Ltd. · © 2026",
   // —— Footer multi-column structure (2026-10-08) ——
   ldFootMarket:"Market",ldFootM1:"Live pricing",ldFootM2:"Host your GPUs",ldFootM3:"Enterprise",
   ldFootRes:"Resources",ldFootR1:"Developer docs",ldFootR2:"FAQ",ldFootR3:"Compliance",
   ldFootLegal:"Legal",
-  ldFootNews:"Subscribe to product updates",ldFootNewsPh:"Enter your email",ldFootNewsOk:"Subscribed (demo only — no email is sent)",
+  ldFootNews:"Subscribe to product updates",ldFootNewsPh:"Enter your email",ldFootNewsOk:"Subscribed",
   // —— Auth modal (email-code passwordless) ——
   auLoginTitle:"Sign in or sign up",
   auLead:"Sign in with an emailed code — no password needed. First sign-in creates your account.",
   auEmail:"Email",auEmailPh:"you@example.com",
   auNext:"Send code",
-  auCodeTitle:"Verify your email",auCodeSent:(e)=>`Code sent to ${e}`,auCodePh:"6 digits",auCodeHint:"Demo: any 6 digits will pass verification",auVerifyBtn:"Verify & continue",
-  auPendingLead:"After signing in we'll continue renting the offer you picked",
+  auCodeTitle:"Verify your email",auCodeSent:(e)=>`Code sent to ${e}`,auCodePh:"6 digits",auVerifyBtn:"Verify & continue",
+  auPendingLead:"Sign in and we'll take you straight back to the offer you picked.",
   auErrEmail:"Enter a valid email address",auErrCode:"Enter the 6-digit code",
   auCreatedOk:"New account created — you're signed in",auSigninOk:"Welcome back — you're signed in",auBackEdit:"← Use a different email",auStep:(n)=>`Step ${n} of 2`,
   // —— Header dual state ——
@@ -798,7 +789,7 @@ const parseCountry = g=>{
  const m=String(g).match(/(?:,\s*|\b)([A-Za-z]{2})\s*$/);
  return m ? m[1].toUpperCase() : "Host";
 };
-// 全市场供给 = 静态 vast offer + 宿主上架（含首发池 seed）——GPU 列表与位置选项统一起源
+// 全市场供给 = 静态采样 offer + 宿主上架（含首发池 seed）——GPU 列表与位置选项统一起源
 const allSupply = (hostMachines)=>[
  ...OFFERS.map(o=>({...o, source:"offer"})),
  ...(hostMachines||[]).filter(m=>!["offline","removed","maintenance"].includes(m.status)).map(hostToOffer)
@@ -817,7 +808,7 @@ const listedSupply = (hostMachines, delisted)=> allSupply(hostMachines)
  .filter(o=>o.verification==="verified");
 /* 落地页算力目录：按型号聚合挂牌口径供给。
    口径要点——tflops 为整机值，故算力列取「单卡值 = tflops/numGpu」才可跨型号比较（整机值跨卡数不可比）；
-   价格为整机 $/hr 起租价，型号格内同时给单机卡数区间，跨卡数的价格不构成可比区间（故不给中位数/区间列）。 */
+   价格为整机 $/hr 起租价；med＝型号内各台 dph 的中位数，供型号卡 median 行。 */
 const catalogRows = (hostMachines, delisted)=>{
  const rows=listedSupply(hostMachines, delisted);
  const byGpu=[...new Set(rows.map(o=>o.gpu))].map(g=>{
@@ -825,6 +816,7 @@ const catalogRows = (hostMachines, delisted)=>{
   const ram=r.map(o=>o.gpuRam).filter(v=>v!=null);
   const perCard=r.map(o=>(o.tflops!=null&&o.numGpu)?Math.round(o.tflops/o.numGpu*100)/100:null).filter(v=>v!=null);
   const cards=r.map(o=>o.numGpu||1);
+  const dphs=r.map(o=>o.dph).sort((a,b)=>a-b), mid=dphs.length>>1;
   return { gpu:g, n:r.length, gpus:cards.reduce((a,b)=>a+b,0),
    cardMin:Math.min(...cards), cardMax:Math.max(...cards),
    gpuRam: ram.length? (Math.max(...ram)===Math.min(...ram)?ram[0]:Math.min(...ram)+"–"+Math.max(...ram)) : null,
@@ -832,6 +824,7 @@ const catalogRows = (hostMachines, delisted)=>{
    pcie: r.find(o=>o.pcie!=null)?.pcie ?? null,
    arch: r.find(o=>o.arch)?.arch ?? null,
    regions:[...new Set(r.map(o=>parseCountry(o.geoloc)))],
+   med: dphs.length? (dphs.length%2? dphs[mid] : (dphs[mid-1]+dphs[mid])/2) : null,
    floor: Math.min(...r.map(o=>o.dph)) };
  }).sort((a,b)=>a.floor-b.floor);
  // 用途＝该型号命中的模板分类（自 TEMPLATES 派生，非前置承诺；未命中则为空）
@@ -1462,7 +1455,7 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租�
  function S_sim(){ return ref.current.simT; }
 
 const filtered = useMemo(()=>{
- // 市场供给 = 静态 vast 采样 offer（平台实测已验证）+ 首发池自购/签约 + 宿主上架（P2P 撮合闭环，source 标注）
+ // 市场供给 = 静态采样 offer（行情已核）+ 首发池自购/签约 + 宿主上架（P2P 撮合闭环，source 标注）
     const all = allSupply(S.hostMachines).filter(o=>!(adminCfg.delisted||[]).includes(String(o.id))); // Admin 联动：强制下架过滤
     let list = all.filter(o=>{
       if(!S.filters.includeUn && o.verification!=="verified") return false;
@@ -1487,7 +1480,7 @@ const filtered = useMemo(()=>{
      if(S.filters.ramMin && o.ram!=null && o.ram < S.filters.ramMin) return false;
      if(S.filters.netDownMin && o.netDown!=null && o.netDown < S.filters.netDownMin) return false;
      if(S.filters.netUpMin && o.netUp!=null && o.netUp < S.filters.netUpMin) return false;
-     // 模板过滤（任务导向显式入口）：端口是硬约束（物理不可扩容）；磁盘满足确认页可额外申请语义（vast），不参与过滤、仅黄警软提示
+     // 模板过滤（任务导向显式入口）：端口是硬约束（物理不可扩容）；磁盘满足确认页可额外申请语义，不参与过滤、仅黄警软提示
      if(S.filters.tpl){ const _t=TEMPLATES.find(x=>x.id===S.filters.tpl);
       if(_t){ const c=tplCompat(o,_t); if(c.portShort) return false; } }
      return true;
@@ -1498,15 +1491,15 @@ const filtered = useMemo(()=>{
   },[S.filters,S.sort,S.hostMachines,adminCfg]);
 
  /* ================= 渲染 ================= */
-  // 渲染期守卫：未登录强制 landing/auth（强制门铁律），防任何路径绕过【公开层语义】
-  const effView = (!S.authed && S.view!=="landing") ? "landing" : S.view;
+  // 渲染期守卫：未登录强制 landing（search 例外——未登录可浏览市场，下单动作仍走 openRent 登录门），防任何路径绕过【公开层语义】
+  const effView = (!S.authed && S.view!=="landing" && S.view!=="search") ? "landing" : S.view;
   return (
   <div className="min-h-screen pb-24">
    <Header S={S} act={act} setS={setS}/>
    <main id="main-content" tabIndex="-1">
    <>
    {effView==="landing" && <LandingPage S={S} act={act} setS={setS} adminCfg={adminCfg}/>}
-   {effView==="search" && S.authed && <SearchPage S={S} act={act} setS={setS} filtered={filtered}/>}
+   {effView==="search" && <SearchPage S={S} act={act} setS={setS} filtered={filtered}/>}
    {effView==="instances" && S.authed && <InstancesPage S={S} act={act} setS={setS}/>}
    {effView==="market-data" && S.authed && S.perspective!=="host" && <MarketDataPage S={S} act={act} setS={setS} adminCfg={adminCfg}/>}
    {effView==="billing" && S.authed && <BillingPage S={S} act={act} setS={setS}/>}
@@ -1566,20 +1559,24 @@ function Header({S,act,setS}){
   return (
   <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] opacity-95 backdrop-blur">
    <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-2 max-md:gap-x-2 sm:gap-x-5 sm:px-5">
-    <div className="flex items-baseline gap-2">
+    <button onClick={()=>setS(p=>({...p,view:"landing"}))} title={T.ldLogoTip} className="flex cursor-pointer items-baseline gap-2 rounded-md transition-opacity hover:opacity-75">
      <span className="text-[16px] font-semibold tracking-tight max-md:text-[16px]">Mekong</span>
-     <span className="rounded border border-[var(--color-border)] px-1 py-px text-[11px] uppercase tracking-wider text-[var(--color-text-muted)] max-md:hidden">demo</span>
-    </div>
-    {authed && (
+    </button>
     <nav aria-label="主导航" className="flex items-center gap-1 py-0.5 text-[14px] max-md:order-last max-md:w-full max-md:flex-wrap max-md:overflow-x-auto">
-      {(S.perspective==="host"
+     {!authed && (
+      <button onClick={()=>setS(p=>({...p,view:"search"}))}
+       className={`rounded-md px-2.5 py-1 ${S.view==="search"?"bg-[var(--color-surface)] text-[var(--color-text)]":"text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]"}`}>{T.navConsole}</button>
+     )}
+     {authed && (
+      (S.perspective==="host"
          ? [["host-machines",T.navMachines],["host-earnings",T.navEarnings]]
         : [["search",T.navConsole],["market-data",T.navMarket],["instances",T.navInstances+(S.instances.length?` (${S.instances.length})`:"")],["billing",T.navBilling]]
-     ).map(([v,l])=>(
-      <button key={v} onClick={()=>setS(p=>({...p,view:v}))}
-       className={`rounded-md px-2.5 py-1 ${S.view===v?"bg-[var(--color-surface)] text-[var(--color-text)]":"text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]"}`}>{l}</button>
-     ))}
-    </nav>)}
+      ).map(([v,l])=>(
+       <button key={v} onClick={()=>setS(p=>({...p,view:v}))}
+        className={`rounded-md px-2.5 py-1 ${S.view===v?"bg-[var(--color-surface)] text-[var(--color-text)]":"text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]"}`}>{l}</button>
+      ))
+     )}
+    </nav>
      <div className="ml-auto flex items-center gap-3 max-md:flex-wrap max-md:justify-end max-md:gap-1">
       {authed && (
       <button onClick={()=>act.setPerspective(S.perspective==="tenant"?"host":"tenant")}
@@ -2247,8 +2244,7 @@ function CreditsModal({S,act,setS}){
      <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-accent)]/10 text-[var(--color-accent-hover)]"><Icon d={P.shield} size={13}/></span>
      <span className="text-[12.5px] leading-snug text-[var(--color-text-secondary)]">{T.crTrustLine}</span>
     </div>)}
-   <p className="text-[12px] leading-relaxed text-[var(--color-text-faint)]">{T.crDemoNote}</p>
-   <div className="space-y-1.5 rounded-lg border border-[var(--color-warning)]/25 bg-[var(--color-warning)]/[.06] p-3 text-[13px] leading-relaxed text-[var(--color-warning-on-tint)]">
+      <div className="space-y-1.5 rounded-lg border border-[var(--color-warning)]/25 bg-[var(--color-warning)]/[.06] p-3 text-[13px] leading-relaxed text-[var(--color-warning-on-tint)]">
      <div>{T.crD1Pre}<b>{T.crD1Em}</b>{T.crD1Suf}</div>
      <div>{T.crD2Pre}<b>{T.crD2Em}</b>{T.crD2Suf}</div>
     </div>
@@ -2643,7 +2639,7 @@ function InstanceCard({it,S,act,setS}){
     <div>
      <div className="text-[11px] uppercase tracking-widest text-[var(--color-text-faint)]">GPU</div>
      {util!=null ? (
-      <div className="mono mt-1 text-[16px] font-medium text-[var(--color-success)]" title={T.simMetric}>{util}%</div>
+      <div className="mono mt-1 text-[16px] font-medium text-[var(--color-success)]">{util}%</div>
      ) : (
       <div className="mono mt-1 text-[16px] font-medium text-[var(--color-text-muted)]">—</div>
      )}
@@ -2812,8 +2808,7 @@ function ControlBar({S,act,setS,collapsed}){
  return (
  <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[var(--color-info)]/30 bg-[var(--color-surface)] opacity-95 backdrop-blur">
   <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2">
-   <span className="rounded border border-[var(--color-info)]/40 bg-[var(--color-info)]/10 px-1.5 py-0.5 text-[12px] font-medium text-[var(--color-info-on-tint)]">{T.ctlBadge}</span>
-    <CtlBtn onClick={()=>{setS(p=>({...p,hostDown:!p.hostDown,
+       <CtlBtn onClick={()=>{setS(p=>({...p,hostDown:!p.hostDown,
       instances:p.instances.map(x=>x.status==="Running"?{...x,status:"Offline",offlineAt:p.simT}:x.status==="Offline"&&p.hostDown?{...x,status:"Running",offlineAt:null}:x), // 断连记 offlineAt（违约检测起点），恢复清零防误触发
       hostMachines:p.hostMachines.map(m=>!p.hostDown&&m.status==="listed"?{...m,status:"offline"}:(p.hostDown&&m.status==="offline"?{...m,status:"listed"}:m))}));act.toast(S.hostDown?"宿主机恢复上线":"已切断宿主机连接（Offline 分支 · 持续断连超 5min 触发宿主违约）");}}
      disabled={!anyRunning&&!S.hostDown} label={T.ctlOffline(S.hostDown)}/>
@@ -2854,7 +2849,25 @@ function ConfirmGate({S,act}){
 /* ================= 落地页（未登录默认首页 · 强制门语义） ================= */
 // 营销层但延续 zinc 工作台语言：无渐变/无玻璃/无装饰阴影；价格 emerald mono；全页仅 hero 1 个 eyebrow（节制铁律）
 const LD_OFFER_IDS=[31230659,33785603,44160786,28705887]; // 价格卡：verified 采样 4 条（RTX 5070/5080/PRO 4500/PRO 6000 S）
-const LD_ROWS=5; // 落地页目录表游客可见行数；切片与尾部说明文案共用，避免两处数字各自为政
+const LD_CARDS=6; // 落地页型号卡网格张数（3×2）
+// 型号卡价格曲线：确定性伪随机（型号名为种子），演示序列、非真实历史报价；同型号每次渲染一致。
+// trend 由 hash 确定性派生（up/down/flat）：曲线漂移方向与线色互相印证——口径是对租客好坏（价升=橙警示、价降=绿），非股市涨跌
+const spark=(gpu,floor,med)=>{
+ let s=[...gpu].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
+ const rnd=()=>(s=(s*1664525+1013904223)>>>0)/4294967296;
+ const trend=["down","flat","up"][(s>>>8)%3];
+ const base0=Math.max(med||floor*1.25,floor);
+ const base=trend==="down"?base0*1.12:base0;
+ const drift=trend==="up"?0.12:trend==="down"?-0.107:0;
+ const n=28,pts=[];
+ for(let i=0;i<n;i++){
+  const t=i/(n-1);
+  pts.push(Math.max(base*(1+drift*t+0.04*Math.sin(t*6.3+(s%7))+(rnd()-0.5)*0.08), floor*0.97));
+ }
+ const lo=Math.min(...pts),hi=Math.max(...pts),W=220,H=44,pad=3;
+ const xy=pts.map((v,i)=>`${(pad+i*(W-2*pad)/(n-1)).toFixed(1)},${(H-pad-((v-lo)/(hi-lo||1))*(H-2*pad)).toFixed(1)}`);
+ return {trend,line:xy.join(" "),area:`${pad},${H-pad} ${xy.join(" ")} ${W-pad},${H-pad}`};
+};
 // 开发者区终端窗口：演示「搜索→部署→查看」会话。终端是代码/命令（非 UI 文案），故英文常量、不入 i18n；
 // 价格直引 $0.104/hr（派生数字先手算纪律）。逐行拆 token 上色——语法结构色，非装饰（$ 绿 / 子命令白粗 / 参数蓝 / 输出灰 / 关键值绿）
 const TERM_COLOR={prompt:"text-[#28c840]",cmd:"text-[#e6edf3] font-semibold",arg:"text-[#79c0ff]",out:"text-[#8b949e]",emph:"text-[#7ee787]"};
@@ -2889,7 +2902,7 @@ function LandingPage({S,act,setS,adminCfg}){
      <h1 className="max-w-[14ch] text-balance text-[36px] font-semibold leading-[1.06] tracking-tight md:max-w-[20ch] md:text-[52px]">{T.ldHeroTitle}</h1>
      <p className="mt-5 max-w-[46ch] text-[16px] leading-relaxed text-[var(--color-text-secondary)]">{T.ldHeroSub}</p>
      <div className="mt-8 flex flex-wrap items-center gap-3">
-      <button onClick={goAuth(setS)} className="rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-[16px] font-semibold text-white hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldCtaBrowse} →</button>
+      <button onClick={()=>setS(p=>({...p,view:"search"}))} className="rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-[16px] font-semibold text-white hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldCtaBrowse} →</button>
       <button onClick={goAuth(setS)} className="rounded-lg border border-[var(--color-border-strong)] px-5 py-2.5 text-[16px] text-[var(--color-text-secondary)] hover:border-[var(--color-text-faint)] active:translate-y-[1px]">{T.ldCtaHost}</button>
      </div>
     </div>
@@ -2908,7 +2921,6 @@ function LandingPage({S,act,setS,adminCfg}){
         <span className="mono text-[16px] font-semibold text-[var(--color-success)]">${lp$(o.dph)}<span className="text-[11px] font-normal text-[var(--color-text-faint)]">/hr</span></span>
        </div>))}
      </div>
-     <p className="mt-3 text-[11px] text-[var(--color-text-faint)]">{T.ldTickerFoot}</p>
     </div>
    </section>
 
@@ -2928,59 +2940,60 @@ function LandingPage({S,act,setS,adminCfg}){
        <div className="mt-2 text-[12px] tracking-wide text-[var(--color-text-muted)]">{l}</div>
       </div>))}
     </div>
-    <p className="pb-6 text-center text-[11px] text-[var(--color-text-faint)]">{T.ldKpiNote}</p>
    </section>
 
-   {/* 算力在哪：落地页唯一视觉锚点，承担「物质感/空间感」——后台系统不会在首屏后铺一张世界分布图，
-       这道气质差就是这个 section 的存在理由。刻意排在目录表之前：先让访客知道「算力在地球上的哪几处」，
-       再进交易细节。留白刻意收紧（py-14 md:px-16 级别）——309px 低密度内容自带呼吸，section 再加满留白会把页面拉太长 */}
+
+   {/* 算力目录：型号卡网格（要素卡式，无说明行）；行为只读，单动线 Rent＝进市场并预筛该型号（未登录下单仍走 openRent 登录门） */}
+   <section className="border-t border-[var(--color-border)] py-16 md:py-24">
+    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldMarketTitle}</h2>
+    <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldMarketSub(listed.length,mkModels,ldGpus,ldRegions)}</p>
+    <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+     {cat.slice(0,LD_CARDS).map(r=>{
+      const tier=r.n>=3?"High":r.n===2?"Med":"Low";
+      const sp=spark(r.gpu,r.floor,r.med);
+      return (
+      <article key={r.gpu} className="flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+       <div className="flex items-center justify-between gap-2">
+        <h3 className="text-[16px] font-semibold tracking-tight">{r.gpu}</h3>
+        <div className="flex items-center gap-1.5" aria-hidden="true">
+         <span className="flex gap-1">{[0,1,2].map(i=><span key={i} className={`h-1.5 w-3 rounded-full ${i<Math.min(r.n,3)?"bg-[var(--color-success)]":"bg-[var(--color-border)]"}`}/>)}</span>
+         <span className="rounded-md border border-[var(--color-border)] px-1.5 py-px text-[12px] text-[var(--color-text-secondary)]">{tier}</span>
+        </div>
+       </div>
+       <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--color-text-muted)]">
+        {r.arch && <span className="rounded bg-[var(--color-bg)] px-1.5 py-px">{r.arch}</span>}
+        {r.gpuRam!=null && <span className="mono">{r.gpuRam} GB VRAM</span>}
+        {r.uses.map(u=><span key={u}>{USE_LBL[u]}</span>)}
+       </p>
+       <svg viewBox="0 0 220 44" preserveAspectRatio="none" aria-hidden="true" className="mt-4 h-11 w-full">
+        <polygon points={sp.area} fill={sp.trend==="up"?"var(--color-trend-up)":"var(--color-success)"} opacity="0.09"/>
+        <polyline points={sp.line} fill="none" stroke={sp.trend==="up"?"var(--color-trend-up)":"var(--color-success)"} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
+       </svg>
+       <div className="mt-4 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+         <p className="mono whitespace-nowrap text-[var(--color-text-muted)]"><span className="text-[12px]">{T.ldCatFrom} </span><span className="text-[20px] font-semibold text-[var(--color-success)]">${lp$(r.floor)}</span><span className="text-[12px] text-[var(--color-text-faint)]"> /hr</span></p>
+         <p className="mono mt-0.5 text-[12px] text-[var(--color-text-faint)]">{T.ldCatMedian} ${lp$(r.med)}/hr</p>
+        </div>
+        <button onClick={()=>setS(p=>({...p,view:"search",filters:{...p.filters,gpus:[r.gpu]}}))} className="shrink-0 rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.rent}</button>
+       </div>
+      </article>);
+     })}
+     {!cat.length && <p className="col-span-full py-6 text-center text-[var(--color-text-faint)]">—</p>}
+    </div>
+    <div className="mt-8 flex flex-col items-center gap-3">
+     <button onClick={()=>setS(p=>({...p,view:"search"}))} className="rounded-lg border border-[var(--color-border-strong)] px-5 py-2.5 text-[14px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-text-faint)] active:translate-y-[1px]">{T.ldCatCta} →</button>
+    </div>
+   </section>
+
+   {/* 在售算力分布：落地页唯一视觉锚点，承担「物质感/空间感」——后台系统不会在页面里铺一张世界分布图，
+       这道气质差就是这个 section 的存在理由。排在报价目录之后收尾：访客先读价格与型号，再看地理分布。
+       留白刻意收紧——309px 低密度内容自带呼吸，section 再加满留白会把页面拉太长 */}
    <section className="border-t border-[var(--color-border)] py-14 md:py-16">
     <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldWhereTitle}</h2>
     <div className="mx-auto mt-6 w-full max-w-[960px]">
      <WorldMapSVG T2={T}/>
     </div>
     <p className="mt-4 text-center text-[12px] leading-4 text-[var(--color-text-faint)]">{T.ldWhereNote}</p>
-   </section>
-
-   {/* 算力目录：全在售型号的规格与挂牌价（口径可引用＝定价权的基础）；行为只读，单一 CTA 进注册（强制门） */}
-   <section className="border-t border-[var(--color-border)] py-16 md:py-24">
-    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldMarketTitle}</h2>
-    <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldMarketSub(listed.length,mkModels,ldGpus,ldRegions)}</p>
-    <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldCatSub}</p>
-    <div className="table-scroll mt-6">
-     <table className="w-full border-collapse text-[13px]">
-      <caption className="sr-only">{T.ldMarketTitle}</caption>
-      <thead><tr className="border-b border-[var(--color-border)] text-left text-[12px] text-[var(--color-text-muted)]">
-       <th scope="col" className="py-2 pr-3 font-medium">{T.ldCatColModel}</th>
-       <th scope="col" className="py-2 pr-3 text-right font-medium">{T.ldCatColRam}</th>
-       <th scope="col" className="hidden py-2 pr-3 text-right font-medium sm:table-cell">{T.ldCatColTflops}</th>
-       <th scope="col" className="hidden py-2 pr-3 font-medium sm:table-cell">{T.ldCatColUse}</th>
-       <th scope="col" className="py-2 text-right font-medium">{T.ldCatColPrice}</th>
-      </tr></thead>
-      <tbody>
-       {cat.slice(0,LD_ROWS).map(r=>(
-        <tr key={r.gpu} className="border-b border-[var(--color-border)] transition-colors last:border-0 hover:bg-[var(--color-surface-alt)]">
-         <td className="py-2.5 pr-3">
-          <div className="text-[13px] font-semibold text-[var(--color-text)]">{r.gpu}</div>
-          <div className="mono mt-0.5 text-[12px] text-[var(--color-text-faint)]">
-           {T.ldCatCount(r.n,r.gpus)}<span className="hidden sm:inline">{T.ldCatCardSpan(r.cardMin,r.cardMax).length?` · ${T.ldCatCardSpan(r.cardMin,r.cardMax)}`:""}{r.pcie!=null?` · PCIe ${r.pcie}`:""}</span> · {r.regions.join(" / ")}
-          </div>
-         </td>
-         <td className="mono py-2.5 pr-3 text-right text-[var(--color-text-secondary)]">{r.gpuRam!=null?`${r.gpuRam} ${T.ldCatRam}`:"—"}</td>
-         <td className="mono hidden py-2.5 pr-3 text-right text-[var(--color-text-secondary)] sm:table-cell">{r.tflops!=null?`${r.tflops} ${T.ldCatTflops}`:"—"}</td>
-         <td className="hidden py-2.5 pr-3 sm:table-cell">{r.uses.length?r.uses.map(u=><span key={u} className="mr-1.5 inline-block rounded border border-[var(--color-border)] px-1.5 py-px text-[11px] text-[var(--color-text-muted)]">{USE_LBL[u]||u}</span>):<span className="text-[var(--color-text-faint)]">—</span>}</td>
-         <td className="mono py-2.5 text-right font-semibold text-[var(--color-success)]">${lp$(r.floor)}<span className="ml-0.5 text-[11px] font-normal text-[var(--color-text-faint)]">/hr</span></td>
-        </tr>))}
-       {cat.length>LD_ROWS && <tr><td colSpan={5} className="pt-4 text-center text-[12px] text-[var(--color-text-faint)]">{T.ldCatNote(LD_ROWS)}</td></tr>}
-       {!cat.length && <tr><td colSpan={5} className="py-6 text-center text-[var(--color-text-faint)]">—</td></tr>}
-      </tbody>
-     </table>
-    </div>
-    <p className="mt-2.5 text-[12px] leading-4 text-[var(--color-text-faint)]">{T.ldCatFoot}</p>
-    <div className="mt-6 flex flex-col items-center gap-3">
-     <button onClick={goAuth(setS)} className="rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldCatCta} →</button>
-     <p className="text-center text-[12px] text-[var(--color-text-faint)]">{T.ldMarketFoot}</p>
-    </div>
    </section>
 
    {/* 三源供给：三等卡一行。三条描述各 22–25 个中文字，落在原列表第三列（1fr ≈ 844px）里右侧空出约 506px，
@@ -3180,8 +3193,7 @@ function AuthModal({S,act,setS}){
        <input value={code} onChange={e=>{setCode(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6} inputMode="numeric" autoFocus placeholder={T.auCodePh} aria-label={T.auCodeTitle} aria-invalid={!!err} aria-describedby={err?"auth-err":undefined}
         className="mono mt-3 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-center text-[20px] tracking-[0.4em]"/></label>
       {err && <p id="auth-err" role="alert" className="text-[13px] text-[var(--color-error-on-tint)]">{err}</p>}
-      <p className="rounded-lg border border-[var(--color-info)]/25 bg-[var(--color-info)]/[.06] p-4 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{T.auCodeHint}</p>
-      <button type="submit" disabled={code.length<6} className={`min-h-[44px] w-full rounded-lg py-2.5 text-[15px] font-semibold ${code.length>=6?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"}`}>{T.auVerifyBtn}</button>
+            <button type="submit" disabled={code.length<6} className={`min-h-[44px] w-full rounded-lg py-2.5 text-[15px] font-semibold ${code.length>=6?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"}`}>{T.auVerifyBtn}</button>
       <button type="button" onClick={()=>{setStep(0);setCode("");setErr("");}} className="w-full text-center text-[13px] text-[var(--color-text-faint)] hover:text-[var(--color-text-secondary)] hover:underline">{T.auBackEdit}</button>
      </form>
     )}
@@ -3878,8 +3890,8 @@ function WithdrawModal({S,act,setS}){
  const [stage,setStage]=useState("form"); // form → verify：出金二次验证（step-up）
  const [wdCode,setWdCode]=useState("");
  const [wdErr,setWdErr]=useState("");
- // 演示环境：本次验证码生成并展示；正式产品下发至账号登录邮箱，错误验证码会被拒绝
- const [demoCode]=useState(()=>String(Math.floor(100000+Math.random()*900000)));
+ // 演示：验证码固定 123456，无对客提示文案；正式产品经账号邮箱下发，错误码被拒
+ const [demoCode]=useState("123456");
  const activeCh=POUTS.some(x=>x.channel===wdCh)?wdCh:(defCh?.channel||null);
  const wdVal=parseFloat(wdAmt);
  const wdOk=Number.isFinite(wdVal)&&wdVal>=20&&wdVal<=S.hostEarnings+1e-9;
@@ -3964,8 +3976,7 @@ function WithdrawModal({S,act,setS}){
     <input value={wdCode} onChange={e=>{setWdCode(e.target.value.replace(/\D/g,"").slice(0,6));setWdErr("");}} maxLength={6} inputMode="numeric" autoFocus placeholder={T.auCodePh} aria-label={T.eaWdCode} aria-invalid={!!wdErr} aria-describedby={wdErr?"wd-err":undefined}
      className="mono mt-1 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-center text-[20px] tracking-[0.4em]"/></label>
    {wdErr && <p id="wd-err" role="alert" className="mt-2 text-[13px] text-[var(--color-error-on-tint)]">{wdErr}</p>}
-   <p className="mt-2 rounded-lg border border-[var(--color-info)]/25 bg-[var(--color-info)]/[.06] p-2.5 text-[13px] leading-snug text-[var(--color-text-muted)]">{T.eaWdCodeHint(demoCode)}</p>
-   <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex gap-2">
     <button type="button" onClick={()=>{setStage("form");setWdCode("");setWdErr("");}}
      className="rounded-lg border border-[var(--color-border)] px-3.5 py-2 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.wzPrev}</button>
     <button disabled={wdCode.length<6} onClick={confirm}

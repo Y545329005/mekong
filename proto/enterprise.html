@@ -36,6 +36,7 @@ window.addEventListener('error',function(e){
     --color-success-on-tint: #065f46; --color-warning-on-tint: #92400e; --color-error-on-tint: #b91c1c; --color-info-on-tint: #6d28d9;
     --color-accent-on-tint: #1d4ed8;
     --color-map-stroke: #64748b; --color-map-grid: #cbd5e1;
+    --color-trend-up: #c2410c;
   }
   .dark {
   /* 同浅色档的同一套取值；深色下语义色底是亮色，字色改用 --color-on-solid / --color-*-on-tint。 */
@@ -49,6 +50,7 @@ window.addEventListener('error',function(e){
     --color-success-on-tint: #6ee7b7; --color-warning-on-tint: #f59e0b; --color-error-on-tint: #fca5a5; --color-info-on-tint: #a78bfa;
     --color-accent-on-tint: #60a5fa;
     --color-map-stroke: #94a3b8; --color-map-grid: #334155;
+    --color-trend-up: #ff6d33;
   }
   /* tokens:end */
   html,body{background:var(--color-bg);color:var(--color-text);}
@@ -95,25 +97,29 @@ window.addEventListener('error',function(e){
    - 定位＝「企业采购需求提交 + 线下对接指引」的受理漏斗，非 B2B 自助购买平台
    - 不承诺尚未交付的能力：统一交付责任 / SLA / 统一账单 / 价格优势（未定能力不作为承诺依据）
    - 表单落 sessionStorage（同源 per-tab，刷新不丢，不写入其他页面共用的主存档键）
-   - localStorage 只写语言偏好与主题两个键，不碰多页共用的主存档键 gpu-market-store（多 tab 同开会互相覆盖存档）
+   - localStorage：语言偏好与主题两键 + 提交时新增 mekong-ent-lead-<ref>（每条需求一独立键，键级原子追加——
+     规避多 tab 并发提交对共享数组的读改写覆盖竞态；创建后本页不再写该键，受理后的写权归 admin.html）；
+     不碰多页共用的主存档键 gpu-market-store（多 tab 同开会互相覆盖存档）
    ============================================================= */
 const {useState,useEffect} = React;
 
 const LANG_KEY = "mekong-ent-lang";
 const DRAFT_KEY = "mekong-ent-draft";
 const ENT_KEY = "mekong-ent-submitted";
+/* 企业需求线索键前缀：admin.html「企业需求」面板按前缀枚举聚合（单条一独立键，理由见头部注释） */
+const LEAD_PREFIX = "mekong-ent-lead-";
 
 /* ---- i18n 双包（主题与语言同 portal/index 范式；语言独立键，避免高频 tick 饿死落盘） ---- */
 const I18N = {
 zh:{
   brand:"Mekong", theme:"切换主题", langAria:"切换语言", skipMain:"跳到主要内容",
   heroKicker:"企业客户入口", heroTitle:"企业算力采购需求受理", heroLead:"提交算力需求后，由销售与方案团队对接确认。当前阶段不支持平台自助下单，合同与交付安排以线下确认为准。",
-  formTitle:"提交采购需求", formLead:"带 * 为必填。提交后进入线下对接流程，不会自动产生订单或费用。", opt:"选填",
+  formTitle:"获取定制算力方案", formLead:"带 * 为必填。提交后进入线下对接流程，不会自动产生订单或费用。", opt:"选填",
   fModel:"算力类型", fModelPh:"选择主要用途", oTraining:"模型训练", oInference:"推理服务", oRender:"渲染 / 图形", oOther:"其他",
   fModelOther:"其他用途说明", fModelOtherPh:"请简述用途",
   fGpu:"GPU 型号", fGpuPh:"选择型号", gAny:"暂不指定（由方案团队建议）", gH100:"NVIDIA H100", gH200:"NVIDIA H200", gA100:"NVIDIA A100", gL40S:"NVIDIA L40S",
   fCards:"预计卡数", fCardsPh:"例如 8", fPeriod:"使用周期", fPeriodPh:"选择周期", pWeek:"按周", pMonth:"按月", pQuarter:"按季度", pLong:"长期 / 不确定",
-  fBudget:"预算区间（USD）", fBudgetPh:"例如 20000 – 50000", fBudgetPh2:"用于方案匹配，不构成报价。",
+  fBudget:"月度算力预算", fBudgetPh:"选择月度预算", fBudgetPh2:"用于方案匹配，不构成报价。",
   fEmail:"联系邮箱", fEmailPh:"name@company.com",
   fCompany:"公司 / 组织", fCompanyPh:"例如 Acme AI Ltd", fName:"联系人", fNamePh:"", fNote:"需求说明", fNotePh:"软件栈、网络要求、数据合规要求等",
   errSummary:"以下字段需要修正",
@@ -125,12 +131,12 @@ zh:{
 en:{
   brand:"Mekong", theme:"Toggle theme", langAria:"Switch language", skipMain:"Skip to main content",
   heroKicker:"For enterprise", heroTitle:"Enterprise compute request intake", heroLead:"Submit a compute requirement; sales and solution engineers will follow up. Self-service enterprise ordering is not available at this stage — contracts and delivery are confirmed offline.",
-  formTitle:"Submit a request", formLead:"Fields marked * are required. Submission starts an offline onboarding flow; it creates no order and no charge.", opt:"Optional",
+  formTitle:"Get a tailored compute proposal", formLead:"Fields marked * are required. Submission starts an offline onboarding flow; it creates no order and no charge.", opt:"Optional",
   fModel:"Workload type", fModelPh:"Select primary use", oTraining:"Model training", oInference:"Inference", oRender:"Rendering / graphics", oOther:"Other",
   fModelOther:"Other workload detail", fModelOtherPh:"Describe the workload",
   fGpu:"GPU model", fGpuPh:"Select a model", gAny:"No preference (advised by solution team)", gH100:"NVIDIA H100", gH200:"NVIDIA H200", gA100:"NVIDIA A100", gL40S:"NVIDIA L40S",
   fCards:"Estimated GPUs", fCardsPh:"e.g. 8", fPeriod:"Term", fPeriodPh:"Select term", pWeek:"Weekly", pMonth:"Monthly", pQuarter:"Quarterly", pLong:"Long-term / unsure",
-  fBudget:"Budget range (USD)", fBudgetPh:"e.g. 20000 – 50000", fBudgetPh2:"Used for matching; not a quotation.",
+  fBudget:"Monthly compute budget", fBudgetPh:"Select monthly budget", fBudgetPh2:"Used for matching; not a quotation.",
   fEmail:"Contact email", fEmailPh:"name@company.com",
   fCompany:"Company / Organization", fCompanyPh:"e.g. Acme AI Ltd", fName:"Contact name", fNamePh:"", fNote:"Requirements", fNotePh:"Software stack, network, data compliance, etc.",
   errSummary:"The following fields need attention",
@@ -147,6 +153,8 @@ const CARDS_MAX = 10000;   /* 上限单点定义：校验与错误文案共用�
 const readLS = (k, d=null) => { try { const v = sessionStorage.getItem(k); return v==null?d:JSON.parse(v); } catch { return d; } };
 const writeLS = (k, v) => { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} };
 const EMPTY_DRAFT = {model:"",modelOther:"",gpu:"",cards:"",period:"",budget:"",company:"",email:"",name:"",note:""};
+/* 预算档位：区间字符串直接作 option value（zh/en 同文案，已存档值不随语言漂移）；label 已标月度口径 */
+const BUDGET_TIERS = ["$0 – $5,000","$5,000 – $10,000","$10,000 – $25,000","$25,000 – $50,000","$50,000+"];
 /* 草稿信封带版本号：字段增删时旧草稿可被识别并安全丢弃（旧结构无 v 字段） */
 const readDraft = () => { const r = readLS(DRAFT_KEY, null); return (r && r.v===1 && r.draft) ? {...EMPTY_DRAFT, ...r.draft} : null; };
 
@@ -190,8 +198,11 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
   /* 码 → 当前语言文案；未知码回退为空（不把码本身显示给用户） */
   const msg = c => c ? (T.errMsg[c] || "").replace("{max}", CARDS_MAX) : "";
   const submit=(ev)=>{ ev.preventDefault(); if(!validate()) return;
-    const ref="REQ-"+Date.now().toString(36).toUpperCase().slice(-6);
+    // 2 位随机后缀防同毫秒碰撞：分键方案下键名碰撞＝后提交覆盖先提交，必须从源头杜绝
+    const ref="REQ-"+Date.now().toString(36).toUpperCase().slice(-6)+Math.random().toString(36).slice(2,4).toUpperCase();
     const rec={v:1, draft:{...draft, modelOther:draft.modelOther.trim(), cards:draft.cards.trim(), budget:draft.budget.trim(), company:draft.company.trim(), email:draft.email.trim(), name:draft.name.trim(), note:draft.note.trim()}, ref, at:Date.now()};   // 冗余 lang 字段已删（渲染跟随当前语言，不按提交时语言回显）
+    // 落后台线索键：仅此一次写入（创建瞬间），此后写权归 admin；失败静默（对客受理回显不依赖该键）
+    try{ localStorage.setItem(LEAD_PREFIX+ref, JSON.stringify({v:1, ref, at:rec.at, status:"new", timeline:[], draft:rec.draft})); }catch(e){}
     writeLS(ENT_KEY,rec); try{ sessionStorage.removeItem(DRAFT_KEY); }catch{} setSent(rec);
   };
   const reset=()=>{ setDraft({...EMPTY_DRAFT}); setErr({}); writeLS(DRAFT_KEY,null); try{ sessionStorage.removeItem(ENT_KEY); }catch{} };
@@ -279,8 +290,12 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
          {sel("period",T.fPeriod,draft.period,v=>set("period",v),[{v:"",t:T.fPeriodPh},{v:"week",t:T.pWeek},{v:"month",t:T.pMonth},{v:"quarter",t:T.pQuarter},{v:"long",t:T.pLong}],msg(err.period),true)}
          <div>
            <label htmlFor="budget" className="block text-[13px] font-medium text-[var(--color-text-secondary)]">{T.fBudget}<OptMark T={T}/></label>
-           <input id="budget" value={draft.budget} placeholder={T.fBudgetPh} onChange={e=>set("budget",e.target.value)}
-             className="mt-1.5 w-full rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-[14px] outline-none placeholder:text-[var(--color-text-faint)] focus:border-[var(--color-focus)]"/>
+           {/* 选填无校验；旧草稿中的自由文本不匹配档位时回落 placeholder，避免 controlled select 值失配 */}
+           <select id="budget" value={BUDGET_TIERS.includes(draft.budget)?draft.budget:""} onChange={e=>set("budget",e.target.value)}
+             className="mt-1.5 w-full rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-3 py-2 text-[14px] text-[var(--color-text)] outline-none focus:border-[var(--color-focus)]">
+             <option value="">{T.fBudgetPh}</option>
+             {BUDGET_TIERS.map(b=><option key={b} value={b}>{b}</option>)}
+           </select>
            <p className="mt-1 text-[11px] text-[var(--color-text-faint)]">{T.fBudgetPh2}</p>
          </div>
          {inp("company",T.fCompany,draft.company,v=>set("company",v),T.fCompanyPh)}

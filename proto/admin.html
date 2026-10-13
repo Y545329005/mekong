@@ -39,6 +39,7 @@ window.addEventListener('error',function(e){
     --color-success-on-tint: #065f46; --color-warning-on-tint: #92400e; --color-error-on-tint: #b91c1c; --color-info-on-tint: #6d28d9;
     --color-accent-on-tint: #1d4ed8;
     --color-map-stroke: #64748b; --color-map-grid: #cbd5e1;
+    --color-trend-up: #c2410c;
   }
   .dark {
   /* 同浅色档的同一套取值；深色下语义色底是亮色，字色改用 --color-on-solid / --color-*-on-tint。 */
@@ -52,6 +53,7 @@ window.addEventListener('error',function(e){
     --color-success-on-tint: #6ee7b7; --color-warning-on-tint: #f59e0b; --color-error-on-tint: #fca5a5; --color-info-on-tint: #a78bfa;
     --color-accent-on-tint: #60a5fa;
     --color-map-stroke: #94a3b8; --color-map-grid: #334155;
+    --color-trend-up: #ff6d33;
   }
   /* tokens:end */
   html,body { background:var(--color-bg); color:var(--color-text); font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; font-size:15px; }
@@ -112,6 +114,19 @@ const STORE_KEY="gpu-market-demo-v1";
 const trimLedger=(a,cap=300)=>{ a=[...a]; let rest=a.filter(e=>!(e.hostV===3||e.seedTenant)).length; while(rest>cap){ const i=a.findLastIndex(e=>!(e.hostV===3||e.seedTenant)); if(i<0) break; a.splice(i,1); rest--; } return a; };
 const ACCOUNTS_KEY="gpu-market-accounts-v1";
 const ADMIN_KEY="gpu-market-admin-v1";
+/* ================= 企业需求线索（enterprise.html 提交落盘；单条一独立键——键级原子追加，规避多 tab 读改写覆盖竞态。
+   写权分相：创建瞬间由 enterprise.html 独占写，受理后仅本端写该键。
+   ⚠ 本页为无鉴权公开演示页：lead 含真实 PII（邮箱/公司/联系人）；真实流量上线前须随鉴权一起关闭公开读 ================= */
+const LEAD_PREFIX="mekong-ent-lead-";
+const loadLead=(ref)=>{ try{ return JSON.parse(localStorage.getItem(LEAD_PREFIX+ref))||null }catch(e){ return null } };
+const saveLead=(rec)=>{ try{ localStorage.setItem(LEAD_PREFIX+rec.ref,JSON.stringify(rec)) }catch(e){} };
+const listLeads=()=>{ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
+    if(k&&k.startsWith(LEAD_PREFIX)){ try{ const r=JSON.parse(localStorage.getItem(k)); if(r&&r.ref) out.push(r); }catch(e){} } } }catch(e){}
+  // at 降序 + ref 次键（同毫秒提交排序稳定）；待联系置顶在展示层做
+  out.sort((a,b)=>((b.at||0)-(a.at||0))||(a.ref<b.ref?-1:1)); return out; };
+// 状态徽章配色（文本+边框双通道，颜色非唯一信号）；状态中文名走 I18N elSt* 键
+const LEAD_CLS={ new:"text-[var(--color-warning)] border-[var(--color-warning)]/40", contacted:"text-[var(--color-info)] border-[var(--color-info)]/40", proposal:"text-[var(--color-accent-on-tint)] border-[var(--color-accent)]/40", won:"text-[var(--color-success)] border-[var(--color-success)]/40", lost:"text-[var(--color-text-faint)] border-[var(--color-border)]" };
+const LEAD_STATUSES=["new","contacted","proposal","won","lost"];   // won 唯一终态；其余可互通（迁移时强制写 timeline 留痕）
 const loadStore=()=>{ try{ return JSON.parse(localStorage.getItem(STORE_KEY))||null }catch(e){ return null } };
 const loadAccounts=()=>{ try{ return JSON.parse(localStorage.getItem(ACCOUNTS_KEY))||{} }catch(e){ return {} } };
 const loadAdminCfg=()=>{ try{ return JSON.parse(localStorage.getItem(ADMIN_KEY))||{} }catch(e){ return {} } };
@@ -129,6 +144,8 @@ const fmtT=(t)=>{ if(t==null) return "—"; if(t<0) return "底数前";
   const s=Math.floor(t), h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
   return (h>0? h+"h "+m+"m " : m>0? m+"m " : "")+x+"s"; };
 const fmtDate=(ts)=>{ if(!ts) return "—"; try{ return new Date(ts).toLocaleString("zh-CN",{hour12:false}) }catch(e){ return "—" } };
+// 列表短时间：月-日 时:分（完整到秒的版本留给详情弹窗，列表窄列腾宽度）
+const fmtShort=(ts)=>{ if(!ts) return "—"; try{ return new Date(ts).toLocaleString("zh-CN",{hour12:false,month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}) }catch(e){ return "—" } };
 const nowStr=()=>{ try{ return new Date().toLocaleTimeString("zh-CN",{hour12:false}) }catch(e){ return "" } };
 // 对客端 ledger msgKey → 文案（admin 侧独立小映射，避免依赖对客端内部函数）
 const EVT = {
@@ -184,7 +201,7 @@ zh:{
   poNote:"批准即时扣减用户端宿主收益（在线实时生效、离线挂载补扣）；出金不产生 ledger 流水，下方对账表保持租客↔宿主入账口径",
   reconTitle:"双边对账（以 ledger 流水为准）", reconRent:"租客消费（host 源）", reconHost:"宿主净入账 (1−r)", reconPlat:"平台抽成 (r)", reconCheck:"守恒校验", reconOk:"通过（±0.01）", reconErr:"校验失败，差值", reconSplit:(a,b)=>`rate>0 共 ${a} 笔 · rate=0 共 ${b} 笔（切抽成前后分段记账）`,
   uEmail:"邮箱", uProvider:"注册方式", uRegAt:"注册时间", uRole:"状态", uBan:"封禁", uUnban:"解封", uBanned:"已封禁", uNormal:"正常", uCurrent:"当前登录", uBanTip:(e)=>`已封禁 ${e}（用户端即时登出并拦截登录）`, uUnbanTip:(e)=>`已解封 ${e}`,
-  genTitle:"演示数据生成器", genBody:"注入 2 个演示账号 + 1 台待审宿主机器（RTX 4090）+ 3 条历史流水（含 1 笔 rate=10% 的宿主收益）+ $40 余额。注入前自动快照当前现场，可一键还原。", genBtn:"注入演示数据", genDone:"已注入；用户端在线时会自动刷新", genSnap:"已快照当前现场", genNoSnap:"尚无快照", genRestore:"还原快照", genRestoreTip:"将把快照写回用户端两键，并通知用户端刷新。建议先关闭用户端标签页再还原（避免其内存态覆盖）", genRestored:"已还原快照，用户端已通知刷新",
+  genTitle:"演示数据生成器", genBody:"注入 2 个演示账号 + 1 台待审宿主机器（RTX 4090）+ 3 条历史流水（含 1 笔 rate=10% 的宿主收益）+ $40 余额 + 3 条企业需求种子（待联系/沟通中/已成交）。注入前自动快照当前现场，可一键还原。", genBtn:"注入演示数据", genDone:"已注入；用户端在线时会自动刷新", genSnap:"已快照当前现场", genNoSnap:"尚无快照", genRestore:"还原快照", genRestoreTip:"将把快照写回用户端两键，并通知用户端刷新。建议先关闭用户端标签页再还原（避免其内存态覆盖）", genRestored:"已还原快照，用户端已通知刷新",
   resetTitle:"重置 Admin 配置", resetBody:"清空下架/封禁/抽成/审计（不动用户端数据；用户端抽成即时回落为 0）", resetBtn:"重置配置", resetDone:"Admin 配置已重置",
   aTitle:"操作审计", aEmpty:"暂无操作记录", aAction:"动作", aDetail:"对象/明细", aTime:"时间",
   adBannedLogout:"你的账号已被平台封禁（Admin 干预）", adForceStop:"后台已强制停机（Admin 干预）", adForceDestroy:"后台已强制销毁（Admin 干预）", adInjected:"测试数据已注入（Admin 生成器）",
@@ -192,6 +209,24 @@ zh:{
   aDelist:"Offer 下架", aRestore:"Offer 恢复", aApprove:"宿主审核通过", aReject:"宿主审核驳回", aBan:"账号封禁", aUnban:"账号解封", aComm:"抽成调整", aTransFee:"过渡费调整", aStop:"强制停机", aDestroy:"强制销毁", aGen:"注入演示数据", aReset:"重置 Admin 配置", aSnapRestore:"还原快照", aPayoutOk:"出金批准", aPayoutNo:"出金驳回",
   confirmGen:"注入会合并数据到当前用户端现场（原数据不删除，快照可还原）。继续？",
   none:"—", yes:"是", sidenavHint:"单登录双主体 · 写权分离：本端只写 ADMIN 配置键，用户端只读",
+  navEnt:"企业需求",
+  elEmpty:"暂无企业需求——enterprise.html 提交后实时出现在此", elEmptyInjectHint:"注入 3 条示例留言（待联系 / 沟通中 / 已成交）",
+  elColContact:"联系人", elColReq:"需求概要", elColStatus:"状态",
+  elCardDoing:"处理中", elCardDone:"已闭环",
+  elStNew:"待联系", elStContacted:"沟通中", elStProposal:"方案已发", elStWon:"已成交", elStLost:"已流失",
+  elDetail:"需求详情",
+  elFModel:"算力类型", elFGpu:"GPU 型号", elFCards:"预计卡数", elFPeriod:"使用周期", elFBudget:"月度预算", elFAt:"提交时间", elFName:"联系人", elFEmail:"联系邮箱", elFNote:"需求说明",
+  elMove:"变更状态", elWonTip:"已成交为终态，不可再变更。",
+  elWonArm:"确认成交？", elWonArmTip:"再次点击生效；已成交为终态，不可回退",
+  elLostReason:"流失原因", elLostReq:"流失须先注明原因", elConfirmLost:"确认流失",
+  elLostR:{budget:"预算不匹配",gpu:"机型不满足",competitor:"竞品成交",noreply:"无回应",other:"其他"},
+  elModels:{training:"模型训练",inference:"推理服务",render:"渲染 / 图形",other:"其他"},
+  elGpus:{any:"暂不指定",h100:"H100",h200:"H200",a100:"A100",l40s:"L40S"},
+  elPeriods:{week:"按周",month:"按月",quarter:"按季度",long:"长期 / 不确定"},
+  elNotePh:"追加跟进备注（只增不改）", elNoteAdd:"添加备注", elTimeline:"跟进时间线", elTimelineEmpty:"暂无跟进记录",
+  elActFollow:"跟进", elActView:"查看",
+  elClose:"关闭",
+  aLeadStatus:"需求状态变更", aLeadNote:"需求跟进备注",
 },
 en:{
   appTitle:"Mekong Admin", appDemo:"Demo console", openClient:"Open client →", syncHint:"Syncs client state every 0.5s",
@@ -210,7 +245,7 @@ en:{
   poNote:"Approving deducts the client's host earnings instantly (live when online, replayed on mount when offline); payouts create no ledger rows — the reconciliation table keeps the tenant↔host credit scope",
   reconTitle:"Two-sided reconciliation (from ledger)", reconRent:"Tenant spend (host source)", reconHost:"Host net (1−r)", reconPlat:"Platform commission (r)", reconCheck:"Conservation check", reconOk:"passed (±0.01)", reconErr:"FAILED, diff", reconSplit:(a,b)=>`${a} entries with rate>0 · ${b} with rate=0 (segmented at commission switch)`,
   uEmail:"Email", uProvider:"Provider", uRegAt:"Registered", uRole:"Status", uBan:"Ban", uUnban:"Unban", uBanned:"Banned", uNormal:"Normal", uCurrent:"Signed in", uBanTip:(e)=>`Banned ${e} (client logs out & blocks sign-in instantly)`, uUnbanTip:(e)=>`Unbanned ${e}`,
-  genTitle:"Demo data generator", genBody:"Injects 2 demo accounts + 1 host machine pending review (RTX 4090) + 3 ledger entries (incl. one hostEarn at rate=10%) + $40 balance. Snapshots the current scene first; one-click restore.", genBtn:"Inject demo data", genDone:"Injected; open client tabs will auto-refresh", genSnap:"Scene snapshotted", genNoSnap:"No snapshot yet", genRestore:"Restore snapshot", genRestoreTip:"Writes the snapshot back to the two client keys and asks the client to reload. Close client tabs first (their in-memory state would overwrite)", genRestored:"Snapshot restored; client reload requested",
+  genTitle:"Demo data generator", genBody:"Injects 2 demo accounts + 1 host machine pending review (RTX 4090) + 3 ledger entries (incl. one hostEarn at rate=10%) + $40 balance + 3 enterprise lead seeds (new / contacted / won). Snapshots the current scene first; one-click restore.", genBtn:"Inject demo data", genDone:"Injected; open client tabs will auto-refresh", genSnap:"Scene snapshotted", genNoSnap:"No snapshot yet", genRestore:"Restore snapshot", genRestoreTip:"Writes the snapshot back to the two client keys and asks the client to reload. Close client tabs first (their in-memory state would overwrite)", genRestored:"Snapshot restored; client reload requested",
   resetTitle:"Reset Admin config", resetBody:"Clears delist/ban/commission/audit (client data untouched; client commission falls back to 0 immediately)", resetBtn:"Reset config", resetDone:"Admin config reset",
   aTitle:"Audit log", aEmpty:"No operations yet", aAction:"Action", aDetail:"Target / detail", aTime:"Time",
   adBannedLogout:"Your account was suspended (Admin action)", adForceStop:"Instance force-stopped (Admin action)", adForceDestroy:"Instance force-destroyed (Admin action)", adInjected:"Test data injected (Admin generator)",
@@ -218,6 +253,24 @@ en:{
   aDelist:"Offer delisted", aRestore:"Offer restored", aApprove:"Host listing approved", aReject:"Host listing rejected", aBan:"Account banned", aUnban:"Account unbanned", aComm:"Commission changed", aTransFee:"Transition fee changed", aStop:"Force stop", aDestroy:"Force destroy", aGen:"Demo data injected", aReset:"Admin config reset", aSnapRestore:"Snapshot restored", aPayoutOk:"Payout released", aPayoutNo:"Payout rejected",
   confirmGen:"Data will be MERGED into the current client scene (nothing deleted; snapshot restorable). Continue?",
   none:"—", yes:"Yes", sidenavHint:"Single sign-in, dual principals · Split write authority: this console writes only ADMIN key; client reads it",
+  navEnt:"Enterprise Leads",
+  elEmpty:"No enterprise leads yet — submissions from enterprise.html appear here live", elEmptyInjectHint:"Injects 3 sample leads (new / contacted / won)",
+  elColContact:"Contact", elColReq:"Request", elColStatus:"Status",
+  elCardDoing:"In progress", elCardDone:"Closed",
+  elStNew:"New", elStContacted:"Contacted", elStProposal:"Proposal sent", elStWon:"Won", elStLost:"Lost",
+  elDetail:"Request detail",
+  elFModel:"Workload", elFGpu:"GPU", elFCards:"GPUs", elFPeriod:"Term", elFBudget:"Monthly budget", elFAt:"Submitted", elFName:"Contact", elFEmail:"Email", elFNote:"Requirements",
+  elMove:"Move status", elWonTip:"Won is final and cannot change.",
+  elWonArm:"Confirm win?", elWonArmTip:"Click again to apply; won is final and cannot be undone",
+  elLostReason:"Loss reason", elLostReq:"Pick a loss reason first", elConfirmLost:"Confirm lost",
+  elLostR:{budget:"Budget mismatch",gpu:"GPU unavailable",competitor:"Competitor won",noreply:"No reply",other:"Other"},
+  elModels:{training:"Model training",inference:"Inference",render:"Rendering / graphics",other:"Other"},
+  elGpus:{any:"No preference",h100:"H100",h200:"H200",a100:"A100",l40s:"L40S"},
+  elPeriods:{week:"Weekly",month:"Monthly",quarter:"Quarterly",long:"Long-term / unsure"},
+  elNotePh:"Add a follow-up note (append-only)", elNoteAdd:"Add note", elTimeline:"Timeline", elTimelineEmpty:"No follow-ups yet",
+  elActFollow:"Follow up", elActView:"View",
+  elClose:"Close",
+  aLeadStatus:"Lead status changed", aLeadNote:"Lead follow-up note",
 }};
 const T = new Proxy({}, { get(_,k){ const v=I18N[_LANG]?.[k]; return v!==undefined? v : I18N.zh[k]; } });
 
@@ -232,6 +285,13 @@ const GEN_PAYLOAD = {
     { t:-90000, msgKey:"lgStoreStop", sid:"i-203977", amt:0.85 },
   ],
 };
+
+/* ================= 企业需求种子（本端直接落盘，不经用户端——leads 键写权在本端；邮箱用 .example 保留域，非真实 PII） ================= */
+const GEN_LEADS=()=>{ const now=Date.now(); return [
+  {v:1, ref:"REQ-SEEDN1", at:now-3600e3, status:"new", timeline:[], draft:{model:"training",gpu:"h100",cards:"16",period:"month",budget:"$25,000 – $50,000",company:"Nimbus AI Labs",email:"ops@nimbus-ai.example",name:"Chen Wei",note:"每日约 5 万亿 token 的训练集群，需要 InfiniBand 互联与合规数据驻留"}},
+  {v:1, ref:"REQ-SEEDC2", at:now-86400e3, status:"contacted", timeline:[{t:now-82800e3,type:"note",text:"首轮融资方电话会已完成，等对方提供数据合规要求清单"}], draft:{model:"inference",gpu:"l40s",cards:"8",period:"quarter",budget:"$10,000 – $25,000",company:"Vectora Ltd",email:"ml@vectora.example",name:"Sara Lin",note:"推理服务高峰期扩容，需弹性伸缩"}},
+  {v:1, ref:"REQ-SEEDW3", at:now-7*86400e3, status:"won", timeline:[{t:now-5*86400e3,type:"status",from:"proposal",to:"won"}], draft:{model:"render",gpu:"a100",cards:"4",period:"long",budget:"$5,000 – $10,000",company:"Studio Kawa",email:"it@kawa.example",name:"Kenji Sato",note:"渲染农场长期租用，月结"}},
+];};
 
 /* ================= 小组件 ================= */
 const Card=({label,value,sub,cls,live,size})=>(
@@ -528,6 +588,144 @@ function Data({cfg,act,snapInfo}){
   </div>);
 }
 
+/* ================= 企业需求（enterprise.html 提交的线索漏斗管理） ================= */
+function EntLeads({act,leads}){
+  const [openRef,setOpenRef]=useState(null);
+  const dlgRef=useRef(null);
+  // 弹窗打开即移焦入内（键盘可达性最小修；focus trap 属原型豁免）
+  useEffect(()=>{ if(openRef) dlgRef.current?.focus(); },[openRef]);
+  const [noteDraft,setNoteDraft]=useState("");   // 跟进输入必须组件 state：0.5s 轮询重渲染不得冲掉未提交输入
+  const [lostReason,setLostReason]=useState("");
+  const [wonArm,setWonArm]=useState(false);   // won 二段确认：唯一不可逆终态，与 lost 双闸对称
+  const tlRef=useRef(null);                    // 时间线列表容器：输入框在流末尾，提交后把新条目（头部）滚回视野
+  const cur=leads.find(l=>l.ref===openRef)||null;
+  useEffect(()=>{ const onKey=e=>{ if(e.key==="Escape") setOpenRef(null); }; window.addEventListener("keydown",onKey); return ()=>window.removeEventListener("keydown",onKey); },[]);
+  const open=(l)=>{ setOpenRef(l.ref); setNoteDraft(""); setLostReason(""); setWonArm(false); };
+  const close=()=>setOpenRef(null);
+  const stName=(s)=>LEAD_STATUSES.includes(s)? T["elSt"+s[0].toUpperCase()+s.slice(1)] : (s||"—");
+  const counts={}; LEAD_STATUSES.forEach(s=>{ counts[s]=leads.filter(l=>l.status===s).length; });
+  // 待联系组置顶（组内时间倒序），其余组时间倒序
+  const sorted=[...leads].sort((a,b)=>((a.status==="new"?0:1)-(b.status==="new"?0:1))||((b.at||0)-(a.at||0)));
+  const move=(to)=>{ if(!cur) return; if(to==="lost"&&!lostReason) return; act.leadStatus(cur,to,to==="lost"?lostReason:null); setLostReason(""); setWonArm(false); };
+  const addNote=()=>{ const tx=noteDraft.trim(); if(!tx||!cur) return; act.leadNote(cur,tx); setNoteDraft(""); if(tlRef.current) tlRef.current.scrollTop=0; };
+  return (<div className="space-y-6">
+    {/* 概览只留三个有决策含义的数：待联系=行动量；处理中/已闭环=漏斗压缩（逐状态明细在列表徽章，不重复展示） */}
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <Card label={T.elStNew} value={counts.new} cls="text-[var(--color-warning)]"/>
+      <Card label={T.elCardDoing} value={counts.contacted+counts.proposal}/>
+      <Card label={T.elCardDone} value={counts.won+counts.lost}/>
+    </div>
+    <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      {sorted.length===0? (
+      <div className="px-5 py-10 text-[14px] text-[var(--color-text-faint)]">
+        {T.elEmpty}
+        <div className="mt-3"><Btn tone="ok" onClick={()=>act.inject()}>{T.genBtn}</Btn></div>
+        <p className="mt-2 text-[12px]">{T.elEmptyInjectHint}</p>
+      </div>
+      ) : (
+      <div className="table-scroll">
+      <table className="w-full text-[14px]">
+        <caption className="sr-only">{T.navEnt}</caption>
+        {/* 列表=分拣视图，只放必有值的列（必填字段填充率 100%，选填的公司/预算留弹窗——空「—」会让列表显残缺）；
+            邮箱恒有故作主行（姓名选填作副行）；周期并入概要凑齐「型号×卡数·周期」画像 */}
+        <thead><tr><Th>{T.elColContact}</Th><Th cls="whitespace-nowrap">{T.colTime}</Th><Th cls="whitespace-nowrap">{T.elColReq}</Th><Th cls="whitespace-nowrap">{T.elColStatus}</Th><Th cls="whitespace-nowrap">{T.colAct}</Th></tr></thead>
+        <tbody>{sorted.map(l=>{
+          const done=l.status==="won"||l.status==="lost";
+          return (
+          <tr key={l.ref} className="hover:bg-[var(--color-surface-alt)]">
+            {/* 邮箱列限宽截断：超长企业邮箱（25ch+ 常态）会把操作列挤出容器；max-w 必须加在内层 div（td 上的 max-width 在 table-auto 下不可靠），全文在详情弹窗可复制 */}
+            <Td><div className="mono max-w-[11rem] truncate" title={l.draft?.email||""}>{l.draft?.email||T.none}</div>{l.draft?.name? <div className="max-w-[11rem] truncate text-[12px] text-[var(--color-text-faint)]" title={l.draft.name}>{l.draft.name}</div>:null}</Td>
+            <Td cls="mono whitespace-nowrap text-[13px] text-[var(--color-text-faint)]">{fmtShort(l.at)}</Td>
+            <Td cls="whitespace-nowrap">{(T.elGpus[l.draft?.gpu]||l.draft?.gpu||T.none)+(l.draft?.cards?` × ${l.draft.cards}`:"")+(l.draft?.period? ` · ${T.elPeriods[l.draft.period]||l.draft.period}`:"")}</Td>
+            <Td cls="whitespace-nowrap"><span className={`rounded border px-1.5 py-px text-[12px] ${LEAD_CLS[l.status]||""}`}>{stName(l.status)}</span></Td>
+            {/* 操作列＝唯一详情入口（一元素一职责：行不可点，避免同动作双元素）；非终态用 accent 色调传达「待我处理」 */}
+            <Td cls="whitespace-nowrap">{done
+              ? <Btn tone="plain" label={T.elActView+" "+l.ref} onClick={()=>open(l)}>{T.elActView}</Btn>
+              : <Btn tone="plain" label={T.elActFollow+" "+l.ref} cls="border-[var(--color-accent)]/40 text-[var(--color-accent-on-tint)] hover:bg-[var(--color-accent)]/10" onClick={()=>open(l)}>{T.elActFollow} <span aria-hidden="true">›</span></Btn>}</Td>
+          </tr>);})}
+        </tbody>
+      </table>
+      </div>)}
+    </div>
+    {cur && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={close}>
+      <div role="dialog" aria-modal="true" aria-label={T.elDetail} tabIndex={-1} ref={dlgRef}
+        className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl outline-none"
+        onClick={e=>e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="mono text-[13px] text-[var(--color-text-faint)]">{cur.ref}</div>
+            <h2 className="mt-0.5 text-[18px] font-bold tracking-tight">{cur.draft?.company||T.elDetail}</h2>
+            <span className={`mt-2 inline-block rounded border px-1.5 py-px text-[12px] ${LEAD_CLS[cur.status]||""}`}>{stName(cur.status)}</span>
+          </div>
+          <button onClick={close} aria-label={T.elClose}
+            className="btn-touch rounded-md border border-[var(--color-border)] px-2 text-[14px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-alt)]">✕</button>
+        </div>
+        {/* 字段区：联系方式提首（留言板核心动作＝拿到联系方式，邮箱 mailto 一步直达）；
+            mono 只给代号/数字/时间/邮箱，中文枚举值回正文字体（mono 的职能是可机读感，中文无此需求） */}
+        <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-[14px] md:grid-cols-3">
+          {[[T.elFName,cur.draft?.name||T.none,""],
+            [T.elFEmail,cur.draft?.email||T.none,"mono email"],
+            [T.elFModel,(T.elModels[cur.draft?.model]||cur.draft?.model||T.none)+((cur.draft?.model==="other"&&cur.draft?.modelOther)?`（${cur.draft.modelOther}）`:""),""],
+            [T.elFGpu,T.elGpus[cur.draft?.gpu]||cur.draft?.gpu||T.none,"mono"],
+            [T.elFCards,cur.draft?.cards?`${cur.draft.cards} GPU`:T.none,"mono"],
+            [T.elFPeriod,T.elPeriods[cur.draft?.period]||cur.draft?.period||T.none,""],
+            [T.elFBudget,cur.draft?.budget||T.none,"mono"],
+            [T.elFAt,fmtDate(cur.at),"mono"],
+          ].map(([k,v,kind],i)=>(
+            <div key={i}><dt className="text-[12px] text-[var(--color-text-faint)]">{k}</dt><dd className={`mt-0.5 break-all text-[14px] ${kind.includes("mono")?"mono":""}`}>{kind.includes("email")&&cur.draft?.email
+              ? <a className="text-[var(--color-accent-on-tint)] hover:underline" href={`mailto:${cur.draft.email}`}>{v}</a>
+              : v}</dd></div>))}
+        </dl>
+        {cur.draft?.note && (
+        <div className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)] p-3 text-[13px] leading-5">
+          <span className="text-[12px] text-[var(--color-text-faint)]">{T.elFNote}：</span>{cur.draft.note}
+        </div>)}
+        <div className="mt-5 border-t border-[var(--color-border)] pt-4">
+          <div className="text-[13px] font-semibold text-[var(--color-text-secondary)]">{T.elMove}</div>
+          {cur.status==="won" ? <p className="mt-2 text-[13px] text-[var(--color-text-faint)]">{T.elWonTip}</p> : (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {LEAD_STATUSES.filter(s=>s!==cur.status&&s!=="lost").map(s=>{
+              // 正向迁移低危可逆、直接生效；won 例外——唯一不可逆终态，首点武装、再点生效、失焦复位（与 lost 选因+确认双闸对称）
+              if(s!=="won") return <Btn key={s} tone="plain" onClick={()=>move(s)}>{stName(s)}</Btn>;
+              return <Btn key={s} tone="ok" title={T.elWonArmTip} onClick={()=>wonArm? move("won"):setWonArm(true)} onBlur={()=>setWonArm(false)}>{wonArm? T.elWonArm:stName(s)}</Btn>;
+            })}
+          </div>)}
+          {cur.status!=="won" && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <select value={lostReason} onChange={e=>setLostReason(e.target.value)} aria-label={T.elLostReason}
+              className="min-h-[44px] min-w-[10rem] rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-2 py-1.5 text-[13px]">
+              <option value="">{T.elLostReason}…</option>
+              {Object.entries(T.elLostR).map(([k,v])=><option key={k} value={k}>{v}</option>)}
+            </select>
+            <Btn tone="danger" disabled={!lostReason} title={T.elLostReq} onClick={()=>move("lost")}>{T.elConfirmLost}</Btn>
+          </div>)}
+        </div>
+        <div className="mt-5 border-t border-[var(--color-border)] pt-4">
+          <div className="text-[13px] font-semibold text-[var(--color-text-secondary)]">{T.elTimeline}</div>
+          {/* 先读后写（回看是高频场景，记录在流末尾）；列表限高内部滚动，弹窗高度不随条目数增长 */}
+          {(cur.timeline||[]).length===0? <p className="mt-2 text-[13px] text-[var(--color-text-faint)]">{T.elTimelineEmpty}</p> : (
+          <ol ref={tlRef} className="mt-2 max-h-60 space-y-2 overflow-y-auto pr-1">
+            {cur.timeline.map((e,i)=>(
+              <li key={i} className="flex gap-2.5 text-[13px] leading-5">
+                <span className="mono shrink-0 text-[12px] text-[var(--color-text-faint)]">{fmtDate(e.t)}</span>
+                <span>{e.type==="status"
+                  ? <span><span className="font-medium">{stName(e.from)} → {stName(e.to)}</span>{e.reason? <span className="text-[var(--color-text-faint)]"> · {T.elLostR[e.reason]||e.reason}</span>:null}</span>
+                  : e.text}</span>
+              </li>))}
+          </ol>)}
+          <div className="mt-3 flex gap-2">
+            <input value={noteDraft} onChange={e=>setNoteDraft(e.target.value)} placeholder={T.elNotePh} aria-label={T.elNoteAdd}
+              onKeyDown={e=>{ if(e.key==="Enter") addNote(); }}
+              className="min-h-[44px] min-w-0 flex-1 rounded-md border border-[var(--color-border-strong)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[13px] outline-none focus:border-[var(--color-focus)]"/>
+            <Btn tone="plain" disabled={!noteDraft.trim()} onClick={addNote}>{T.elNoteAdd}</Btn>
+          </div>
+        </div>
+      </div>
+    </div>)}
+  </div>);
+}
+
 function Audit({cfg,act}){
   const rows=cfg.audit||[];
   return (<div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
@@ -545,6 +743,7 @@ function Audit({cfg,act}){
 
 /* ================= App ================= */
 let accounts={}; // 轮询刷新的账号库快照（Users 表读取）
+let leads=[];    // 轮询刷新的企业需求快照（EntLeads 读取）
 function App(){
   const [lang,setLangState]=useState(()=>{ try{ const l=localStorage.getItem("vast-demo-lang"); return (l==="en"||l==="zh")?l:"zh"; }catch(e){ return "zh"; } });
   /* 主题与 index.html 共用 gpu-market-theme 键；初值直接读 DOM 上 head 脚本已定好的 class，避免首帧不一致 */
@@ -552,7 +751,9 @@ function App(){
   const toggleTheme=()=>{ const nd=!isDark; document.documentElement.classList.toggle("dark",nd); setIsDark(nd);
     try{ localStorage.setItem("gpu-market-theme", nd?"dark":"light"); }catch(e){} };
   setLang(lang);
-  const [tab,setTab]=useState("dash");
+  /* 其他面板（大盘/市场/实例/资金/用户/演示数据/审计）暂屏蔽，仅保留企业需求；
+     恢复：nav 数组加回对应项 + 主区渲染分支加回 + tab 初值改回 "dash" */
+  const [tab,setTab]=useState("leads");
   const [store,setStore]=useState(loadStore);
   const [cfg,setCfg]=useState(()=>({...defaultCfg(),...loadAdminCfg()}));
   const [syncAt,setSyncAt]=useState(nowStr());
@@ -563,8 +764,9 @@ function App(){
   const flash=(m)=>{ setNotice(m); if(noticeTimer.current) clearTimeout(noticeTimer.current); noticeTimer.current=setTimeout(()=>setNotice(null),2600); };
   // 轮询用户端两键（对客端 dumpState 每 1s 落盘；本端 0.5s 读取——演示"后台看得见"）
   useEffect(()=>{
-    const iv=setInterval(()=>{ setStore(loadStore()); accounts=loadAccounts(); setSyncAt(nowStr()); setTickN(n=>n+1); },500);
-    const onStorage=e=>{ if(e.key===STORE_KEY||e.key===ACCOUNTS_KEY){ setStore(loadStore()); accounts=loadAccounts(); setSyncAt(nowStr()); } };
+    const iv=setInterval(()=>{ setStore(loadStore()); accounts=loadAccounts(); leads=listLeads(); setSyncAt(nowStr()); setTickN(n=>n+1); },500);
+    const onStorage=e=>{ if(e.key===STORE_KEY||e.key===ACCOUNTS_KEY){ setStore(loadStore()); accounts=loadAccounts(); setSyncAt(nowStr()); }
+      if(e.key&&e.key.startsWith(LEAD_PREFIX)){ leads=listLeads(); } };
     window.addEventListener("storage",onStorage);
     return ()=>{ clearInterval(iv); window.removeEventListener("storage",onStorage); };
   },[]);
@@ -589,8 +791,19 @@ function App(){
       flash(T.aPayoutNo+" · "+q.email); },
     ban:(e)=>{ setCfg(c=>commitCfg({...c,banned:[...new Set([...(c.banned||[]),e])]},T.aBan,e)); flash(T.uBanTip(e)); },
     unban:(e)=>{ setCfg(c=>commitCfg({...c,banned:(c.banned||[]).filter(x=>x!==e)},T.aUnban,e)); flash(T.uUnbanTip(e)); },
+    // 企业需求：先重读该键最新值再改（防覆盖 0.5s 轮询窗口内的并发写入）；won 终态拒绝迁移；每次迁移强制写 timeline
+    leadStatus:(l,to,reason)=>{ const fresh=loadLead(l.ref); if(!fresh||fresh.status==="won"||fresh.status===to) return;
+      saveLead({...fresh, status:to, timeline:[{t:Date.now(),type:"status",from:fresh.status,to,...(reason?{reason}:{})},...(fresh.timeline||[])]});
+      leads=listLeads();
+      setCfg(c=>commitCfg(c,T.aLeadStatus,l.ref+" · "+fresh.status+"→"+to+(reason?" · "+reason:"")));
+      flash(T.aLeadStatus+" · "+l.ref+" → "+to); },
+    leadNote:(l,tx)=>{ const fresh=loadLead(l.ref); if(!fresh) return;
+      saveLead({...fresh, timeline:[{t:Date.now(),type:"note",text:tx},...(fresh.timeline||[])]});
+      leads=listLeads();
+      setCfg(c=>commitCfg(c,T.aLeadNote,l.ref+" · "+tx.slice(0,40)));
+      flash(T.aLeadNote+" · "+l.ref); },
     inject:()=>{
-      const snap={store:loadStore(), accounts:loadAccounts(), at:Date.now()};
+      const snap={store:loadStore(), accounts:loadAccounts(), leads:listLeads(), at:Date.now()};
       // 在线探测：150ms 内收到用户端 pong → 其自行注入（写权分离）；离线 → 本端读-改-写合并直写（单开 Admin 也能演示）
       const pid="p"+Date.now(); let online=false;
       const onPong=(ev)=>{ if(ev.data&&ev.data.type==="pong"&&ev.data.id===pid) online=true; };
@@ -609,6 +822,9 @@ function App(){
           try{ localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(a)); }catch(e){}
           setStore(loadStore()); accounts=loadAccounts();
         }else{ send({type:"inject",payload:GEN_PAYLOAD}); }
+        // 企业需求种子不走用户端（leads 键写权在本端），在线/离线统一本端落盘；幂等：已有同 ref 键跳过
+        GEN_LEADS().forEach(r=>{ if(!loadLead(r.ref)) saveLead(r); });
+        leads=listLeads();
         flash(T.genDone);
         setCfg(c=>commitCfg({...c,backup:snap},T.aGen,(online?"client":"offline-direct")+" · "+GEN_PAYLOAD.hostMachines[0].id));
       },150);
@@ -618,14 +834,21 @@ function App(){
       let ok=true;
       try{ if(b.store){ localStorage.setItem(STORE_KEY,JSON.stringify(b.store)); } }catch(e){ ok=false; }
       try{ if(b.accounts){ localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(b.accounts)); } }catch(e){ ok=false; }
+      // 企业需求仅新快照接管（旧快照无该字段，不清不写防误删真实线索）；清残留按键名前缀枚举——
+      // 不能走 listLeads()（JSON 解析失败的幽灵键会被过滤掉而漏清，实测 GHOST 键残留）
+      try{ if(Array.isArray(b.leads)){
+        const kill=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.startsWith(LEAD_PREFIX)) kill.push(k); }
+        kill.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+        b.leads.forEach(r=>saveLead(r));
+      } }catch(e){ ok=false; }
       send({type:"cfg"}); send({type:"reload"});
-      setStore(loadStore()); accounts=loadAccounts();
+      setStore(loadStore()); accounts=loadAccounts(); leads=listLeads();
       setCfg(c=>commitCfg(c,T.aSnapRestore,(ok?"ok":"write-failed")+" · "+(b.store?"store":"")+(b.accounts?" accounts":"")));
       flash(ok? T.genRestored : (_LANG==="zh"?"快照还原写入失败":"snapshot restore write failed"));
     },
     resetCfg:()=>{ const fresh=defaultCfg(); saveAdminCfg(fresh); send({type:"cfg"}); setCfg(fresh); flash(T.resetDone); },
   };
-  const nav=[["dash",T.navDash],["market",T.navMarket],["inst",T.navInst],["fund",T.navFund],["user",T.navUser],["data",T.navData],["audit",T.navAudit]];
+  const nav=[["leads",T.navEnt]];
   const toggleLang=()=>{ const nl=lang==="zh"?"en":"zh"; try{localStorage.setItem("vast-demo-lang",nl)}catch(e){}; setLangState(nl); };
   return (<div className="flex min-h-screen">
     <a className="skip-link" href="#admin-main">{lang==="zh"?"跳到主要内容":"Skip to main content"}</a>
@@ -668,13 +891,7 @@ function App(){
         <span role="status" aria-live="polite" aria-atomic="true"
           className={notice?"rounded border border-[var(--color-success)]/40 bg-[var(--color-success)]/5 px-2.5 py-1 text-[13px] text-[var(--color-success-on-tint)]":"sr-only"}>{notice||""}</span>
       </header>
-      {tab==="dash" && <Dashboard d={d} syncAt={syncAt}/>}
-      {tab==="market" && <Market d={d} act={act}/>}
-      {tab==="inst" && <Instances d={d} act={act}/>}
-      {tab==="fund" && <Fund d={d} cfg={cfg} act={act}/>}
-      {tab==="user" && <Users d={d} cfg={cfg} act={act}/>}
-      {tab==="data" && <Data cfg={cfg} act={act} snapInfo={snapInfo}/>}
-      {tab==="audit" && <Audit cfg={cfg} act={act}/>}
+      {tab==="leads" && <EntLeads act={act} leads={leads}/>}
     </main>
   </div>);
 }
