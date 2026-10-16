@@ -139,7 +139,11 @@ const OFFERS = [
 {id:41903269,gpu:"RTX 5060 Ti",numGpu:2,gpuRam:15.9,memBw:368,cpu:"AMD EPYC 7K62",cpuCores:96,ram:63,disk:582,diskBw:2337,netUp:652,netDown:939,ports:24,dlperf:77.0,dlperfPerUsd:689,dph:0.112,reliability:98.6,geoloc:", US",verification:"verified",pcie:4.0,arch:"Blackwell",tflops:49.4,cuda:"13.0",maxDuration:30},
 {id:48052164,gpu:"RTX PRO 6000 S",numGpu:2,gpuRam:95.6,memBw:1397,cpu:"Xeon 6960P",cpuCores:288,ram:252,disk:2420,diskBw:25190,netUp:7011,netDown:9325,ports:255,dlperf:559.5,dlperfPerUsd:262,dph:2.136,reliability:98.7,geoloc:"Utah, US",verification:"unverified",pcie:5.0,arch:"Blackwell",tflops:222.8,cuda:"13.0",maxDuration:14},
 {id:46112205,gpu:"RTX 5090",numGpu:2,gpuRam:31.8,memBw:1455,cpu:"Xeon Gold 6530",cpuCores:128,ram:63,disk:792,diskBw:5711,netUp:1525,netDown:547,ports:249,dlperf:397.9,dlperfPerUsd:496,dph:0.802,reliability:99.1,geoloc:", CN",verification:"unverified",pcie:5.0,arch:"Blackwell",tflops:215.2,cuda:"13.0",maxDuration:7},
-{id:46773231,gpu:"RTX 5080",numGpu:2,gpuRam:15.9,memBw:781,cpu:"AMD EPYC 7K62",cpuCores:192,ram:63,disk:792,diskBw:2229,netUp:850,netDown:1701,ports:24,dlperf:167.1,dlperfPerUsd:621,dph:0.269,reliability:99.3,geoloc:"Hong Kong, HK",verification:"unverified",pcie:4.0,arch:"Blackwell",tflops:112.6,cuda:"13.0",maxDuration:14}
+{id:46773231,gpu:"RTX 5080",numGpu:2,gpuRam:15.9,memBw:781,cpu:"AMD EPYC 7K62",cpuCores:192,ram:63,disk:792,diskBw:2229,netUp:850,netDown:1701,ports:24,dlperf:167.1,dlperfPerUsd:621,dph:0.269,reliability:99.3,geoloc:"Hong Kong, HK",verification:"unverified",pcie:4.0,arch:"Blackwell",tflops:112.6,cuda:"13.0",maxDuration:14},
+// 2026-10 增补：旗舰档供给采样（B300 / H200 / verified 5090）——落地页目录策展的数据底座；价格为演示值【MK】
+{id:30128452,gpu:"B300 SXM 288GB",numGpu:8,gpuRam:2304,memBw:8000,cpu:"Xeon 6980P",cpuCores:256,ram:2048,disk:15360,diskBw:21000,netUp:25600,netDown:25600,ports:64,dlperf:9120,dlperfPerUsd:155,dph:58.9,reliability:99.6,geoloc:"Oregon, US",verification:"verified",pcie:5.0,arch:"Blackwell",tflops:11980,cuda:"13.0",maxDuration:90},
+{id:29771635,gpu:"H200 SXM 141GB",numGpu:8,gpuRam:1128,memBw:4800,cpu:"AMD EPYC 9654",cpuCores:384,ram:2048,disk:12288,diskBw:18900,netUp:25600,netDown:25600,ports:64,dlperf:5810,dlperfPerUsd:296,dph:19.6,reliability:99.8,geoloc:"Sweden, SE",verification:"verified",pcie:5.0,arch:"Hopper",tflops:8320,cuda:"13.0",maxDuration:90},
+{id:29334187,gpu:"RTX 5090",numGpu:2,gpuRam:31.8,memBw:1455,cpu:"Xeon Gold 6530",cpuCores:128,ram:63,disk:892,diskBw:6200,netUp:2400,netDown:2600,ports:128,dlperf:397.9,dlperfPerUsd:214,dph:1.86,reliability:99.4,geoloc:"Oregon, US",verification:"verified",pcie:5.0,arch:"Blackwell",tflops:215.2,cuda:"13.0",maxDuration:30}
 ];
 
 // 实例工作区（Instance Portal）第三方入口——联调期指向本地演示页，生产替换为第三方网关地址；留空则 Open 回退提示
@@ -147,9 +151,9 @@ const PORTAL_BASE = "/proto/portal.html";
 
 const TEMPLATES = [
  // 推理模板（适合高端GPU）
- {id:"vllm", name:"vLLM · OpenAI 兼容", tag:"vastai/vllm:latest", desc:"推理服务端点，自动暴露 8000 端口",descEn:"OpenAI-compatible inference endpoint, port 8000 auto-exposed", inject:{diskMin:64}, portsMin:8, category:"inference", requiredGpus:["RTX PRO 6000 S","RTX PRO 6000 WS","RTX 5090","RTX 5080","RTX 5070","RTX 5060 Ti","H100 SXM 80GB","L40S 48GB"]},
+ {id:"vllm", name:"vLLM · OpenAI 兼容", tag:"vastai/vllm:latest", desc:"推理服务端点，自动暴露 8000 端口",descEn:"OpenAI-compatible inference endpoint, port 8000 auto-exposed", inject:{diskMin:64}, portsMin:8, category:"inference", requiredGpus:["RTX PRO 6000 S","RTX PRO 6000 WS","RTX 5090","RTX 5080","RTX 5070","RTX 5060 Ti","H100 SXM 80GB","H200 SXM 141GB","B300 SXM 288GB","L40S 48GB"]},
  // 训练模板（适合中端GPU）
- {id:"pytorch", name:"PyTorch 2.5.1", tag:"pytorch/pytorch:2.5.1-cuda12.4-runtime", desc:"官方基础训练镜像，内置 JupyterLab 与 SSH",descEn:"Official base training image with JupyterLab & SSH built-in", inject:{diskMin:32}, portsMin:8, category:"training", requiredGpus:["RTX PRO 6000 S","RTX PRO 6000 WS","RTX 5090","H100 SXM 80GB","L40S 48GB"]},
+ {id:"pytorch", name:"PyTorch 2.5.1", tag:"pytorch/pytorch:2.5.1-cuda12.4-runtime", desc:"官方基础训练镜像，内置 JupyterLab 与 SSH",descEn:"Official base training image with JupyterLab & SSH built-in", inject:{diskMin:32}, portsMin:8, category:"training", requiredGpus:["RTX PRO 6000 S","RTX PRO 6000 WS","RTX 5090","H100 SXM 80GB","H200 SXM 141GB","B300 SXM 288GB","L40S 48GB"]},
  // 图像生成模板（适合消费级GPU）
  {id:"comfyui", name:"ComfyUI", tag:"vastai/comfyui:latest", desc:"节点式扩散模型工作流，Web UI 直达",descEn:"Node-based diffusion workflows, Web UI ready", inject:{diskMin:50}, portsMin:8, category:"image", requiredGpus:["RTX PRO 4500","RTX 5080","RTX 5070"]},
 ];
@@ -440,6 +444,8 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   ldMarketTitle:"在售算力实时报价",ldMarketSub:(m,k,g,r)=>`以下为平台在售算力——注册后即可按此价格下单。${m?`当前内测期在售 ${m} 台 / ${k} 个型号 / ${g} 张 GPU，分布在 ${r} 个国家/地区。`:""}`,
   ldWhereTitle:"在售算力分布",ldWhereNote:"点位为国别位置示意。",
   ldCatFrom:"低至",ldCatMedian:"中位",
+  // 型号卡供给徽标：语义档位（按在挂条数 n：≥3 充裕 / =2 一般 / ≤1 紧张）+ hover 数量（N 台在挂）
+  ldTierHigh:"充裕",ldTierMed:"一般",ldTierLow:"紧张",ldTierN:(n)=>`${n} 台在挂`,
   ldCatUseInference:"推理",ldCatUseTraining:"训练",ldCatUseImage:"图像",
   ldCatCta:"查看全部在售机器",
   ldSupplyTitle:"三级供给，层层可信",ldSupplySub:"每台机器的供给等级公开可查。",
@@ -707,6 +713,8 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   ldMarketTitle:"Live compute pricing",ldMarketSub:(m,k,g,r)=>`Live supply — sign up and order at these prices.${m?` Early-access supply: ${m} ${m===1?"machine":"machines"} / ${k} ${k===1?"model":"models"} / ${g} ${g===1?"GPU":"GPUs"} across ${r} ${r===1?"country":"countries"}/regions.`:""}`,
   ldWhereTitle:"Global supply",ldWhereNote:"Markers show indicative country positions.",
   ldCatFrom:"from",ldCatMedian:"median",
+  // Supply badge: semantic tier (by listing count n) + hover count; offer count is singular/plural aware
+  ldTierHigh:"Ample",ldTierMed:"Moderate",ldTierLow:"Tight",ldTierN:(n)=>n===1?"1 offer":`${n} offers`,
   ldCatUseInference:"Inference",ldCatUseTraining:"Training",ldCatUseImage:"Image",
   ldCatCta:"See all listed machines",
   ldSupplyTitle:"Three supply tiers, all trustworthy",ldSupplySub:"Every listing shows its supply tier — check any machine.",
@@ -2850,6 +2858,10 @@ function ConfirmGate({S,act}){
 // 营销层但延续 zinc 工作台语言：无渐变/无玻璃/无装饰阴影；价格 emerald mono；全页仅 hero 1 个 eyebrow（节制铁律）
 const LD_OFFER_IDS=[31230659,33785603,44160786,28705887]; // 价格卡：verified 采样 4 条（RTX 5070/5080/PRO 4500/PRO 6000 S）
 const LD_CARDS=6; // 落地页型号卡网格张数（3×2）
+// 目录卡策展白名单：旗舰锚定 → 数据中心主力 → 消费级。
+// 只决定「哪些型号上台」，卡内价格与行序仍按起租价升序（floor 口径不变）；
+// 白名单按精确型号名命中 cat，未命中跳过，不足 LD_CARDS 由其余型号按 floor 补齐。
+const LD_CURATED=["B300 SXM 288GB","H200 SXM 141GB","H100 SXM 80GB","RTX PRO 6000 S","RTX 5090","RTX 5070"];
 // 型号卡价格曲线：确定性伪随机（型号名为种子），演示序列、非真实历史报价；同型号每次渲染一致。
 // trend 由 hash 确定性派生（up/down/flat）：曲线漂移方向与线色互相印证——口径是对租客好坏（价升=橙警示、价降=绿），非股市涨跌
 const spark=(gpu,floor,med)=>{
@@ -2891,6 +2903,9 @@ function LandingPage({S,act,setS,adminCfg}){
  const ldRegions=new Set(listed.map(o=>parseCountry(o.geoloc)).filter(c=>c!=="Host")).size;
  const ldFloor=listed.length?Math.min(...listed.map(o=>o.dph)):null; // KPI 最低起价：与目录表 floor 同源
  const cat=catalogRows(S.hostMachines, adminCfg&&adminCfg.delisted);
+ // 策展先行：白名单命中型号上台，其余按 floor 排后续补——展示行序仍按起租价升序
+ const feat=LD_CURATED.map(g=>cat.find(r=>r.gpu===g)).filter(Boolean);
+ const ldCards=[...feat,...cat.filter(r=>!feat.includes(r))].slice(0,LD_CARDS);
  const USE_LBL={inference:T.ldCatUseInference,training:T.ldCatUseTraining,image:T.ldCatUseImage};
  const lp$=n=>n<1?n.toFixed(3):n.toFixed(2); // 低价 3 位/高价 2 位：与 hero 起价 $0.104 全链一致
  return (
@@ -2948,8 +2963,8 @@ function LandingPage({S,act,setS,adminCfg}){
     <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldMarketTitle}</h2>
     <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldMarketSub(listed.length,mkModels,ldGpus,ldRegions)}</p>
     <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-     {cat.slice(0,LD_CARDS).map(r=>{
-      const tier=r.n>=3?"High":r.n===2?"Med":"Low";
+     {ldCards.map(r=>{
+      const tierKey=r.n>=3?"ldTierHigh":r.n===2?"ldTierMed":"ldTierLow";
       const sp=spark(r.gpu,r.floor,r.med);
       return (
       <article key={r.gpu} className="flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
@@ -2957,7 +2972,7 @@ function LandingPage({S,act,setS,adminCfg}){
         <h3 className="text-[16px] font-semibold tracking-tight">{r.gpu}</h3>
         <div className="flex items-center gap-1.5" aria-hidden="true">
          <span className="flex gap-1">{[0,1,2].map(i=><span key={i} className={`h-1.5 w-3 rounded-full ${i<Math.min(r.n,3)?"bg-[var(--color-success)]":"bg-[var(--color-border)]"}`}/>)}</span>
-         <span className="rounded-md border border-[var(--color-border)] px-1.5 py-px text-[12px] text-[var(--color-text-secondary)]">{tier}</span>
+         <span className="rounded-md border border-[var(--color-border)] px-1.5 py-px text-[12px] text-[var(--color-text-secondary)]" title={T.ldTierN(r.n)}>{T[tierKey]}</span>
         </div>
        </div>
        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--color-text-muted)]">

@@ -115,9 +115,9 @@ zh:{
   brand:"Mekong", theme:"切换主题", langAria:"切换语言", skipMain:"跳到主要内容",
   heroKicker:"企业客户入口", heroTitle:"企业算力采购需求受理", heroLead:"提交算力需求后，由销售与方案团队对接确认。当前阶段不支持平台自助下单，合同与交付安排以线下确认为准。",
   formTitle:"获取定制算力方案", formLead:"带 * 为必填。提交后进入线下对接流程，不会自动产生订单或费用。", opt:"选填",
-  fModel:"算力类型", fModelPh:"选择主要用途", oTraining:"模型训练", oInference:"推理服务", oRender:"渲染 / 图形", oOther:"其他",
+  fModel:"算力类型", fModelPh:"选择主要用途", oTraining:"模型训练", oInference:"推理服务", oRender:"渲染 / 图形", oResell:"转卖", oOther:"其他",
   fModelOther:"其他用途说明", fModelOtherPh:"请简述用途",
-  fGpu:"GPU 型号", fGpuPh:"选择型号", gAny:"暂不指定（由方案团队建议）", gH100:"NVIDIA H100", gH200:"NVIDIA H200", gA100:"NVIDIA A100", gL40S:"NVIDIA L40S",
+  fGpu:"GPU 型号", fGpuPh:"选择型号", gAny:"暂不指定（由方案团队建议）", g5090:"NVIDIA RTX 5090", gPro6k:"NVIDIA RTX PRO 6000 Server", gH100:"NVIDIA H100", gH200:"NVIDIA H200", gB300:"NVIDIA B300", gGb300:"NVIDIA GB300", gA100:"NVIDIA A100", gL40S:"NVIDIA L40S", gOther:"其他",
   fCards:"预计卡数", fCardsPh:"例如 8", fPeriod:"使用周期", fPeriodPh:"选择周期", pWeek:"按周", pMonth:"按月", pQuarter:"按季度", pLong:"长期 / 不确定",
   fBudget:"月度算力预算", fBudgetPh:"选择月度预算", fBudgetPh2:"用于方案匹配，不构成报价。",
   fEmail:"联系邮箱", fEmailPh:"name@company.com",
@@ -132,9 +132,9 @@ en:{
   brand:"Mekong", theme:"Toggle theme", langAria:"Switch language", skipMain:"Skip to main content",
   heroKicker:"For enterprise", heroTitle:"Enterprise compute request intake", heroLead:"Submit a compute requirement; sales and solution engineers will follow up. Self-service enterprise ordering is not available at this stage — contracts and delivery are confirmed offline.",
   formTitle:"Get a tailored compute proposal", formLead:"Fields marked * are required. Submission starts an offline onboarding flow; it creates no order and no charge.", opt:"Optional",
-  fModel:"Workload type", fModelPh:"Select primary use", oTraining:"Model training", oInference:"Inference", oRender:"Rendering / graphics", oOther:"Other",
+  fModel:"Workload type", fModelPh:"Select primary use", oTraining:"Model training", oInference:"Inference", oRender:"Rendering / graphics", oResell:"Resale", oOther:"Other",
   fModelOther:"Other workload detail", fModelOtherPh:"Describe the workload",
-  fGpu:"GPU model", fGpuPh:"Select a model", gAny:"No preference (advised by solution team)", gH100:"NVIDIA H100", gH200:"NVIDIA H200", gA100:"NVIDIA A100", gL40S:"NVIDIA L40S",
+  fGpu:"GPU model", fGpuPh:"Select a model", gAny:"No preference (advised by solution team)", g5090:"NVIDIA RTX 5090", gPro6k:"NVIDIA RTX PRO 6000 Server", gH100:"NVIDIA H100", gH200:"NVIDIA H200", gB300:"NVIDIA B300", gGb300:"NVIDIA GB300", gA100:"NVIDIA A100", gL40S:"NVIDIA L40S", gOther:"Other",
   fCards:"Estimated GPUs", fCardsPh:"e.g. 8", fPeriod:"Term", fPeriodPh:"Select term", pWeek:"Weekly", pMonth:"Monthly", pQuarter:"Quarterly", pLong:"Long-term / unsure",
   fBudget:"Monthly compute budget", fBudgetPh:"Select monthly budget", fBudgetPh2:"Used for matching; not a quotation.",
   fEmail:"Contact email", fEmailPh:"name@company.com",
@@ -282,10 +282,10 @@ function App(){  const [lang,setLang]=useState(()=>{ try{ return localStorage.ge
          {T.errSummary}：{Object.keys(err).map(k=>msg(err[k])).filter(Boolean).join("；")}
         </div>)}
        <form onSubmit={submit} noValidate className="mt-5 grid gap-4 md:grid-cols-2">
-         {sel("model",T.fModel,draft.model,v=>{ set("model",v); if(v!=="other") setErr(e=>{ if(!("modelOther" in e)) return e; const {modelOther:_drop,...rest}=e; return rest; }); },[{v:"",t:T.fModelPh},{v:"training",t:T.oTraining},{v:"inference",t:T.oInference},{v:"render",t:T.oRender},{v:"other",t:T.oOther}],msg(err.model),true)}
+         {sel("model",T.fModel,draft.model,v=>{ set("model",v); if(v!=="other") setErr(e=>{ if(!("modelOther" in e)) return e; const {modelOther:_drop,...rest}=e; return rest; }); },[{v:"",t:T.fModelPh},{v:"training",t:T.oTraining},{v:"inference",t:T.oInference},{v:"render",t:T.oRender},{v:"resell",t:T.oResell},{v:"other",t:T.oOther}],msg(err.model),true)}
          {/* 该字段仅在 model==="other" 时渲染 → 字段存在即必填，红 * 不会误标为常显必填 */}
          {draft.model==="other" && inp("modelOther",T.fModelOther,draft.modelOther,v=>set("modelOther",v),T.fModelOtherPh,msg(err.modelOther),{req:true})}
-         {sel("gpu",T.fGpu,draft.gpu,v=>set("gpu",v),[{v:"",t:T.fGpuPh},{v:"any",t:T.gAny},{v:"h100",t:T.gH100},{v:"h200",t:T.gH200},{v:"a100",t:T.gA100},{v:"l40s",t:T.gL40S}],msg(err.gpu),true)}
+         {sel("gpu",T.fGpu,draft.gpu,v=>set("gpu",v),[{v:"",t:T.fGpuPh},{v:"any",t:T.gAny},{v:"5090",t:T.g5090},{v:"pro6k",t:T.gPro6k},{v:"h100",t:T.gH100},{v:"h200",t:T.gH200},{v:"b300",t:T.gB300},{v:"gb300",t:T.gGb300},{v:"a100",t:T.gA100},{v:"l40s",t:T.gL40S},{v:"other",t:T.gOther}],msg(err.gpu),true)}
          {inp("cards",T.fCards,draft.cards,v=>set("cards",v),T.fCardsPh,msg(err.cards),{req:true})}
          {sel("period",T.fPeriod,draft.period,v=>set("period",v),[{v:"",t:T.fPeriodPh},{v:"week",t:T.pWeek},{v:"month",t:T.pMonth},{v:"quarter",t:T.pQuarter},{v:"long",t:T.pLong}],msg(err.period),true)}
          <div>
