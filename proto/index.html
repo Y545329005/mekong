@@ -951,7 +951,7 @@ function App(){
   let _sv=null; try{_sv=JSON.parse(localStorage.getItem(STORE_KEY))}catch(e){}
   const base = {
     view:"landing", balance:0, simT:0, timeScale:60,
-    modal:null, pendingOffer:null,
+    modal:null, pendingOffer:null, pendingCta:null, // CTA 意图续接（登录后继续原入口，如 "host"；瞬态，不持久化）
     user:null, // 注册/登录：账号对象
     filters:{gpus:[],relMin:0,priceMin:"",priceMax:"",numGpuMin:1,gpuRamMin:0,includeUn:false,hideOwn:false,diskMin:FREE_DISK,searchModel:"",
 locs:[],cpuMin:0,ramMin:0,netDownMin:0,netUpMin:0,pcies:[],tpl:null},
@@ -1040,7 +1040,7 @@ lang:_initLang,
   // 持久化：interval 快照 + 用户手势后 250ms 落盘（覆盖上架/下单/销毁等关键动作，不依赖 2s 节流窗口）+ beforeunload 兜底
   const sRef=useRef(S); sRef.current=S;
   const dumpState=()=>{ if(window.__demoReset) return; try{
-    const {modal,toast,hostDown,armStuck,debtBanner,ctrlOpen,...keep}=sRef.current; // 以上均为临时态，不持久化
+    const {modal,toast,hostDown,armStuck,debtBanner,ctrlOpen,pendingCta,...keep}=sRef.current; // 以上均为临时态，不持久化
     localStorage.setItem(STORE_KEY, JSON.stringify(keep));
   }catch(e){
     // localStorage 不可用或已满时的降级处理
@@ -1318,7 +1318,15 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租�
      _finishAuth:(user,toastMsg,reset)=>{
       // reset=true（新注册）：租客域+信任域归零，每个新账号从干净新客开始（余额 $0 起步）
       const _reset = reset? {balance:0,instances:[],ledger:[],bookings:null,escrow:0,instArchive:[],selectedTemplate:null,hostAgreed:false,hostRealname:false,payouts:[],payoutReqs:[]} : null;
-      setS(p=>({...p,authed:true,user,view:"search",modal:null,...(_reset||{})}));
+      const _wantHost = ref.current.pendingCta==="host"; // 落地页「上架机器赚收益」入口：登录后继续进宿主流程，不丢原意图
+      setS(p=>{
+        const next={...p,authed:true,user,modal:null,pendingCta:null,...(_reset||{})};
+        if(_wantHost){
+          next.perspective="host";
+          if(next.hostAgreed) next.view="host-machines"; else next.modal="hostagree"; // 新号未签宿主协议 → 先过协议门
+        } else next.view="search";
+        return next;
+      });
       act.toast(toastMsg);
       setTimeout(()=>act.continueRent(),80);
      },
@@ -1341,6 +1349,8 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租�
      if(v==="host" && !ref.current.hostAgreed){ setS(p=>({...p,modal:"hostagree"})); return; }
       setS(p=>({...p,perspective:v,view:v==="host"?"host-machines":"search"}));
       if(v==="host") act.toast(T.tSwitchHost); },
+   // 落地页「上架机器赚收益」入口：未登录先登录（记下意图，登录后继续进宿主流程），已登录直接进宿主流程
+   enterHost:()=>{ if(!ref.current.authed){ setS(p=>({...p,modal:"auth",pendingCta:"host"})); return; } act.setPerspective("host"); },
  passHostAgree:()=>{ setS(p=>({...p,hostAgreed:true,modal:null,perspective:"host",view:"host-machines"})); act.toast(T.tSwitchHost); },
   setHostRealname:(v)=>setS(p=>({...p,hostRealname:v})), // 实名账号级一次（宿主主体 KYC），非机器级
    listMachine:(m)=>setS(p=>({...p,hostMachines:[m,...p.hostMachines],modal:null})),
@@ -2895,6 +2905,9 @@ const LD_TERM_LINES=[
 ];
 const goAuth=(setS)=>()=>setS(p=>({...p,modal:"auth"}));
 function LandingPage({S,act,setS,adminCfg}){
+ // 落地页 CTA 按登录态与当前主体分流：已登录不再弹登录框（曾误弹），宿主入口进宿主流程（含协议门），租户入口进市场
+ const goMarket=()=>{ if(S.authed && S.perspective==="host"){ act.setPerspective("tenant"); return; } setS(p=>({...p,view:"search"})); };
+ const goTenant=()=>{ if(!S.authed){ goAuth(setS)(); return; } act.setPerspective("tenant"); };
  const picks=LD_OFFER_IDS.map(id=>OFFERS.find(o=>o.id===id)).filter(Boolean);
  // 规模数字取自挂牌口径而非市场筛选结果；型号名归一（hostToOffer 以规格整串作型号名，会带 "×8" 后缀）后再去重
  const listed=listedSupply(S.hostMachines, adminCfg&&adminCfg.delisted);
@@ -2918,8 +2931,8 @@ function LandingPage({S,act,setS,adminCfg}){
      <h1 className="max-w-[14ch] text-balance text-[36px] font-semibold leading-[1.06] tracking-tight md:max-w-[20ch] md:text-[52px]">{T.ldHeroTitle}</h1>
      <p className="mt-5 max-w-[46ch] text-[16px] leading-relaxed text-[var(--color-text-secondary)]">{T.ldHeroSub}</p>
      <div className="mt-8 flex flex-wrap items-center gap-3">
-      <button onClick={()=>setS(p=>({...p,view:"search"}))} className="rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-[16px] font-semibold text-white hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldCtaBrowse} →</button>
-      <button onClick={goAuth(setS)} className="rounded-lg border border-[var(--color-border-strong)] px-5 py-2.5 text-[16px] text-[var(--color-text-secondary)] hover:border-[var(--color-text-faint)] active:translate-y-[1px]">{T.ldCtaHost}</button>
+      <button onClick={goMarket} className="rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-[16px] font-semibold text-white hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldCtaBrowse} →</button>
+      <button onClick={()=>act.enterHost()} className="rounded-lg border border-[var(--color-border-strong)] px-5 py-2.5 text-[16px] text-[var(--color-text-secondary)] hover:border-[var(--color-text-faint)] active:translate-y-[1px]">{T.ldCtaHost}</button>
      </div>
     </div>
     {/* 真实 OFFERS 采样数据面板（非 fake screenshot：直接渲染数据层采样） */}
@@ -3096,7 +3109,7 @@ function LandingPage({S,act,setS,adminCfg}){
            （hero 42.5px / 目录表 41px），未凑 44px：次要动作在卡片角上凑满会显得笨重。 */}
        <div className="flex items-center justify-between gap-3">
         <span className="text-[15px] font-semibold">{r.t}</span>
-        <button onClick={goAuth(setS)} className="shrink-0 rounded-lg border border-[var(--color-border-strong)] px-4 py-2.5 text-[13px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text)] active:translate-y-[1px]">{r.ctaLbl}</button>
+        <button onClick={()=>r.cta==="register"? act.enterHost() : goTenant()} className="shrink-0 rounded-lg border border-[var(--color-border-strong)] px-4 py-2.5 text-[13px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text)] active:translate-y-[1px]">{r.ctaLbl}</button>
        </div>
        <p className="mt-2 max-w-[46ch] text-[13px] leading-relaxed text-[var(--color-text-muted)]">{r.lead}</p>
        <ol className="mt-5 space-y-2.5">
