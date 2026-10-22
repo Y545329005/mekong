@@ -992,7 +992,7 @@ lang:_initLang,
     // 视图恢复（2026-09-11 重写）：原 L618 表达式 `||` 优先级高于 `?:`，任何非空 _sv.view 恒得 "instances"；
     // 老存档 view 可能已被该 bug 污染，无法与真实值区分，直接信任 _sv.view【取舍 T1，注释记录】。
     // 强制门语义：未登录一律落地页；已登录 auth 视图（临时态）与非法视图 → 按 instances/search 兜底。
-    const _VIEWS=["search","market-data","instances","billing","host-machines","host-earnings"];
+    const _VIEWS=["landing","search","market-data","instances","billing","host-machines","host-earnings"]; // 含 landing：登录态停在落地页时刷新仍回落地页（与 session 内经 logo 可达一致）
     if(!base.authed) base.view="landing";
     else { if(base.view==="host-withdrawals") base.view="host-earnings"; // 提现页并入收益页（2026-09-20）：老存档视图迁移，防兜底掉进租客页
       if(base.view==="auth" || !_VIEWS.includes(base.view)) base.view=(base.instances && base.instances.length)?"instances":"search"; }
