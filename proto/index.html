@@ -146,8 +146,9 @@ const OFFERS = [
 {id:29334187,gpu:"RTX 5090",numGpu:2,gpuRam:31.8,memBw:1455,cpu:"Xeon Gold 6530",cpuCores:128,ram:63,disk:892,diskBw:6200,netUp:2400,netDown:2600,ports:128,dlperf:397.9,dlperfPerUsd:214,dph:1.86,reliability:99.4,geoloc:"Oregon, US",verification:"verified",pcie:5.0,arch:"Blackwell",tflops:215.2,cuda:"13.0",maxDuration:30}
 ];
 
-// 实例工作区（Instance Portal）第三方入口——联调期指向本地演示页，生产替换为第三方网关地址；留空则 Open 回退提示
-const PORTAL_BASE = "/proto/portal.html";
+// 实例工作区（Instance Portal）第三方入口——联调期指向同目录演示页，生产替换为第三方网关地址；留空则 Open 回退提示
+// 用同目录相对量而非站点根绝对路径：绝对量只在「web root = 项目根」时成立，子路径部署与直接起服务都会 404
+const PORTAL_BASE = "portal.html";
 
 const TEMPLATES = [
  // 推理模板（适合高端GPU）

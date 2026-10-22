@@ -867,7 +867,7 @@ function App(){
             aria-current={tab===k?"page":undefined}>{l}</button>))}
       </nav>
       <div className="space-y-2 border-t border-[var(--color-border)] p-4">
-        <a href="/index.html" className="btn-touch block rounded-lg border border-[var(--color-border)] px-3 py-2 text-center text-[13px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.openClient}</a>
+        <a href="./index.html" className="btn-touch block rounded-lg border border-[var(--color-border)] px-3 py-2 text-center text-[13px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.openClient}</a>
         <button onClick={toggleTheme} aria-pressed={isDark} aria-label={lang==="zh"?(isDark?"切换到浅色模式":"切换到深色模式"):(isDark?"Switch to light mode":"Switch to dark mode")}
           className="btn-touch w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-[13px] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]">{isDark?"☀":"🌙"}</button>
         <button onClick={toggleLang} aria-label={lang==="zh"?"Switch to English":"切换到中文"} className="btn-touch w-full rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-[13px] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]">{lang==="zh"?"EN":"中文"}</button>

@@ -270,7 +270,7 @@ function TopBar({remain,speed,sid,gpu,ip,port,tpl,onOpenHub}){
     {t>0 && <span className={`mono rounded-md border px-2 py-0.5 ${speed>1?"border-[var(--color-warning)] text-[var(--color-warning-on-tint)]":"border-[var(--color-border)]"}`}><span className="text-[var(--color-text-faint)]">{T.remainLbl} </span>{fmtDur(t)}</span>}
     <button onClick={onOpenHub}
      className="rounded-lg border border-[var(--color-info)]/50 px-3 py-1 text-[12px] text-[var(--color-info-on-tint)] hover:bg-[var(--color-info)]/10">{T.hubBtn}</button>
-    <button onClick={()=>{ try{window.close();}catch(e){} try{location.href="/proto/index.html";}catch(e){} }}
+    <button onClick={()=>{ try{window.close();}catch(e){} try{location.href="./index.html";}catch(e){} }}
      className="rounded-lg border border-[var(--color-border-strong)] px-3 py-1 text-[12px] hover:text-[var(--color-text)]">{T.back}</button>
     <button onClick={onToggleTheme} aria-pressed={isDark}
      aria-label={isDark?"Switch to light mode":"Switch to dark mode"}
@@ -443,7 +443,7 @@ function EndedSkin({kind}){
     <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full text-[20px] ${kind==="expired"?"bg-[var(--color-warning)]/15 text-[var(--color-warning-on-tint)]":"bg-[var(--color-error)]/15 text-[var(--color-error)]"}`}>⏻</div>
     <h1 className="mb-2 text-[20px] font-semibold">{title}</h1>
     <p className="mb-6 text-[14px] leading-6 text-[var(--color-text-secondary)]">{lead}</p>
-    <button onClick={()=>{location.href="/proto/index.html";}}
+    <button onClick={()=>{location.href="./index.html";}}
      className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-[14px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.backBtn}</button>
    </div>
   </div>);
