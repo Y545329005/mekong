@@ -21,7 +21,7 @@ window.addEventListener('error',function(e){
   /* tokens:begin —— 以下整块由 tools/sync-tokens.mjs 生成，勿手改 */
   :root {
   /* 令牌由 tools/sync-tokens.mjs 生成 —— 不要手改本块；改脚本后重跑。四页共用同一份取值。 */
-    --color-bg: #f8fafc; --color-surface: #ffffff; --color-surface-alt: #f1f5f9;
+    --color-bg: #f8fafc; --color-surface: #ffffff; --color-surface-alt: #f1f5f9; --color-surface-brand: #e6edff;
     --color-text: #0f172a; --color-text-secondary: #334155; --color-text-muted: #475569; --color-text-faint: #5b6673;
     --color-border: #e2e8f0; --color-border-strong: #cbd5e1;
     --color-accent: #2563eb; --color-accent-hover: #1d4ed8; --color-accent-strong: #1d4ed8; --color-focus: #2563eb;
@@ -35,7 +35,7 @@ window.addEventListener('error',function(e){
   }
   .dark {
   /* 同浅色档的同一套取值；深色下语义色底是亮色，字色改用 --color-on-solid / --color-*-on-tint。 */
-    --color-bg: #0f172a; --color-surface: #1e293b; --color-surface-alt: #1e293b;
+    --color-bg: #0f172a; --color-surface: #1e293b; --color-surface-alt: #1e293b; --color-surface-brand: #1a2747;
     --color-text: #f1f5f9; --color-text-secondary: #e2e8f0; --color-text-muted: #cbd5e1; --color-text-faint: #94a3b8;
     --color-border: #334155; --color-border-strong: #475569;
     --color-accent: #2563eb; --color-accent-hover: #3b82f6; --color-accent-strong: #1d4ed8; --color-focus: #3b82f6;
@@ -270,10 +270,28 @@ zh:{
   tplDiskShort:(d,n)=>`该机器可用磁盘 ${d}GB 低于模板要求 ${n}GB —— 实例磁盘将按模板下限分配并计费`,tplPortShort:(p,n)=>`该机器可用端口 ${p} 个少于模板要求 ${n} 个`,
   chipTplTip:"模板的硬件要求已应用到实例配置",chipTpl:(d,p)=>`模板要求 · 磁盘 ≥${d}GB · 端口 ≥${p}`,noTemplateSelected:"未选择模板",notPreferred:"非推荐",
   tplFilter:"模板",tplFilterNone:"不限",stEmptyTpl:"该模板要求下无兼容机器（端口不足）· 试试更换模板或放宽筛选",
-  crTitle:"Add Credits · 需要余额才能开机",crOther:"其他金额（≥ $10）",crOtherBtn:"其他",crChanLbl:"支付通道",crLater:"稍后再说",crProcessing:"处理中…",
+  crTitle:"Add Credits · 需要余额才能开机",crOther:"其他金额（≥ $10）",crOtherBtn:"其他",crLater:"稍后再说",crProcessing:"处理中…",
   crD1Pre:"⚠ 仅",crD1Em:"未消费余额",crD1Suf:"可退款。",crD2Pre:"⚠ 平台",crD2Em:"不提供 SLA 保证",crD2Suf:"。",
+  crChanNote:"点「支付」后跳转到支付机构的托管收单页——在那里选择付款方式并完成付款，回到本站自动入账；本平台不接触卡号。",
+  crAmtNote:"余额仅用于本站消费，不可提现、不可转让（充值与出金是两条独立链路）。",
+  crPendingTitle:"银行转账待入账",crPendingRow:(a)=>`$${a} · 已收到汇款信息，等待银行到账`,crPendingSim:"模拟到账",
    tSwitchHost:"已切换到宿主视角",
-    lblBw:"带宽",lblDisk:"磁盘",lblPorts:"端口",crChBank:"银行卡",crChAlipay:"支付宝",crChWechat:"微信支付",crChTransfer:"银行转账",crGrpFiat:"Airwallex（法币）",crGrpPaypal:"PayPal",crGrpCrypto:"加密货币",crTrustLine:"本笔支付由 Airwallex 安全收款",crChipTip:"点击充值",crMinNote:(bal)=>`最低充值 $10 · 当前余额 ${fmt$(bal,2)}`,balHostTip:"可提现收益：租用「宿主上架」机器的消费按 1:1 全额入账（Running 计费与停机存储费均计入）",
+    lblBw:"带宽",lblDisk:"磁盘",lblPorts:"端口",crChBank:"银行卡",crChAlipay:"支付宝",crChWechat:"微信支付",crChTransfer:"银行转账",crTrustLine:"本笔支付由持牌支付机构安全收款，本平台不存储卡号",crChipTip:"点击充值",crMinNote:(bal)=>`最低充值 $10 · 当前余额 ${fmt$(bal,2)}`,balHostTip:"可提现收益：租用「宿主上架」机器的消费按 1:1 全额入账（Running 计费与停机存储费均计入）",
+  // —— 支付跳转 + 托管页（示意，2026-10-27）：页内不出现支付机构商标，也不伪造其官方页面 ——
+  payRedirecting:"正在跳转到支付页面…",
+  payRedirectHint:"若浏览器未自动跳转，请检查是否拦截了弹出窗口",
+  payHostedTitle:"安全支付",payAmount:"支付金额",payPickMethod:"选择付款方式",
+  payHostedNote:"此页示意支付机构托管的收单页面：填卡/选钱包与实名校验都在该页完成，返回本站后才入账。",
+  payFailedNote:"支付未成功（常见原因：余额不足、3D Secure 未通过、发卡行拒绝）。本平台未入账，可重试或更换支付方式。",
+  payCardHint:"在该页填写卡号、有效期与安全码，并完成 3D Secure 验证",
+  payWalletHint:"在该页打开钱包扫码完成付款",
+  payDemoHint:"演示：以下按钮模拟你在托管页完成的操作结果，仅影响本机演示数据。",
+  payCancelBtn:"取消支付",payRetry:"重试",payOkBtn:"模拟支付成功 · 未发生真实扣款",
+  payFailBtn:"模拟支付失败",
+  payBankTitle:"汇款信息",payBankAcct:"收款账号",payBankRef:"汇款附言",payBankEta:"跨行转账通常 T+1 到账；附言请勿修改，否则无法自动匹配。",
+  payBankDone:"我已汇款 · 等待到账",payBankSim:"模拟已到账",
+  payParked:(a)=>`已记录银行转账 $${a}，到账后自动入账`,
+  payCanceled:"支付已取消，未产生扣款",
    cfTitle:"确认实例配置",cfImageShort:"镜像",cfImageHint:"可填任意公共镜像路径，需带版本 tag，如 pytorch/pytorch:2.5.1",cfEdit:"改",cfEditTitle:"编辑镜像 tag",cfAdv:"高级配置",
     cfAdvPreset:(n)=>`已预填 ${n} 项`,cfAdvNone:"未预填",cfAdvEnv:"环境配置",cfAdvPorts:"开放端口",cfAdvOnstart:"启动脚本",cfAdvOpen:"收起 ▲",cfEnv:"环境配置",cfEnvHint:"一行一个，格式 KEY=VALUE",cfPorts:"对外开放端口",cfPortsHint:"每行一个，格式 宿主端口:容器端口",cfPortsErr:"端口格式应为 宿主端口:容器端口（如 8000:8000），每行或逗号一个",
   cfOnstart:"启动后自动执行",cfOnstartHint:"机器就绪后以 bash 运行",
@@ -387,36 +405,65 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   wzS2Warn:"⚠ 发布即创建 offer：客户下单瞬间条款全部冻结，此后改价/下架均不影响存量合同",
   wzCancel:"取消",wzPrev:"上一步",wzNext:"下一步",wzSubmit:"发布上架",
   wzOk:"平台实测通过，机器已发布——出现在搜索结果（DLPerf 为平台实测值；可靠性待首单积累）",
-  // —— Earnings 页（i18n 二期 · 2026-09-18 多通道重构） ——
-  eaWithdrawable:"可提现收益",eaWithdrawableSub:"累计合同收入 − 已提现",
+  // —— Earnings 页（2026-10-27 · 六态出金 · 单一 PSP / 仅同名银行账户） ——
+  eaWithdrawable:"可提现收益",eaWithdrawableSub:"累计合同收入 − 已提现 − 出金冻结中",
+  eaFrozenTip:(a)=>`其中 $${a} 已被出金申请冻结（放行即冻结，发起出款才扣款）`,
   eaMonthly:"近 30 天收入",eaMonthlySub:"按收益流水累计（净额 · 已扣平台抽成）",
-  eaWdNet:(a,f)=>`通道费率约 ${f} · 预计实到 $${a}`,
   eaTotalGross:"累计总收入",eaTotalNet:"累计净收入",eaPlatFee:"平台抽成",
   eaRiskTitle:"违约与下架记录",eaRiskNone:"无违约记录——机器断连超 5 分钟将触发合同终止并自动下架",
-  eaChTitle:"出金通道",eaActive:(c,e)=>`已绑定：${c} · ${e}`,eaNone:"尚未绑定出金通道",
-  eaDefaultCh:"默认出金通道",eaNoChannels:"尚未绑定出金通道",eaChDefault:"默认",
-  eaChAdd:"添加通道",eaChSetDefault:"设为默认",eaChRemove:"删除",eaClose:"关闭",
+  eaChTitle:"收款账户",eaNoChannels:"尚未绑定收款账户",eaChDefault:"默认",
+  eaChAdd:"添加收款账户",eaChSetDefault:"设为默认",eaChRemove:"删除",eaClose:"关闭",
   eaTrendTitle:"近 30 天收益趋势",eaTrendUnit:"每日净收益（美元）",eaTrendEmpty:"暂无收益数据——上架机器被租用后此处将展示趋势",
-  eaWdTitle:"提现",eaWdBtn:(a)=>`提现 $${(+a||0).toFixed(2)}`,eaWdNoCh:"请先绑定并选择出金通道",
-  eaWdChannel:"出金通道",
-   eaWdAmt:"提现金额 $",eaWdAmtSub:"起提 $20 · 上限为可提现余额",eaWdInvalid:"提现金额需 ≥$20 且不超过可提现余额",eaWdAll:"全部",
-   eaWdVerify:"出金二次验证",eaWdVerifyAmt:"提现金额",eaWdVerifySent:(e)=>`验证码已发送至 ${e}`,eaWdCode:"验证码",eaWdConfirm:"验证并提交",eaErrCode:"请输入 6 位数字验证码",eaErrCodeWrong:"验证码错误，请重试",
-   eaPoTitle:"出金记录",eaPoEmpty:"暂无出金申请",eaPoStatus:"状态",
-   eaPoPending:"审核中",eaPoApproved:"已放行",eaPoRejected:"已拒绝",
-  wdSubmitted:(a)=>`提现申请已提交（$${a.toFixed(2)}），等待平台审核（Admin 出金审批）`,
-  wdPending:"已有提现申请在审——放行后可再次提现",wdPendingBtn:"审核中 · 等待平台放行",wdPendingT:"该申请已提交至平台出金审批，批准后即时到账",
-  wdPaid:(a)=>`提现申请已放行 · $${a.toFixed(2)} 已到账（Admin 审批）`,
-  wdRejected:(a)=>`提现申请被平台驳回 · $${a.toFixed(2)} 未扣款`,
+  eaWdTitle:"提现",eaWdBtn:(a)=>`提现 $${(+a||0).toFixed(2)}`,eaWdNoCh:"请先绑定收款账户",
+  eaWdAcct:"出金至",eaWdSameName:"仅支持同名账户出金：收款账户名须与实名主体一致，绑定后自动核验。",
+  eaWdVerifyBlock:"该收款账户尚未通过同名核验，暂不可出金——请在「管理收款账户」补充材料后重试。",
+  eaWdAmt:"提现金额 $",eaWdAmtSub:"起提 $20 · 上限为可提现余额（已扣除冻结中金额）",eaWdInvalid:"提现金额需 ≥$20 且不超过可提现余额",eaWdAll:"全部",
+  eaWdFeeNote:"出款费用与到账金额以出款时报价为准（含中间行与换汇成本），此处不作预估。",
+  eaWdVerify:"出金二次验证",eaWdVerifyAmt:"提现金额",eaWdVerifySent:(e)=>`验证码已发送至 ${e}`,eaWdCode:"验证码",eaWdConfirm:"验证并提交",eaErrCode:"请输入 6 位数字验证码",eaErrCodeWrong:"验证码错误，请重试",
+  eaPoTitle:"出金记录",eaPoEmpty:"暂无出金申请",eaPoStatus:"状态",eaPoAcct:"收款账户",
+  eaPoPending:"审核中",eaPoApproved:"已放行 · 冻结中",eaPoProcessing:"出款中",eaPoSent:"已汇出",eaPoPaid:"已到账",eaPoFailed:"出款失败 · 已退回",eaPoRejected:"已驳回",
+  eaPoStateNote:"放行只冻结（不扣款）；平台发起出款时才扣款，出款失败自动退回可提现余额。",
+  wdSubmitted:(a)=>`提现申请已提交（$${a.toFixed(2)}），等待平台审核`,
+  wdPending:"已有出金申请在途——该笔完成或退回后可再次提现",wdPendingBtn:"处理中 · 查看进度",
+  wdPendingT:"该申请已提交平台出金审批；放行后仅冻结，发起出款时才扣款",
+  wdInFlightT:"出款处理中：金额已从可提现余额扣除，到账后自动完成；若出款失败将自动退回余额。",
+  wdApproved:(a)=>`提现申请已放行 · $${a.toFixed(2)} 已冻结，等待发起出款`,
+  wdProcessing:(a)=>`出款已发起 · $${a.toFixed(2)} 已从可提现余额扣除`,
+  wdSent:(a)=>`出款已汇出 · $${a.toFixed(2)} 在途，到账后自动完成`,
+  // —— 出金状态演示控件（仅原型：真实环境由平台运营在审核台推进） ——
+  poDemoNote:"演示：以下按钮模拟平台侧推进（放行只冻结、发起出款才扣款、失败退回），真实环境由运营在出金审核台操作。",
+  poDemoRelease:"模拟放行",poDemoSend:"模拟发起出款",poDemoSent:"模拟已汇出",poDemoPaid:"模拟到账",poDemoFail:"模拟失败退回",
+  wdPaid:(a)=>`出款完成 · $${a.toFixed(2)} 已到账`,
+  wdFailed:(a)=>`出款失败 · $${a.toFixed(2)} 已退回可提现余额`,
+  wdRejected:(a)=>`提现申请被驳回 · $${a.toFixed(2)} 未扣款`,
   wdNoUser:"登录态异常，无法发起提现",
   eaWdThreshold:"满 $20 才可提现",
   eaWdWarn:"⚠ 满 $20 才可提现。",
    eaDetail:"收益明细",eaDetailSub:"租用「宿主上架」机器后，此处产生收益流水（消费全额入账，仅展示近期）",eaExport:"导出 CSV",eaExportOk:"收益数据已导出为 CSV",
-  // —— Payout 绑定弹窗（i18n 二期 · 2026-09-18 多通道） ——
-  poTitle:(ch)=>`添加出金通道 · ${ch}`,
-  poEmail:"收款账户邮箱",poEmailAria:"收款账户邮箱",
-  poRateNote:(r)=>`费率：${r}。可绑定多个通道，提现时可在面板选择通道（默认通道预选）。`,
-  poBound:"已绑定",poBoundHint:"该通道已绑定，确认可更新收款邮箱。",
-  poCancel:"取消",poConfirm:"确认添加",poOk:(ch)=>`${ch} 已绑定`,poManage:"管理通道",
+  // —— 收款账户绑定弹窗（2026-10-27 · 同名银行账户 + 核验） ——
+  poTitle:"添加收款账户",
+  poLead:"一期出金仅限同名银行账户（本平台的资金安全约束，非支付机构要求）：账户名须与实名主体一致，保存时发起账户核验。",
+  poEntityOrg:"企业主体",poEntityInd:"个人主体",
+  poHolder:"账户名（与实名主体一致）",poHolderPh:"例如：Mekong Trading Pte Ltd",
+  poAcctNo:"银行账号",poAcctNoPh:"仅用于生成尾号与出款",
+  poBank:"开户银行",poBankPh:"例如：DBS Bank",
+  poCountry:"开户国家/地区",poRouteType:"路由方式",poRouteVal:"路由号",poRouteValPh:"SWIFT / IBAN / ABA",
+  poCurrency:"账户币种",poNotify:"到账通知邮箱",
+  poSameName:"我确认该账户为同名账户，账户名与实名主体一致",
+  poVerifying:"正在核验收款账户…",poVerifyHint:"核验结果由账户核验接口返回（对齐官方 verify_account：完全匹配 / 部分匹配 / 名称不匹配 / 无法核验）；仅「核验通过」可发起出金。",
+  poVerifyOk:"核验通过（完全匹配）",poVerifyPartial:"部分匹配 · 待确认",poVerifyNo:"名称不匹配",poVerifyCannot:"无法核验",
+  poSimVerify:"模拟核验返回（演示）",
+  poRouteAuto:"路由类型（按开户国）",
+  poNotify:"出款到账通知（发给受益人 · 可选）",poNotifyPh:"beneficiary@example.com",
+  poAcctFormNote:"开户行由平台解析后回填；路由类型按开户国自适应生成（因此没有 SWIFT/IBAN/ABA 选择）。",
+  poStepOf:(n)=>`第 ${n} 步 · 共 3 步`,poStep1:"账户信息",poStep2:"同名确认与核验",poStep3:"核验结果",
+  poNext:"下一步",poPrev:"上一步",poFinish:"完成",poDoneTitle:"核验结果",
+  poDoneTip:"仅「核验通过（完全匹配）」的账户可用于发起出金；核验结果以保存时的返回为准。",
+  poDoneNo:"账户已保存，但名称核验不匹配——修正户名后才能出金",
+  poDoneCannot:"账户已保存，但当前无法核验——核验完成前不能出金",
+  poVerifyNote:"账户信息变更后需重新核验；核验未通过的账户不能发起出金。",
+  poDoneOk:"账户已保存并核验通过，可以发起出金。",poDonePartial:"账户已保存；名称仅部分匹配——建议先与开户名核对，再发起出金。",
+  poCancel:"取消",poConfirm:"核验并保存",poManage:"管理收款账户",
   // —— P2P：账号级信任门（宿主实名/KYC 见上架向导与视角切换） ——
   srcHostLbl:"宿主上架",srcDeposit:(d)=>`押金 $${d.toFixed(0)}`,srcSeedLbl:"企业可信",srcSeedTitle:"企业可信供给 · 平台自购/签约机房",
   escrowTitle:"资金托管 · Escrow",escrowDesc:"下单时按实例预留冻结（防租客赖账），消费后释放，租约结束/销毁后释放回可退款余额；余额耗尽自动停机。",escrowHold:"托管冻结中",escrowRefundable:"可退款余额（含托管）",
@@ -436,13 +483,13 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   ldUc2T:"模型训练",ldUc2D:"官方 PyTorch 镜像，内置 JupyterLab 与 SSH。",
   ldUc3T:"图像生成",ldUc3D:"ComfyUI 节点式扩散工作流，Web UI 直达。",
   // —— 开发者接入（2026-10-08 · 左列收敛为「一句主张 + 一行动作」，三接入方式降为一行 mono 小字） ——
-  ldDevTitle:"一行命令，接入算力",ldDevSub:"与租用同一套 API：按秒计费、随取随停，训练推理通用。",
+  ldDevEyebrow:"面向开发者",ldDevTitle:"一行命令，接入算力",ldDevSub:"与租用同一套 API：按秒计费、随取随停，训练推理通用。",
   ldDevModes:"CLI · Python SDK · REST API",
   ldDevCta:"探索开发者工具",ldDevTerm:"deploy.py",
-  ldTickerTitle:"市场快照",ldTickerLive:"实时快照",
+  ldTickerTitle:"市场快照",ldTickerLive:"报价采样",
   ldEntTitle:"企业算力采购",ldEntDesc:"企业规模算力需求可提交需求单，由销售与方案团队对接确认。",
-  ldEntBtn:"提交采购需求",
-  ldMarketTitle:"在售算力实时报价",ldMarketSub:(m,k,g,r)=>`以下为平台在售算力——注册后即可按此价格下单。${m?`当前内测期在售 ${m} 台 / ${k} 个型号 / ${g} 张 GPU，分布在 ${r} 个国家/地区。`:""}`,
+  ldEntBtn:"提交采购需求",ldEntMail:"或邮件联系",
+  ldMarketEyebrow:"市场目录",ldMarketTitle:"在售算力报价",ldMarketSub:(m,k,g,r)=>`以下为平台在售算力——注册后即可按此价格下单。${m?`当前内测期在售 ${m} 台 / ${k} 个型号 / ${g} 张 GPU，分布在 ${r} 个国家/地区。`:""}`,
   ldWhereTitle:"在售算力分布",ldWhereNote:"点位为国别位置示意。",
   ldCatFrom:"低至",ldCatMedian:"中位",
   // 型号卡供给徽标：语义档位（按在挂条数 n：≥3 充裕 / =2 一般 / ≤1 紧张）+ hover 数量（N 台在挂）
@@ -458,7 +505,7 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   ldTrust2T:"一次性合规门",ldTrust2D:"最终用途声明，账号级仅确认一次。",
   ldTrust3T:"出口管制筛查",ldTrust3D:"受限型号下单前执行受限方与地域筛查。",
   ldTrust4T:"实名宿主",ldTrust4D:"真人实名 + 可选押金，未实名无法上架机器。",
-  ldRolesTitle:"一个账号，两种角色",
+  ldRolesEyebrow:"如何开始",ldRolesTitle:"一个账号，两种角色",
   ldRoleTenantT:"租户",ldRoleTenantLead:"按小时租 GPU，按秒计费，停机只收存储费。",
   ldRoleHostT:"宿主",ldRoleHostLead:"上架自建机器，平台撮合订单，收益随时提现。",
   ldHowT1:"注册并登录",ldHowT2:"挑选报价、选模板",ldHowT3:"充值并创建实例",
@@ -466,7 +513,7 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   ldFootTerms:"服务条款",ldFootPrivacy:"隐私政策",ldFootDocs:"文档",ldFootStub:"该页面即将上线",ldFootCorp:"Mekong Ltd. · © 2026",
   // —— Footer 多列信息架构（2026-10-08） ——
   ldFootMarket:"市场",ldFootM1:"在售算力",ldFootM2:"宿主上架",ldFootM3:"企业采购",
-  ldFootRes:"资源",ldFootR1:"开发者文档",ldFootR2:"常见问题",ldFootR3:"平台合规",
+  ldFootRes:"资源",ldFootR1:"开发者文档",ldFootR2:"常见问题",ldFootR3:"平台合规",ldFootContact:"联系我们",ldFootSupport:"支持",
   ldFootLegal:"法律",
   ldFootNews:"订阅产品动态",ldFootNewsPh:"输入邮箱",ldFootNewsOk:"已订阅",
   // —— 注册/登录弹窗（邮箱验证码直登 · passwordless） ——
@@ -537,11 +584,29 @@ blThTime:"时间",blThItem:"说明",blThAmt:"金额",blThBal:"余额",blThId:"�
   tplDiskShort:(d,n)=>`Machine has ${d}GB disk, below the template's ${n}GB requirement — instance disk will be allocated at the template minimum and billed`,tplPortShort:(p,n)=>`Machine has ${p} ports, fewer than the template's ${n} required`,
   chipTplTip:"Template hardware requirements applied to instance config",chipTpl:(d,p)=>`Template · disk ≥${d}GB · ports ≥${p}`,noTemplateSelected:"No template selected",notPreferred:"Not recommended",
   tplFilter:"Template",tplFilterNone:"Any",stEmptyTpl:"No machines compatible with this template (insufficient ports) · try another template or relax filters",
-  crTitle:"Add Credits · credits required to boot",crOther:"Custom amount (≥ $10)",crOtherBtn:"Custom",crChanLbl:"Payment channel",crLater:"Later",crProcessing:"Processing…",
+  crTitle:"Add Credits · credits required to boot",crOther:"Custom amount (≥ $10)",crOtherBtn:"Custom",crLater:"Later",crProcessing:"Processing…",
   crD1Pre:"⚠ We can refund only ",crD1Em:"unspent credit balance",crD1Suf:".",crD2Pre:"⚠ Machine reliability/performance varies and is ",crD2Em:"not guaranteed",crD2Suf:".",
+  crChanNote:"Paying redirects you to the provider's hosted checkout page — pick a payment method and complete it there; we credit your balance when you come back. Card details never reach this platform.",
+  crAmtNote:"Balance is for spending here only — not withdrawable or transferable (top-ups and payouts are separate flows).",
+  crPendingTitle:"Bank transfer pending",crPendingRow:(a)=>`$${a} · transfer details received, awaiting bank settlement`,crPendingSim:"Simulate arrival",
    tSwitchHost:"Switched to Host view",
 
-   lblBw:"BW",lblDisk:"Disk",lblPorts:"ports",crChBank:"Bank card",crChAlipay:"Alipay",crChWechat:"WeChat Pay",crChTransfer:"Bank transfer",crGrpFiat:"Airwallex (Fiat)",crGrpPaypal:"PayPal",crGrpCrypto:"Crypto",crTrustLine:"This payment is secured by Airwallex",crChipTip:"Click to top up",crMinNote:(bal)=>`Minimum top-up $10 · Current balance ${fmt$(bal,2)}`,balHostTip:"Withdrawable earnings: consumption on host-listed machines credits 1:1 (Running billing and stopped storage fees both included)",
+   lblBw:"BW",lblDisk:"Disk",lblPorts:"ports",crChBank:"Bank card",crChAlipay:"Alipay",crChWechat:"WeChat Pay",crChTransfer:"Bank transfer",crTrustLine:"Payment is processed by a licensed payment provider; card details never reach this platform",crChipTip:"Click to top up",crMinNote:(bal)=>`Minimum top-up $10 · Current balance ${fmt$(bal,2)}`,balHostTip:"Withdrawable earnings: consumption on host-listed machines credits 1:1 (Running billing and stopped storage fees both included)",
+  // —— Payment redirect + hosted page (illustrative, 2026-10-27): no provider trademark, never a fake official page ——
+  payRedirecting:"Redirecting to the payment page…",
+  payRedirectHint:"If your browser does not redirect, check whether pop-ups are blocked",
+  payHostedTitle:"Secure payment",payAmount:"Amount",payPickMethod:"Choose a payment method",
+  payHostedNote:"This page illustrates the provider's hosted checkout: card entry / wallet selection and verification happen there; your balance is credited only after you return.",
+  payFailedNote:"Payment did not go through (common causes: insufficient funds, 3-D Secure failure, issuer declined). Nothing was credited here — retry or switch method.",
+  payCardHint:"Enter card number, expiry and CVC on that page, then complete 3-D Secure",
+  payWalletHint:"Open your wallet and scan to pay on that page",
+  payDemoHint:"Demo: the buttons below simulate what you did on the hosted page and only affect local demo data.",
+  payCancelBtn:"Cancel payment",payRetry:"Retry",payOkBtn:"Simulate success · no real charge",
+  payFailBtn:"Simulate failure",
+  payBankTitle:"Transfer details",payBankAcct:"Beneficiary account",payBankRef:"Reference",payBankEta:"Bank transfers usually settle next business day; do not alter the reference or the payment cannot be matched.",
+  payBankDone:"I've sent it · awaiting settlement",payBankSim:"Simulate settlement",
+  payParked:(a)=>`Bank transfer of $${a} recorded; credited once the funds arrive`,
+  payCanceled:"Payment cancelled — nothing was charged",
 
    cfTitle:"Confirm instance configuration",cfImageShort:"Image",cfImageHint:"Any public image path with a version tag, e.g. pytorch/pytorch:2.5.1",cfEdit:"Edit",cfEditTitle:"Edit image tag",cfAdv:"Advanced options",
     cfAdvPreset:(n)=>`Preset ${n}`,cfAdvNone:"Nothing preset",cfAdvEnv:"Env config",cfAdvPorts:"Public ports",cfAdvOnstart:"Startup script",cfAdvOpen:"Collapse ▲",cfEnv:"Env config",cfEnvHint:"One per line, KEY=VALUE",cfPorts:"Public ports",cfPortsHint:"One per line, host:container",cfPortsErr:"Expected host:container (e.g. 8000:8000), one per line or comma-separated",
@@ -657,35 +722,64 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   wzCancel:"Cancel",wzPrev:"Back",wzNext:"Next",wzSubmit:"Publish listing",
   wzOk:"Benchmark passed & machine published — live in search (DLPerf is platform-measured; reliability accrues from first rentals)",
   // —— Earnings (i18n phase 2 · 2026-09-18 multi-channel rework) ——
-  eaWithdrawable:"Withdrawable earnings",eaWithdrawableSub:"Contract income to date − withdrawn",
+  eaWithdrawable:"Withdrawable earnings",eaWithdrawableSub:"Contract income to date − withdrawn − frozen by payouts",
+  eaFrozenTip:(a)=>`$${a} of this is frozen by a payout in flight (frozen on release, deducted only when sent)`,
   eaMonthly:"Last 30 days",eaMonthlySub:"Net from earnings ledger (after commission)",
-  eaWdNet:(a,f)=>`Channel fee ≈ ${f} · est. net $${a}`,
   eaTotalGross:"Total gross",eaTotalNet:"Total net",eaPlatFee:"Platform commission",
   eaRiskTitle:"Breaches & delistings",eaRiskNone:"No breaches — a machine offline for over 5 minutes terminates its contracts and auto-delists",
-  eaChTitle:"Payout channels",eaActive:(c,e)=>`Bound: ${c} · ${e}`,eaNone:"No payout channel bound yet",
-  eaDefaultCh:"Default payout channel",eaNoChannels:"No payout channel bound yet",eaChDefault:"Default",
-  eaChAdd:"Add channel",eaChSetDefault:"Set as default",eaChRemove:"Remove",eaClose:"Close",
+  eaChTitle:"Payout accounts",eaNoChannels:"No payout account bound yet",eaChDefault:"Default",
+  eaChAdd:"Add payout account",eaChSetDefault:"Set as default",eaChRemove:"Remove",eaClose:"Close",
   eaTrendTitle:"Earnings trend · last 30 days",eaTrendUnit:"Daily net earnings (USD)",eaTrendEmpty:"No earnings data yet — the trend will appear once your hosted machine gets rented",
-  eaWdTitle:"Withdraw",eaWdBtn:(a)=>`Withdraw $${(+a||0).toFixed(2)}`,eaWdNoCh:"Bind and select a payout channel first",
-  eaWdChannel:"Payout channel",
-   eaWdAmt:"Amount $",eaWdAmtSub:"$20 minimum · capped at withdrawable balance",eaWdInvalid:"Amount must be ≥$20 and within withdrawable balance",eaWdAll:"Max",
-   eaWdVerify:"Withdrawal verification",eaWdVerifyAmt:"Amount",eaWdVerifySent:(e)=>`Code sent to ${e}`,eaWdCode:"Verification code",eaWdConfirm:"Verify & submit",eaErrCode:"Enter the 6-digit code",eaErrCodeWrong:"Incorrect code, please retry",
-   eaPoTitle:"Payout history",eaPoEmpty:"No payout requests yet",eaPoStatus:"Status",
-   eaPoPending:"Under review",eaPoApproved:"Released",eaPoRejected:"Rejected",
-  wdSubmitted:(a)=>`Withdrawal request submitted ($${a.toFixed(2)}); awaiting platform review (Admin payouts)`,
-  wdPending:"A withdrawal is already under review — you can withdraw again after it's released",wdPendingBtn:"Under review · awaiting release",wdPendingT:"Submitted to the platform's payout approval; funds arrive instantly once approved",
-  wdPaid:(a)=>`Withdrawal released · $${a.toFixed(2)} credited (Admin approved)`,
+  eaWdTitle:"Withdraw",eaWdBtn:(a)=>`Withdraw $${(+a||0).toFixed(2)}`,eaWdNoCh:"Bind a payout account first",
+  eaWdAcct:"Pay out to",eaWdSameName:"Same-name payouts only: the beneficiary account must match your verified identity; it is verified on save.",
+  eaWdVerifyBlock:"This account has not passed same-name verification yet — add supporting details under “Manage payout accounts” and retry.",
+  eaWdAmt:"Amount $",eaWdAmtSub:"$20 minimum · capped at withdrawable balance (frozen amounts excluded)",eaWdInvalid:"Amount must be ≥$20 and within withdrawable balance",eaWdAll:"Max",
+  eaWdFeeNote:"Payout fees and the amount received are quoted at payout time (including intermediary and FX costs); nothing is estimated here.",
+  eaWdVerify:"Withdrawal verification",eaWdVerifyAmt:"Amount",eaWdVerifySent:(e)=>`Code sent to ${e}`,eaWdCode:"Verification code",eaWdConfirm:"Verify & submit",eaErrCode:"Enter the 6-digit code",eaErrCodeWrong:"Incorrect code, please retry",
+  eaPoTitle:"Payout history",eaPoEmpty:"No payout requests yet",eaPoStatus:"Status",eaPoAcct:"Payout account",
+  eaPoPending:"Under review",eaPoApproved:"Released · frozen",eaPoProcessing:"Sending",eaPoSent:"Sent",eaPoPaid:"Paid",eaPoFailed:"Failed · refunded",eaPoRejected:"Rejected",
+  eaPoStateNote:"Release only freezes the amount; it is deducted when the payout is initiated and returned to the balance automatically if the payout fails.",
+  wdSubmitted:(a)=>`Withdrawal request submitted ($${a.toFixed(2)}); awaiting platform review`,
+  wdPending:"A payout is already in flight — withdraw again once it settles or is refunded",wdPendingBtn:"In progress · view status",
+  wdPendingT:"Submitted to the platform's payout approval; release only freezes the amount, deduction happens when it is sent",
+  wdInFlightT:"Payout in progress: the amount has left your withdrawable balance and completes on arrival; if the payout fails it returns automatically.",
+  wdApproved:(a)=>`Withdrawal released · $${a.toFixed(2)} frozen, awaiting payout initiation`,
+  wdProcessing:(a)=>`Payout initiated · $${a.toFixed(2)} deducted from withdrawable balance`,
+  wdSent:(a)=>`Payout sent · $${a.toFixed(2)} in transit, completed on arrival`,
+  // —— Payout progress demo controls (prototype only: production advances them from the ops console) ——
+  poDemoNote:"Demo: these buttons simulate platform-side progress (release only freezes, deduction happens when the payout is initiated, failures are refunded); production runs them from the payout console.",
+  poDemoRelease:"Simulate release",poDemoSend:"Simulate payout",poDemoSent:"Simulate sent",poDemoPaid:"Simulate paid",poDemoFail:"Simulate failure",
+  wdPaid:(a)=>`Payout complete · $${a.toFixed(2)} received`,
+  wdFailed:(a)=>`Payout failed · $${a.toFixed(2)} returned to withdrawable balance`,
   wdRejected:(a)=>`Withdrawal rejected by the platform · $${a.toFixed(2)} not deducted`,
   wdNoUser:"Sign-in state error; cannot start a withdrawal",
   eaWdThreshold:"$20 minimum to withdraw",
   eaWdWarn:"⚠ $20 minimum to withdraw.",
    eaDetail:"Earnings detail",eaDetailSub:"Earnings rows appear here once your host-listed machine gets rented (1:1 credit, recent only)",eaExport:"Export CSV",eaExportOk:"Earnings data exported as CSV",
-  // —— Bind payout modal (i18n phase 2 · 2026-09-18 multi-channel) ——
-  poTitle:(ch)=>`Add payout channel · ${ch}`,
-  poEmail:"Payout account email",poEmailAria:"Payout account email",
-  poRateNote:(r)=>`Rate: ${r}. Multiple channels can be bound; pick a channel in the withdraw panel (the default is preselected).`,
-  poBound:"Bound",poBoundHint:"Channel already bound — confirm to update the payout email.",
-  poCancel:"Cancel",poConfirm:"Confirm add",poOk:(ch)=>`${ch} bound`,poManage:"Manage channels",
+  // —— Bind payout account (2026-10-27 · same-name bank account + verification) ——
+  poTitle:"Add payout account",
+  poLead:"Phase one pays out to same-name bank accounts only (this platform's fund-safety rule, not a provider requirement): the account name must match your verified identity, and verification is initiated on save.",
+  poEntityOrg:"Company",poEntityInd:"Individual",
+  poHolder:"Account name (matches verified identity)",poHolderPh:"e.g. Mekong Trading Pte Ltd",
+  poAcctNo:"Bank account number",poAcctNoPh:"Used only for the last four digits and payouts",
+  poBank:"Bank",poBankPh:"e.g. DBS Bank",
+  poCountry:"Country / region",poRouteType:"Routing",poRouteVal:"Routing number",poRouteValPh:"SWIFT / IBAN / ABA",
+  poCurrency:"Account currency",poNotify:"Payout notification email",
+  poSameName:"I confirm this is a same-name account: the account name matches my verified identity",
+  poVerifying:"Verifying the payout account…",poVerifyHint:"The result comes from the account verification API (aligned with the provider's verify_account: full match / partial match / name not matched / cannot verify); only \u201cVerified\u201d can receive payouts.",
+  poVerifyOk:"Verified (full match)",poVerifyPartial:"Partial match · needs confirmation",poVerifyNo:"Name not matched",poVerifyCannot:"Cannot verify",
+  poSimVerify:"Simulate verification result (demo)",
+  poRouteAuto:"Routing type (by country)",
+  poNotify:"Payout arrival notice (to the beneficiary · optional)",poNotifyPh:"beneficiary@example.com",
+  poAcctFormNote:"The bank is resolved and filled in by the platform; the routing type follows the account country (hence no SWIFT/IBAN/ABA picker).",
+  poStepOf:(n)=>`Step ${n} of 3`,poStep1:"Account details",poStep2:"Same-name check & verification",poStep3:"Verification result",
+  poNext:"Next",poPrev:"Back",poFinish:"Done",poDoneTitle:"Verification result",
+  poDoneTip:"Only an account verified as “full match” can receive payouts; the result is whatever came back on save.",
+  poDoneNo:"Account saved, but the name did not match — fix the account name before paying out",
+  poDoneCannot:"Account saved, but verification is currently unavailable — no payouts until it completes",
+  poVerifyNote:"Changing account details requires re-verification; unverified accounts cannot receive payouts.",
+  poDoneOk:"Account saved and verified — ready for payouts.",poDonePartial:"Account saved; the name only partially matches — confirm it against the bank record before paying out.",
+  poCancel:"Cancel",poConfirm:"Verify & save",poManage:"Manage payout accounts",
   // —— P2P: account-level trust gate (host KYC lives in the listing wizard / perspective switch) ——
   srcHostLbl:"Host-listed",srcDeposit:(d)=>`deposit $${d.toFixed(0)}`,srcSeedLbl:"Secure",srcSeedTitle:"Secure supply · company/contracted machines",
   escrowTitle:"Escrow · funds held",escrowDesc:"On order, hold is reserved per instance (protects against renter default), released as consumed, and returns to refundable balance when the lease ends/destroys; auto-stop when balance runs out.",escrowHold:"In escrow (held)",escrowRefundable:"Refundable incl. escrow",
@@ -705,13 +799,13 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   ldUc2T:"Model training",ldUc2D:"Official PyTorch images with JupyterLab & SSH built in.",
   ldUc3T:"Image generation",ldUc3D:"ComfyUI node-based diffusion workflows, Web UI included.",
   // —— Developer access (2026-10-08 · left column reduced to claim + one action) ——
-  ldDevTitle:"Provision compute in one line",ldDevSub:"The same API that rents machines — billed per second, start and stop anytime.",
+  ldDevEyebrow:"For developers",ldDevTitle:"Provision compute in one line",ldDevSub:"The same API that rents machines — billed per second, start and stop anytime.",
   ldDevModes:"CLI · Python SDK · REST API",
   ldDevCta:"Explore developer tools",ldDevTerm:"deploy.py",
-  ldTickerTitle:"Market snapshot",ldTickerLive:"live snapshot",
+  ldTickerTitle:"Market snapshot",ldTickerLive:"sampled pricing",
   ldEntTitle:"Enterprise compute",ldEntDesc:"Tell us what you need to run — our sales and solutions team follows up.",
-  ldEntBtn:"Submit a request",
-  ldMarketTitle:"Live compute pricing",ldMarketSub:(m,k,g,r)=>`Live supply — sign up and order at these prices.${m?` Early-access supply: ${m} ${m===1?"machine":"machines"} / ${k} ${k===1?"model":"models"} / ${g} ${g===1?"GPU":"GPUs"} across ${r} ${r===1?"country":"countries"}/regions.`:""}`,
+  ldEntBtn:"Submit a request",ldEntMail:"Or email us",
+  ldMarketEyebrow:"Market catalog",ldMarketTitle:"Compute pricing",ldMarketSub:(m,k,g,r)=>`Live supply — sign up and order at these prices.${m?` Early-access supply: ${m} ${m===1?"machine":"machines"} / ${k} ${k===1?"model":"models"} / ${g} ${g===1?"GPU":"GPUs"} across ${r} ${r===1?"country":"countries"}/regions.`:""}`,
   ldWhereTitle:"Global supply",ldWhereNote:"Markers show indicative country positions.",
   ldCatFrom:"from",ldCatMedian:"median",
   // Supply badge: semantic tier (by listing count n) + hover count; offer count is singular/plural aware
@@ -727,7 +821,7 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   ldTrust2T:"One-time gates",ldTrust2D:"End-use statement, confirmed once per account.",
   ldTrust3T:"Export-control screening",ldTrust3D:"Restricted-party and region screening before restricted-SKU orders.",
   ldTrust4T:"Verified hosts",ldTrust4D:"Real-person ID + optional deposit; unverified hosts cannot list machines.",
-  ldRolesTitle:"One account, two roles",
+  ldRolesEyebrow:"Get started",ldRolesTitle:"One account, two roles",
   ldRoleTenantT:"Tenant",ldRoleTenantLead:"Rent GPUs by the hour, billed by the second. Stopped machines cost only storage.",
   ldRoleHostT:"Host",ldRoleHostLead:"List your machines — we match the orders, you withdraw earnings anytime.",
   ldHowT1:"Register & sign in",ldHowT2:"Pick an offer, choose a template",ldHowT3:"Top up & create an instance",
@@ -735,7 +829,7 @@ blThTime:"Time",blThItem:"Description",blThAmt:"Amount",blThBal:"Balance",blThId
   ldFootTerms:"Terms of Service",ldFootPrivacy:"Privacy Policy",ldFootDocs:"Documentation",ldFootStub:"Coming soon",ldFootCorp:"Mekong Ltd. · © 2026",
   // —— Footer multi-column structure (2026-10-08) ——
   ldFootMarket:"Market",ldFootM1:"Live pricing",ldFootM2:"Host your GPUs",ldFootM3:"Enterprise",
-  ldFootRes:"Resources",ldFootR1:"Developer docs",ldFootR2:"FAQ",ldFootR3:"Compliance",
+  ldFootRes:"Resources",ldFootR1:"Developer docs",ldFootR2:"FAQ",ldFootR3:"Compliance",ldFootContact:"Contact",ldFootSupport:"Support",
   ldFootLegal:"Legal",
   ldFootNews:"Subscribe to product updates",ldFootNewsPh:"Enter your email",ldFootNewsOk:"Subscribed",
   // —— Auth modal (email-code passwordless) ——
@@ -758,9 +852,21 @@ const RATE_STORE_RUN = 0.00004;   // $/GB/h 运行期存储单价【MK·演示�
 const RATE_STORE_STOP = 0.00011;  // $/GB/h 停机存储单价（docs：停机费率通常更高）
 const RATE_BW = 0.02;             // $/GB 带宽单价【MK·演示口径，与宿主上架 net 同量级】——全局常量，不依赖 offer（offer 无 net 字段）
 const BW_GB_PER_H = 0.35;         // 模拟出/入流量速率 GB/h【模拟演示数据：无真实流量源，运行期平滑累积】
-// 出金通道常量（统一口径）：[通道全名, 费率展示串]；费率为演示展示值【MK】
-const PAYOUT_CHANNELS = [["Stripe International","0.25–1%"],["Wise","1%"],["PayPal","3%"]];
-const PAYOUT_RATES = Object.fromEntries(PAYOUT_CHANNELS);
+/* 出金收款账户（2026-10-27 单一 PSP 口径）：一期第三方支付仅 Airwallex，出金轨道只有「同名银行账户」，
+   故不再有通道矩阵与费率表——费用与到账时效由 Airwallex 出款时返回（fee_amount / amount_beneficiary_receives），
+   本平台只负责「给谁、批不批、什么时候批」。 */
+const acctTail = n=>String(n||"").replace(/\s/g,"").slice(-4);
+const acctMask = n=>"•••• "+acctTail(n);
+// 出金状态机（六态 + 驳回）：approved=放行并冻结（不扣款）→ processing=发起出款（此时才扣）→ sent → paid；
+// failed=失败退回余额；rejected=驳回不扣款。rank 用于「只前进不回退」，防广播重放造成状态倒退。
+const payoutRank = {pending:0,approved:1,processing:2,sent:3,paid:4};
+// 进行中（未到终态）：同账号同时仅一笔出金在途，避免同一笔资金被重复发起
+const PO_ACTIVE = ["pending","approved","processing","sent"];
+const PAYOUT_VERIFY = ["match","partial","nomatch"];
+// 充值门序意图（pendingOffer）只落 sessionStorage：localStorage 里它是临时态，跳转支付页/刷新后必须能恢复
+const PENDING_OFFER_KEY = "mk-pending-offer";
+const savePendingOffer = (o)=>{ try{ if(o) sessionStorage.setItem(PENDING_OFFER_KEY, JSON.stringify(o)); else sessionStorage.removeItem(PENDING_OFFER_KEY); }catch(e){} };
+const loadPendingOffer = ()=>{ try{ const v=sessionStorage.getItem(PENDING_OFFER_KEY); return v?JSON.parse(v):null; }catch(e){ return null; } };
 const FREE_DISK = 10;             // 默认磁盘 GB
 const r = (a,b)=>Math.floor(a+Math.random()*(b-a+1));
 const rid = p=>p+"-"+Math.random().toString(36).slice(2,8);
@@ -925,6 +1031,7 @@ const P = {
  chev:"M6 9l6 6 6-6",
  plus:"M12 5v14M5 12h14",
  copy:"M9 9h11v11H9zM5 15H4V4h11v1",
+ image:"M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M9 9h.01",
  shield:"M12 3l7 3v5c0 4.4-2.9 7.9-7 10-4.1-2.1-7-5.6-7-10V6zM9 12l2 2 4-4",
 };
 
@@ -963,21 +1070,24 @@ lang:_initLang,
     authed:false,
      perspective:"tenant", hostAgreed:false, hostRealname:false,
     hostEarnings:128.40, escrow:0,
-    payouts:[], // 出金通道（2026-09-18 多通道重构）：[{channel,email,isDefault}]；isDefault 为默认出金通道，首次绑定自动设为默认
-    payoutReqs:[], // 出金申请（Admin 审批制：Admin 纵审批后经 applyAdminCfg 扣款）
+     payouts:[], // 收款账户（2026-10-27 单一 PSP）：同名银行账户 [{id,holderName,entityType,accountNumber,bankName,bankCountry,routingType,routingValue,currency,verified,notifyEmail,isDefault}]
+    payoutReqs:[], // 出金申请（2026-10-27 六态）：申请快照含收款账户尾号/银行/币种；Admin 放行=冻结，发起出款才扣款
+    pendingTopups:[], // 银行转账待入账（T+1）：{id,amt,method,t}；到账后转 lgTopup 流水并入余额
     bookings:null, // 他人预订占用（时段互斥）：懒初始化（首次打开订单弹框按当时 simT 生成）并持久化——防渲染期重算漂移失真
     hostMachines: SEED_MACHINES.map(m=>({...m})),
     billingConfig:{
      storeChargeTransition:true,
     },
    };
-   if(_sv){ ["balance","simT","timeScale","instances","ledger","filters","sort","selectedTemplate","injectedParams","authed","hostAgreed","hostRealname","perspective","view","hostMachines","hostEarnings","escrow","payouts","payoutReqs","bookings","user","instArchive"].forEach(k=>{ if(_sv[k]!==undefined) base[k]=_sv[k]; });
-    // 出金通道迁移（2026-09-18）：payout 单通道 → payouts 多通道数组；老存档兜底
-    if(_sv.payout && !Array.isArray(base.payouts)){
-      const _old=_sv.payout||{channel:null,email:""};
-      base.payouts=_old.channel?[{channel:_old.channel,email:_old.email||"",isDefault:true}]:[];
-    }
+   if(_sv){ ["balance","simT","timeScale","instances","ledger","filters","sort","selectedTemplate","injectedParams","authed","hostAgreed","hostRealname","perspective","view","hostMachines","hostEarnings","escrow","payouts","payoutReqs","pendingTopups","bookings","user","instArchive"].forEach(k=>{ if(_sv[k]!==undefined) base[k]=_sv[k]; });
+    // 收款账户迁移（2026-10-27）：旧「通道 + 邮箱」结构作废（一期仅同名银行账户）——无银行账户字段的记录丢弃，由用户重绑
     if(!Array.isArray(base.payouts)) base.payouts=[];
+    base.payouts=base.payouts.filter(a=>a&&a.accountNumber);
+    if(base.payouts.length && !base.payouts.some(a=>a.isDefault)) base.payouts=base.payouts.map((a,i)=>({...a,isDefault:i===0}));
+    if(!Array.isArray(base.pendingTopups)) base.pendingTopups=[];
+    // 出金申请迁移：旧口径「approved=已扣款」→ 补 deducted 标记，避免新口径把旧已扣款再算一次冻结
+    if(Array.isArray(base.payoutReqs)) base.payoutReqs=base.payoutReqs.map(q=>(
+      q&&q.status==="approved"&&q.deducted===undefined?{...q,deducted:true}:q));
     // 老存档兜底：无 contractType 的存量实例按按量处理，新字段补默认值，防渲染/计费 undefined
     if(Array.isArray(base.instances)) base.instances = base.instances.map(i=>({contractType:"ondemand", escrowHold:0, amortized:0, offlineAt:null, ...i}));
     if(Array.isArray(base.hostMachines)) base.hostMachines = base.hostMachines.map(m=>{
@@ -1034,6 +1144,14 @@ lang:_initLang,
       .forEach(s=>{ const i=base.ledger.findIndex(e=>(e.t??Infinity)<s.t); if(i<0) base.ledger.push(s); else base.ledger.splice(i,0,s); });
      base.ledger=trimLedger(base.ledger);
     }
+   // 支付跳转返回：pendingOffer 落在 sessionStorage（localStorage 不持久化瞬态），刷新/跳回后恢复门序，
+   // 否则「充值完继续租用」必断链（余额墙入口拿不到原 offer）。恢复后按当前进度重开对应门。
+   if(base.authed){
+     const _po=loadPendingOffer();
+     if(_po){ base.pendingOffer=_po;
+       base.modal = base.selectedTemplate ? (base.balance<=0.001?"credits":"confirm") : "template";
+     }
+   }
   return base;
  });
  const ref = useRef(S); ref.current = S;
@@ -1243,26 +1361,40 @@ else if(it.stuck && !it.stuckHint && n.simT>=it.hintAt){ it.stuckHint=true; }
     if(_fs.size){ setS(p=>{ let changed=false, esc=p.escrow;
      const inst=p.instances.map(x=>{ if(_fs.has(x.key) && x.status!=="Inactive" && (x.contractType||"ondemand")==="ondemand"){ changed=true; esc=Math.max(0,+(esc-(x.offer?.dph||0)).toFixed(3)); return {...x,status:"Inactive",debtStopped:false,stuck:false,stuckHint:false}; } return x; });
      return changed? {...p,instances:inst,escrow:esc} : p; }); } // 订单/预订实例不走按量强停路径（全局 escrow 不可误动的混账防线）；Admin 强退走 forceDestroy=platform 分叉
-   // 出金审批（2026-09-15）：cfg.payouts 快照按 id 匹配本端申请——approved 即扣 hostEarnings（幂等：paid/status 标记持久化，重复广播不重复扣）；rejected 仅置态，钱不动。
-   // toast 基于预判（ref.current）：React 批处理下 updater 不可同步读新态；payoutReqs 仅 withdraw/本函数写，无并发竞态。
-   const po=c.payouts||{};
-   const _ok=new Map((po.approved||[]).map(x=>[x.id,x])); const _rj=new Set((po.rejected||[]).map(x=>x.id));
-   if(_ok.size||_rj.size){
-     const toPaid=[],toRej=[];
-     (ref.current.payoutReqs||[]).forEach(q=>{ if(q.status!=="pending") return;
-       if(_ok.has(q.id)&&!q.paid) toPaid.push(q); else if(_rj.has(q.id)&&!q.rejNoted) toRej.push(q); });
-     if(toPaid.length||toRej.length){
-       setS(p=>{ let changed=false; let he=p.hostEarnings;
-         const reqs=(p.payoutReqs||[]).map(q=>{
-           if(q.status!=="pending") return q;
-           if(_ok.has(q.id)&&!q.paid){ changed=true; he=+(he-(q.amt||20)).toFixed(2); return {...q,status:"approved",paid:true}; }
-           if(_rj.has(q.id)&&!q.rejNoted){ changed=true; return {...q,status:"rejected",rejNoted:true}; }
-           return q; });
-         return changed? {...p,payoutReqs:reqs,hostEarnings:he} : p; });
-       toPaid.forEach(q=>act.toast(T.wdPaid(q.amt||20)));
-       toRej.forEach(q=>act.toast(T.wdRejected(q.amt||20)));
-     }
-   }
+    /* 出金回写（2026-10-27 六态，幂等）：approved=放行并冻结（不扣款）→ processing=发起出款（此时才扣 hostEarnings）
+       → sent → paid；failed=失败退回余额；rejected=仅置态。全部按 rank 只前进不回退，重复广播不重复扣/退。 */
+    const po=c.payouts||{};
+    const _stage={approved:[],processing:[],sent:[],paid:[],failed:[],rejected:[]};
+    Object.keys(_stage).forEach(k=>{ _stage[k]=(po[k]||[]).map(x=>x&&x.id).filter(Boolean); });
+    const _hit=id=>_stage.approved.includes(id)||_stage.processing.includes(id)||_stage.sent.includes(id)||_stage.paid.includes(id)||_stage.failed.includes(id)||_stage.rejected.includes(id);
+    const _cur=ref.current.payoutReqs||[];
+    if(_cur.some(q=>_hit(q.id))){
+      setS(p=>{ let changed=false; let he=p.hostEarnings;
+        const reqs=(p.payoutReqs||[]).map(q=>{
+          if(!_hit(q.id)) return q;
+          const rank=payoutRank[q.status]??0;
+          if(_stage.failed.includes(q.id) && q.status!=="failed" && q.status!=="rejected"){
+            if(q.deducted&&!q.refunded) he=+(he+(q.amt||0)).toFixed(2);
+            changed=true; return {...q,status:"failed",refunded:!!q.deducted,at:Date.now()};
+          }
+          if(rank<4 && _stage.paid.includes(q.id)){ changed=true; return {...q,status:"paid",at:Date.now()}; }
+          if(rank<3 && _stage.sent.includes(q.id)){ changed=true; return {...q,status:"sent",at:Date.now()}; }
+          if(rank<2 && _stage.processing.includes(q.id)){
+            if(!q.deducted) he=+(he-(q.amt||0)).toFixed(2);
+            changed=true; return {...q,status:"processing",deducted:true,at:Date.now()};
+          }
+          if(rank<1 && _stage.approved.includes(q.id)){ changed=true; return {...q,status:"approved",at:Date.now()}; }
+          if(q.status==="pending" && _stage.rejected.includes(q.id)){ changed=true; return {...q,status:"rejected",at:Date.now()}; }
+          return q; });
+        return changed? {...p,payoutReqs:reqs,hostEarnings:he} : p; });
+      _cur.forEach(q=>{
+        if(_stage.failed.includes(q.id)&&q.status!=="failed"&&q.status!=="rejected") act.toast(T.wdFailed(q.amt||0));
+        else if(_stage.paid.includes(q.id)&&q.status!=="paid") act.toast(T.wdPaid(q.amt||0));
+        else if(_stage.processing.includes(q.id)&&(payoutRank[q.status]??0)<2) act.toast(T.wdProcessing(q.amt||0));
+        else if(_stage.approved.includes(q.id)&&q.status==="pending") act.toast(T.wdApproved(q.amt||0));
+        else if(_stage.rejected.includes(q.id)&&q.status==="pending") act.toast(T.wdRejected(q.amt||0));
+      });
+    }
   };
   useEffect(()=>{
    const onCfg=()=>applyAdminCfg(loadAdminCfg());
@@ -1305,6 +1437,7 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租�
    openRent:(offer)=>{ // 模板意图优先级：过滤显式选择（filters.tpl，本次会话最高优先）> 历史记忆（selectedTemplate）；都无 → 模板门（机器导向）
      const st=ref.current;
       // 强制门：未登录 → 登录弹窗（保留 pendingOffer，登录后续走 template→credits→confirm 门序）
+      savePendingOffer(offer); // 意图落 sessionStorage：充值跳转/刷新后仍能续回原 offer（否则「充完继续租用」必断链）
       if(!st.authed){ setS(p=>({...p,pendingOffer:offer,modal:"auth"})); return; }
       let tpl=st.selectedTemplate;
       if(st.filters.tpl){ const _t=TEMPLATES.find(x=>x.id===st.filters.tpl); if(_t) tpl=_t; }
@@ -1339,7 +1472,14 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租�
      return null;
     },
    logout:()=>{ setS(p=>({...p,authed:false,user:null,view:"landing",perspective:"tenant",modal:null})); act.toast(T.tLogout); },
-   addCredits:(amt)=>new Promise(res=>{ setTimeout(()=>{ setS(p=>{ const nb=+(p.balance+amt).toFixed(2); return {...p,balance:nb,ledger:trimLedger([{t:p.simT,msgKey:"lgTopup",amt:+amt,txnId:txid(),balAfter:nb},...p.ledger])}; }); res(); },700); }), // 充值入流水（P0.6 对账闭环 + 审计字段 txnId/balAfter）
+   // 充值（2026-10-27）：支付动作在第三方托管页完成，本平台只做入账——成功才加余额并落 lgTopup 流水（txnId=外部单号）
+   creditTopup:(amt,method,ref)=>setS(p=>{ const nb=+(p.balance+amt).toFixed(2);
+     return {...p,balance:nb,pendingTopups:(p.pendingTopups||[]).filter(x=>x.id!==ref),
+       ledger:trimLedger([{t:p.simT,msgKey:"lgTopup",amt:+amt,txnId:ref||txid(),balAfter:nb},...p.ledger])}; }),
+   // 银行转账：先记「待入账」（虚拟账号已给、款项未到），到账由银行回单驱动（T+1），不即时加余额
+   parkTopup:(amt,method,ref)=>setS(p=>({...p,pendingTopups:[{id:ref,amt:+amt,method,t:Date.now()},...(p.pendingTopups||[])]})),
+   // 发起支付：只切到「跳转托管页」中间态，不做入账（入账只在 creditTopup）
+   startPayment:(amt,fromGate)=>setS(p=>({...p,modal:"pay",payDraft:{amt:+amt,fromGate:!!fromGate}})), // 付款方式由托管页内自行选择
    gotoConfirm:()=>setS(p=>({...p,modal:"confirm"})),
    closeModal:()=>setS(p=>({...p,modal:null})),
     // —— 账号级门（2026-10-09）：end-use 声明与内测邀请门均已移除，下单路径无账号级弹窗门——
@@ -1358,32 +1498,59 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租�
     machineDelist:(id)=>setS(p=>({...p,hostMachines:p.hostMachines.map(m=>m.id===id?{...m,status:"removed"}:m)})),
     machineEditPrice:(id,f)=>setS(p=>({...p,hostMachines:p.hostMachines.map(m=>m.id===id&&m.status!=="removed"?{...m,dph:+f.dph,net:+f.net,sto:+f.sto,endDate:f.endDate}:m)})), // 改价仅 listed/maintenance（removed 无出边）；存量实例已快照 offer，冻结天然成立
     machineRelist:(id)=>setS(p=>({...p,hostMachines:p.hostMachines.map(m=>m.id===id&&m.status==="removed"?{...m,status:"listed"}:m)})), // 重上架=removed 终态唯一受控出边（2026-09-18）
-  bindPayout:(channel,email)=>setS(p=>{ // 多通道绑定（2026-09-18）：已绑定通道→更新邮箱；新通道→追加，首次绑定自动设为默认
-    const list=p.payouts||[];
-    const i=list.findIndex(x=>x.channel===channel);
-    if(i>=0){ const next=list.map((x,ix)=>ix===i?{...x,email}:x); return {...p,payouts:next,modal:null}; }
-    const isFirst=list.length===0;
-    return {...p,payouts:[...list,{channel,email,isDefault:isFirst}],modal:null};
-  }),
-  setDefaultPayout:(channel)=>setS(p=>({...p,payouts:(p.payouts||[]).map(x=>({...x,isDefault:x.channel===channel}))})),
-  removePayout:(channel)=>setS(p=>{ // 删除通道：若删的是默认通道，自动将剩余第一个设为默认
-    let list=(p.payouts||[]).filter(x=>x.channel!==channel);
-    if(list.length&&!list.some(x=>x.isDefault)) list=list.map((x,i)=>({...x,isDefault:i===0}));
-    return {...p,payouts:list};
-  }),
-   withdraw:(amt,channel)=>{ // 出金申请制（2026-09-15）：不再直接扣款——申请入 payoutReqs 随 dumpState 落盘，Admin「资金对账→出金审批」批准后经 applyAdminCfg 扣款（写权分离不破坏）
+   /* 收款账户（2026-10-27）：一期只有同名银行账户，一个账号可绑多个账户但须各自过同名核验 */
+   bindPayoutAccount:(acct)=>setS(p=>{ // 同账号+同路由视为同一账户 → 覆盖更新；否则追加，首个自动设为默认
+     const list=p.payouts||[];
+     const key=a=>`${a.accountNumber}|${a.routingValue}`;
+     const i=list.findIndex(a=>key(a)===key(acct));
+     if(i>=0){ const next=list.map((a,ix)=>ix===i?{...a,...acct,id:a.id,isDefault:a.isDefault}:a); return {...p,payouts:next}; } // 不关弹窗：保存结果由绑定流程的第 3 步展示
+     const isFirst=list.length===0;
+     return {...p,payouts:[...list,{...acct,id:"pa-"+Date.now(),isDefault:isFirst}]};
+   }),
+   setDefaultPayout:(id)=>setS(p=>({...p,payouts:(p.payouts||[]).map(a=>({...a,isDefault:a.id===id}))})),
+   removePayout:(id)=>setS(p=>{ // 删除账户：若删的是默认账户，自动将剩余第一个设为默认
+     let list=(p.payouts||[]).filter(a=>a.id!==id);
+     if(list.length&&!list.some(a=>a.isDefault)) list=list.map((a,i)=>({...a,isDefault:i===0}));
+     return {...p,payouts:list};
+   }),
+   withdraw:(amt,acctId)=>{ // 出金申请（2026-10-27 六态）：本平台只决定「给谁、批不批」；放行=冻结（不扣款），发起出款才扣
      const st=ref.current; const me=st.user?.email;
      if(!me){ act.toast(T.wdNoUser); return; }
-     const defCh=(st.payouts||[]).find(x=>x.isDefault)?.channel;
-     // 通道选择（2026-09-18 修复）：优先用提现面板选中的通道；若该通道已被删除则回退默认通道
-     const ch=(channel&&(st.payouts||[]).some(x=>x.channel===channel))?channel:defCh;
-     if(!ch){ act.toast(T.eaWdNoCh); return; }
-     if((st.payoutReqs||[]).some(q=>q.email===me&&q.status==="pending")){ act.toast(T.wdPending); return; } // 同账号同时仅一笔在审
-     const _a=Math.round((+amt||20)*100)/100; // 金额自定义（2026-09-18）：防线校验 起提 $20 且 ≤ 可提现余额（Admin 端按 q.amt 透传审批）
-     if(!(_a>=20)||_a>st.hostEarnings+1e-9){ act.toast(T.eaWdInvalid); return; }
-     const req={id:"w-"+Date.now(),email:me,channel:ch,amt:_a,t:Date.now(),status:"pending"};
+     const acct=(st.payouts||[]).find(a=>a.id===acctId)||(st.payouts||[]).find(a=>a.isDefault);
+     if(!acct){ act.toast(T.eaWdNoCh); return; }
+     if(acct.verified!=="match"){ act.toast(T.eaWdVerifyBlock); return; }
+     const _mine=(st.payoutReqs||[]).filter(q=>q.email===me);
+     if(_mine.some(q=>PO_ACTIVE.includes(q.status))){ act.toast(T.wdPending); return; } // 同账号同时仅一笔在途（守卫与按钮禁用同口径）
+     const _frozen=_mine.filter(q=>q.status==="approved"&&!q.deducted).reduce((a,q)=>a+(q.amt||0),0);
+     const _avail=+(st.hostEarnings-_frozen).toFixed(2);
+     const _a=Math.round((+amt||0)*100)/100;
+     if(!(_a>=20)||_a>_avail+1e-9){ act.toast(T.eaWdInvalid); return; }
+     const req={id:"w-"+Date.now(),email:me,acctId:acct.id,holderName:acct.holderName,entityType:acct.entityType,
+       tail:acctTail(acct.accountNumber),bankName:acct.bankName,bankCountry:acct.bankCountry,currency:acct.currency,
+       amt:_a,t:Date.now(),status:"pending",deducted:false};
      setS(p=>({...p,payoutReqs:[req,...(p.payoutReqs||[])]}));
      act.toast(T.wdSubmitted(_a));
+   },
+   /* 演示推进（2026-10-27）：真实链路由平台运营在审核台推进、经 admin-cfg 回写；
+      本端演示控件复用同一套六态口径（rank 只前进、扣款仅一次、失败仅退一次），
+      故演示看到的行为与真实回写一致，不是另一套逻辑。 */
+   advancePayout:(id,to)=>{
+     const q=(ref.current.payoutReqs||[]).find(x=>x.id===id);
+     if(!q) return;
+     const terminal=q.status==="paid"||q.status==="failed"||q.status==="rejected";
+     if(terminal) return;                                        // 终态不再推进
+     if(to!=="failed"&&(payoutRank[to]??0)<=(payoutRank[q.status]??0)) return; // 只能前进
+     setS(p=>{
+       let he=p.hostEarnings;
+       const next={...q,status:to,at:Date.now()};
+       if(to==="processing"&&!q.deducted){ he=+(he-(q.amt||0)).toFixed(2); next.deducted=true; }
+       if(to==="failed"&&q.deducted&&!q.refunded){ he=+(he+(q.amt||0)).toFixed(2); next.refunded=true; }
+       const reqs=(p.payoutReqs||[]).map(x=>x.id===id?next:x);
+       return {...p,payoutReqs:reqs,hostEarnings:he};
+     });
+     const a=q.amt||0;
+     const msg=to==="approved"?T.wdApproved(a):to==="processing"?T.wdProcessing(a):to==="paid"?T.wdPaid(a):to==="failed"?T.wdFailed(a):T.wdSent(a);
+     act.toast(msg);
    },
    exportLedger:()=>{ // 全量导出（2026-09-18）：收益流水 + 出金记录 + 汇总统计（CSV）
      const st=ref.current;
@@ -1393,14 +1560,15 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租�
       csv+=`${new Date((e.t||0)*1000).toISOString()},${e.msgKey},${e.sid||""},${e.amt},${e.rate||0},${(e.amt*(1-(e.rate||0))).toFixed(4)},${e.heAfter??""},${e.txnId||""}\n`;
      });
      csv+="\n=== Withdrawal Requests ===\n";
-     csv+="Time,Channel,Amount,Status\n";
+     csv+="Time,Beneficiary account,Amount,Status\n";
      (st.payoutReqs||[]).forEach(q=>{
-      csv+=`${new Date(q.t).toISOString()},${q.channel||"—"},${q.amt},${q.status}\n`;
+      csv+=`${new Date(q.t).toISOString()},${q.holderName?q.holderName+" "+(q.tail?acctMask(q.tail):""):"—"},${q.amt},${q.status}\n`;
      });
      const _g=(st.ledger||[]).filter(e=>e.hostEarn&&e.amt>0).reduce((a,e)=>a+e.amt,0);
      const _n=(st.ledger||[]).filter(e=>e.hostEarn&&e.amt>0).reduce((a,e)=>a+e.amt*(1-(e.rate||0)),0);
+     const _def=(st.payouts||[]).find(x=>x.isDefault);
      csv+="\n=== Summary ===\n";
-     csv+=`Withdrawable,${st.hostEarnings}\nTotalGross,${_g.toFixed(2)}\nTotalNet,${_n.toFixed(2)}\nPlatformFee,${(_g-_n).toFixed(2)}\nDefaultChannel,${(st.payouts||[]).find(x=>x.isDefault)?.channel||"None"}\n`;
+     csv+=`Withdrawable,${st.hostEarnings}\nTotalGross,${_g.toFixed(2)}\nTotalNet,${_n.toFixed(2)}\nPlatformFee,${(_g-_n).toFixed(2)}\nDefaultAccount,${_def?_def.holderName+" "+acctMask(_def.accountNumber):"None"}\n`;
      try{ const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}); const url=URL.createObjectURL(blob);
       const a=document.createElement("a"); a.href=url; a.download=`earnings-${new Date().toISOString().slice(0,10)}.csv`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
@@ -1425,6 +1593,7 @@ pickTemplate:(tpl)=>{ // 模板仅注入实例配置；选模板后「继续租�
         ?{ status:"Reserved", startAt:cfg.startAt, phaseUntil:cfg.startAt, createdAt:S_sim(), rentalEnd:cfg.startAt+cfg.durationSec } // 预订：到点自动开，rentalEnd=startAt+档
         :{ status:"Creating", phaseUntil:S_sim()+70, createdAt:S_sim(), rentalEnd:S_sim()+(cfg.durationSec||86400) }),
       acc:0, extPort22:r(30000,62000), extPort8080:r(30000,62000), stuck:false };
+    savePendingOffer(null); // 意图已消费（实例已建）→ 清掉续租凭据，防下次刷新又弹门
     setS(p=>({...p,instances:[it,...p.instances],modal:null,view:"instances",pendingOffer:null,
       // 订单/预订下单全额划款即记 lgOrderPay 流水（P0.6 对账闭环）；按量仅预留全局 escrow（不动 balance，故无流水）
       ...(sku==="ondemand"?{ escrow:+(p.escrow+offer.dph).toFixed(3) }
@@ -1531,6 +1700,7 @@ const filtered = useMemo(()=>{
    {S.modal==="hostagree" && <HostAgreeGate S={S} act={act} setS={setS}/>}
   {S.modal==="template" && <TemplateModal S={S} act={act} setS={setS}/>}
   {S.modal==="credits" && <CreditsModal S={S} act={act} setS={setS}/>}
+  {S.modal==="pay" && <PayModal S={S} act={act} setS={setS}/>}
    {S.modal==="ssh" && <InfoModal S={S} act={act} setS={setS} kind="ssh"/>}
    {S.modal==="ports" && <InfoModal S={S} act={act} setS={setS} kind="ports"/>}
   {S.modal==="logs" && <LogsModal S={S} act={act} setS={setS}/>}
@@ -1562,6 +1732,8 @@ function Header({S,act,setS}){
   },[]);
   const atuTh=10; // 低余额提醒固定阈值（Auto Top-Up 已裁剪，无用户自设项）
   const lowBal = S.balance<=atuTh && S.balance>0;
+  // 宿主顶栏口径与收益页一致：可用 = 累计收益 − 放行未扣款（冻结中），避免顶栏显示的钱与页内"可提现"不一致
+  const hostAvail = +((S.hostEarnings||0) - (S.payoutReqs||[]).filter(q=>q.email===S.user?.email&&q.status==="approved"&&!q.deducted).reduce((a,q)=>a+(q.amt||0),0)).toFixed(2);
   const [balanceAnnounce, setBalanceAnnounce] = useState("");
   const prevBal = React.useRef(S.balance);
   React.useEffect(()=>{
@@ -1609,7 +1781,7 @@ function Header({S,act,setS}){
        aria-label={S.perspective==="host"?T.balHostTip:T.crChipTip}
        className={`mono rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1 text-[14px] tabular-nums cursor-pointer hover:border-[var(--color-border-strong)]`}>
        <span className="mr-1.5 text-[12px] text-[var(--color-text-muted)]">{S.perspective==="host"?T.balHost:T.balTenant}</span>
-       <span className={S.perspective==="host"?"text-[var(--color-warning)]":S.balance<=0?"text-[var(--color-text-muted)]":lowBal?"text-[var(--color-warning)]":"text-[var(--color-success)]"}>{fmt$(S.perspective==="host"?S.hostEarnings:S.balance)}</span>
+       <span className={S.perspective==="host"?"text-[var(--color-warning)]":S.balance<=0?"text-[var(--color-text-muted)]":lowBal?"text-[var(--color-warning)]":"text-[var(--color-success)]"}>{fmt$(S.perspective==="host"?hostAvail:S.balance)}</span>
        <span className="sr-only" aria-live="polite">{balanceAnnounce}</span>
       </button>)}
       <button onClick={toggleTheme} title={S.lang==="zh"?(isDark?"浅色模式":"深色模式"):(isDark?"Light mode":"Dark mode")}
@@ -2052,7 +2224,7 @@ const OfferCard = React.memo(function OfferCard({o,idx,S,act}){
  const isNotPreferred = tplCompat_?.gpuNotPreferred;
  
  return (
-  <article onClick={()=>act.openRent(o)} className={`card-in cursor-pointer rounded-xl border bg-[var(--color-surface)] p-3 transition-colors hover:border-[var(--color-border-strong)] hover:bg-white/[0.02] ${un?"border-[var(--color-border)]/60":(isSeed?"border-[var(--color-info)]/40":isHost?"border-amber-500/40":"border-[var(--color-border)]")} ${isNotPreferred?"opacity-60":""}`} style={{animationDelay:`${idx*40}ms`}}>
+  <article onClick={()=>act.openRent(o)} className={`card-in cursor-pointer rounded-xl border bg-[var(--color-surface)] p-3 transition-colors hover:border-[var(--color-border-strong)] hover:bg-white/[0.02] ${un?"border-[var(--color-border)]/60":(isSeed?"border-[var(--color-info)]/40":isHost?"border-[var(--color-warning)]/40":"border-[var(--color-border)]")} ${isNotPreferred?"opacity-60":""}`} style={{animationDelay:`${idx*40}ms`}}>
    {/* 五列对齐：GPU / 主机 / 网络 / DLPerf·可靠性 / 价格·租用；窄屏折行堆叠 */}
    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.05fr)_minmax(0,0.75fr)_minmax(0,1fr)_auto] lg:items-center lg:gap-0 lg:divide-x lg:divide-[var(--color-border)]/50">
     {/* 列1：GPU */}
@@ -2061,7 +2233,7 @@ const OfferCard = React.memo(function OfferCard({o,idx,S,act}){
       <h3 className="truncate text-[16px] font-semibold text-[var(--color-text)]">{o.gpu}</h3>
       {o.numGpu!=null&&o.numGpu>1 && <span className="mono shrink-0 text-[12px] font-medium text-[var(--color-text-muted)]">×{o.numGpu}</span>}
       {o.arch && <span className="shrink-0 rounded border border-[var(--color-border)] px-1.5 py-px text-[11px] text-[var(--color-text-faint)]">{o.arch}</span>}
-      {isNotPreferred && <span className="shrink-0 rounded bg-amber-500/10 px-1.5 py-px text-[11px] text-[var(--color-warning-on-tint)]">{T.notPreferred}</span>}
+      {isNotPreferred && <span className="shrink-0 rounded bg-[var(--color-warning)]/10 px-1.5 py-px text-[11px] text-[var(--color-warning-on-tint)]">{T.notPreferred}</span>}
      </div>
      <div className="mono text-[12px] text-[var(--color-text-muted)]">{o.tflops!=null?`${Number(o.tflops).toFixed(1)} TFLOPS`:"—"}{o.cuda?` · Max CUDA ${o.cuda}`:""}</div>
      <div className="text-[11px] text-[var(--color-text-muted)]">{T.lblVram}</div>
@@ -2122,7 +2294,7 @@ const OfferCard = React.memo(function OfferCard({o,idx,S,act}){
     {isSeed
       ? <span className="rounded bg-[var(--color-info)]/10 px-1.5 py-0.5 text-[var(--color-info-on-tint)]">{T.srcSeedLbl}</span>
       : isHost
-        ? <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[var(--color-warning-on-tint)]">{T.srcHostLbl}</span>
+        ? <span className="rounded bg-[var(--color-warning)]/10 px-1.5 py-0.5 text-[var(--color-warning-on-tint)]">{T.srcHostLbl}</span>
         : un
           ? <span className="rounded bg-[var(--color-surface-alt)]/40 px-1.5 py-0.5">{T.unverifiedLbl}</span>
           : <span className="rounded bg-[var(--color-success)]/10 px-1.5 py-0.5 text-[var(--color-success-on-tint)]">{T.verifiedLbl}</span>}
@@ -2204,25 +2376,22 @@ function TemplateModal({S,act}){
 }
 
 /* ================= 单元 3：余额墙弹窗 ================= */
-const FIAT_CHANS=["card","alipay","wechat","transfer"]; // 法币组通道（Airwallex 收单口径；PayPal 自带品牌、加密组中性命名，均不挂信任行）
+/* 充值（2026-10-27 单一 PSP 口径）：一期第三方支付只有 Airwallex，本平台只决定「买多少 + 优先用什么方式」，
+   支付动作整体在托管支付页完成。故此处不再有「选通道＝已支付」，CTA 只负责跳转；入账/失败/待入账在 PayModal 按真实状态演示。 */
+const CR_CHANS=["card","alipay","wechat","transfer"];
+const CR_CHAN_KEY={card:"crChBank",alipay:"crChAlipay",wechat:"crChWechat",transfer:"crChTransfer"};
 function CreditsModal({S,act,setS}){
  const PRESETS=[10,25,100,200];
   const [amt,setAmt]=useState(25);
   const [custom,setCustom]=useState("");
   const [showCustom,setShowCustom]=useState(false);
-   const [chan,setChan]=useState("card");
-   const [chanLbl,setChanLbl]=useState(null); // 选中通道显示名（随 i18n 动态取 option 文本）
-  const [busy,setBusy]=useState(false);
-  const final = custom? Math.max(+custom||0,10):amt;
-   async function pay(){ const fromGate=!!S.pendingOffer; setBusy(true); await act.addCredits(final); setBusy(false);
-    const lbl = chanLbl || T.crChBank;
-    // 成功文案随入口分化：门序（余额墙）承诺「继续租用」，Header 独立入口只确认充值本身，不再谎报后续动作
-    act.toast(fromGate?T.crOkRent(final,lbl):T.crOkPlain(final,lbl));
-    // 有 pendingOffer（RENT 门序进入）→ 关窗进确认页续门序；无（Header 充值入口）→ 仅关窗，不跳无关确认页
-    setS(p=>({...p, modal: p.pendingOffer ? "confirm" : null}));
-   }
+ const final = custom? Math.max(+custom||0,10):amt;
+ const pending=(S.pendingTopups||[]);
+ const okAmt=final>=10;
+ // 放弃充值＝放弃本次续租意图（否则 pendingOffer 残留会让下一次充值入口莫名跳确认页）
+ const later=()=>{ setS(p=>({...p,modal:null,pendingOffer:null})); savePendingOffer(null); };
  return (
- <ModalShell width="max-w-md" onClose={()=>act.closeModal()}>
+ <ModalShell width="max-w-md" onClose={later}>
    <div className="border-b border-[var(--color-border)] px-5 py-3">
     <div className="flex items-center justify-between">
      <h2 className="text-[16px] font-semibold">{T.crTitle}</h2>
@@ -2234,47 +2403,126 @@ function CreditsModal({S,act,setS}){
     {PRESETS.map(v=>(
      <button key={v} onClick={()=>{setAmt(v);setCustom("");setShowCustom(false);}}
       className={`mono rounded-lg border py-2 text-[16px] font-semibold transition-colors ${!showCustom&&!custom&&amt===v?"border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent-hover)]":"border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]"}`}>${v}</button>))}
-    <button onClick={()=>{setShowCustom(v=>!v);setCustom("");}} aria-expanded={showCustom} disabled={busy}
+    <button onClick={()=>{setShowCustom(v=>!v);setCustom("");}} aria-expanded={showCustom}
      className={`rounded-lg border py-2 text-[14px] font-semibold transition-colors ${showCustom||custom?"border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent-hover)]":"border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]"}`}>{T.crOtherBtn}</button>
    </div>
    {showCustom && <input autoFocus type="number" min="10" placeholder={T.crOther} value={custom} onChange={e=>setCustom(e.target.value)}
-    className="mono w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-[16px]" disabled={busy}/>}
-   <label className="block text-[13px] text-[var(--color-text-muted)]">{T.crChanLbl}
-    <select value={chan} onChange={e=>{setChan(e.target.value);setChanLbl(e.target.selectedOptions[0].text);}} disabled={busy}
-     className="mono mt-1 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-[14px] text-[var(--color-text-secondary)]">
-     <optgroup label={T.crGrpFiat}>
-       <option value="card">{T.crChBank}</option>
-       <option value="alipay">{T.crChAlipay}</option>
-       <option value="wechat">{T.crChWechat}</option>
-       <option value="transfer">{T.crChTransfer}</option>
-      </optgroup>
-     <optgroup label={T.crGrpPaypal}>
-       <option value="paypal">PayPal</option>
-      </optgroup>
-     <optgroup label={T.crGrpCrypto}>
-       <option value="usdt">USDT</option>
-       <option value="usdc">USDC</option>
-       <option value="btc">BTC</option>
-      </optgroup>
-    </select>
-   </label>
-   {FIAT_CHANS.includes(chan)&&(
-    <div className="flex items-center gap-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
-     <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-accent)]/10 text-[var(--color-accent-hover)]"><Icon d={P.shield} size={13}/></span>
-     <span className="text-[12.5px] leading-snug text-[var(--color-text-secondary)]">{T.crTrustLine}</span>
+    className="mono w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-[16px]"/>}
+   {/* 付款方式的选择属于支付机构的托管收单页，不在本站充值弹窗里做 */}
+   <p className="text-[12px] leading-snug text-[var(--color-text-faint)]">{T.crChanNote}</p>
+   <div className="flex items-center gap-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
+    <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-accent)]/10 text-[var(--color-accent-hover)]"><Icon d={P.shield} size={13}/></span>
+    <span className="text-[12.5px] leading-snug text-[var(--color-text-secondary)]">{T.crTrustLine}</span>
+   </div>
+   <p className="text-[12px] leading-snug text-[var(--color-text-faint)]">{T.crAmtNote}</p>
+   {pending.length>0 && (
+    <div className="rounded-lg border border-[var(--color-info)]/25 bg-[var(--color-info)]/[.06] p-3">
+     <div className="text-[13px] font-semibold text-[var(--color-info-on-tint)]">{T.crPendingTitle}</div>
+     {pending.map(x=>(
+      <div key={x.id} className="mt-1.5 flex items-center justify-between gap-2">
+       <span className="mono text-[12.5px] text-[var(--color-text-secondary)]">{T.crPendingRow(x.amt.toFixed(2))}</span>
+       <button onClick={()=>{act.creditTopup(x.amt,x.method,x.id); act.toast(T.crOkPlain(x.amt.toFixed(2),T[CR_CHAN_KEY[x.method]]||T.crChTransfer));}}
+        className="shrink-0 rounded-md border border-[var(--color-info)]/40 px-2 py-1 text-[12px] text-[var(--color-info-on-tint)] hover:border-[var(--color-info)]">{T.crPendingSim}</button>
+      </div>))}
     </div>)}
-      <div className="space-y-1.5 rounded-lg border border-[var(--color-warning)]/25 bg-[var(--color-warning)]/[.06] p-3 text-[13px] leading-relaxed text-[var(--color-warning-on-tint)]">
-     <div>{T.crD1Pre}<b>{T.crD1Em}</b>{T.crD1Suf}</div>
-     <div>{T.crD2Pre}<b>{T.crD2Em}</b>{T.crD2Suf}</div>
-    </div>
+    <div className="space-y-1.5 rounded-lg border border-[var(--color-warning)]/25 bg-[var(--color-warning)]/[.06] p-3 text-[13px] leading-relaxed text-[var(--color-warning-on-tint)]">
+    <div>{T.crD1Pre}<b>{T.crD1Em}</b>{T.crD1Suf}</div>
+    <div>{T.crD2Pre}<b>{T.crD2Em}</b>{T.crD2Suf}</div>
+   </div>
   </div>
   <div className="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
-   <button onClick={()=>act.closeModal()} disabled={busy} className="rounded-lg border border-[var(--color-border)] px-3.5 py-1.5 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.crLater}</button>
-   <button onClick={pay} disabled={busy||final<10}
-    className={`rounded-lg px-4 py-1.5 text-[14px] font-semibold ${final>=10&&!busy?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-muted)]"}`}>
-    {busy?T.crProcessing:T.crPay(final.toFixed(0))}
+   <button onClick={later} className="rounded-lg border border-[var(--color-border)] px-3.5 py-1.5 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.crLater}</button>
+   <button onClick={()=>act.startPayment(final,!!S.pendingOffer)} disabled={!okAmt}
+    className={`rounded-lg px-4 py-1.5 text-[14px] font-semibold ${okAmt?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-muted)]"}`}>
+    {T.crPay(final.toFixed(0))}
    </button>
   </div>
+ </ModalShell>);
+}
+
+/* 跳转中间态 → 中性托管页示意（proto/ 是公开仓库：页内不出现 Airwallex 商标，也不伪造其官方页面）。
+   本页只演示「谁在收款、需要用户做什么、回来后本平台如何入账」，三个按钮模拟在托管页完成的操作。 */
+function PayModal({S,act,setS}){
+ const d=S.payDraft||{amt:25,fromGate:false};
+ const [method,setMethod]=useState("card"); // 付款方式在托管页内选择（真实托管页即如此），不在本站先选
+ const [stage,setStage]=useState("redirect"); // redirect → hosted → failed
+ const refNo=useRef("awx-"+Math.random().toString(36).slice(2,10)).current;
+ useEffect(()=>{ const t=setTimeout(()=>setStage("hosted"),1100); return ()=>clearTimeout(t); },[]);
+ const isBank=method==="transfer";
+ const ok=()=>{ act.creditTopup(d.amt,method,refNo); act.toast(T.crOkPlain(d.amt.toFixed(2),T[CR_CHAN_KEY[method]]));
+   setS(p=>({...p,payDraft:null,modal:p.pendingOffer?(p.selectedTemplate?"confirm":"template"):null})); };
+ const park=()=>{ act.parkTopup(d.amt,method,refNo); act.toast(T.payParked(d.amt.toFixed(2)));
+   setS(p=>({...p,payDraft:null,modal:null})); };
+ const cancel=()=>{ act.toast(T.payCanceled); setS(p=>({...p,modal:"credits",payDraft:null})); };
+ const close=()=>setS(p=>({...p,modal:null,payDraft:null}));
+ return (
+ <ModalShell width="max-w-md" onClose={close}>
+  {stage==="redirect"? (
+   <div className="flex flex-col items-center gap-3 px-6 py-14">
+    <span aria-hidden="true" className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-accent)] motion-reduce:animate-none"/>
+    <p className="text-[14px] font-medium text-[var(--color-text-secondary)]">{T.payRedirecting}</p>
+    <p className="text-[12px] text-[var(--color-text-faint)]">{T.payRedirectHint}</p>
+   </div>
+  ) : (
+   <>
+    <div className="flex items-center justify-between gap-2 border-b border-[var(--color-border)] px-5 py-3">
+     <div className="flex items-center gap-2">
+      <span aria-hidden="true" className="flex h-6 w-6 items-center justify-center rounded-md bg-[var(--color-success)]/12 text-[var(--color-success-on-tint)]"><Icon d={P.shield} size={13}/></span>
+      <h2 className="text-[15px] font-semibold">{T.payHostedTitle}</h2>
+     </div>
+     <button onClick={close} aria-label={T.eaClose} className="rounded-md px-2 py-1 text-[14px] leading-none text-[var(--color-text-muted)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]">✕</button>
+    </div>
+    <div className="space-y-4 p-5">
+     <div className="flex items-baseline justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5">
+      <span className="text-[13px] text-[var(--color-text-muted)]">{T.payAmount}</span>
+      <span className="mono text-[20px] font-bold text-[var(--color-text)]">${d.amt.toFixed(2)}</span>
+     </div>
+     {/* 付款方式选择属于支付机构的页面，故放在这里（托管页），不在本站充值弹窗里 */}
+     <div>
+      <div className="mb-1 text-[13px] text-[var(--color-text-muted)]">{T.payPickMethod}</div>
+      <div className="grid grid-cols-2 gap-2">
+       {CR_CHANS.map(k=>(
+        <button key={k} onClick={()=>{setMethod(k); setStage("hosted");}} aria-pressed={method===k}
+         className={`rounded-lg border px-3 py-2 text-left text-[13px] font-medium transition-colors ${method===k?"border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent-hover)]":"border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]"}`}>{T[CR_CHAN_KEY[k]]}</button>))}
+      </div>
+     </div>
+     <p className="rounded-lg border border-dashed border-[var(--color-border-strong)] px-3 py-2 text-[12px] leading-snug text-[var(--color-text-faint)]">{T.payHostedNote}</p>
+     {stage==="failed"? (
+      <div className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/[.06] p-3 text-[13px] leading-snug text-[var(--color-error-on-tint)]">{T.payFailedNote}</div>
+     ) : isBank? (
+      <div className="space-y-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+       <div className="text-[13px] font-semibold text-[var(--color-text-secondary)]">{T.payBankTitle}</div>
+       <div className="mono flex items-baseline justify-between gap-2 text-[12.5px]"><span className="text-[var(--color-text-muted)]">{T.payBankAcct}</span><span className="text-[var(--color-text-secondary)]">8823 4410 0092 7710</span></div>
+       <div className="mono flex items-baseline justify-between gap-2 text-[12.5px]"><span className="text-[var(--color-text-muted)]">{T.payBankRef}</span><span className="text-[var(--color-text-secondary)]">MK-{refNo.slice(-6).toUpperCase()}</span></div>
+       <p className="text-[12px] leading-snug text-[var(--color-text-faint)]">{T.payBankEta}</p>
+      </div>
+     ) : (
+      <div className="space-y-2" aria-hidden="true">
+       <div className="h-8 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]"/>
+       <div className="grid grid-cols-2 gap-2"><div className="h-8 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]"/><div className="h-8 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]"/></div>
+       <p className="text-[12px] text-[var(--color-text-faint)]">{method==="card"?T.payCardHint:T.payWalletHint}</p>
+      </div>
+     )}
+     <p className="text-[12px] leading-snug text-[var(--color-text-faint)]">{T.payDemoHint}</p>
+    </div>
+    <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
+     <button onClick={cancel} className="rounded-lg border border-[var(--color-border)] px-3.5 py-1.5 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.payCancelBtn}</button>
+     {stage==="failed"? (
+      <button onClick={()=>setStage("hosted")} className="rounded-lg bg-[var(--color-accent)] px-4 py-1.5 text-[14px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.payRetry}</button>
+     ) : isBank? (
+      <>
+       <button onClick={park} className="rounded-lg border border-[var(--color-border-strong)] px-3.5 py-1.5 text-[14px] font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]">{T.payBankDone}</button>
+       <button onClick={ok} className="rounded-lg bg-[var(--color-accent)] px-4 py-1.5 text-[14px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.payBankSim}</button>
+      </>
+     ) : (
+      <>
+       <button onClick={()=>setStage("failed")} className="rounded-lg border border-[var(--color-border-strong)] px-3.5 py-1.5 text-[14px] font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)]">{T.payFailBtn}</button>
+       <button onClick={ok} className="rounded-lg bg-[var(--color-accent)] px-4 py-1.5 text-[14px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.payOkBtn}</button>
+      </>
+     )}
+    </div>
+   </>
+  )}
  </ModalShell>);
 }
 
@@ -2927,12 +3175,12 @@ function LandingPage({S,act,setS,adminCfg}){
    {/* Hero：左文右数据面板的非对称分割；headline ≤2 行，sub ≤20 词，CTA 一主一辅 */}
    <section className="grid items-center gap-10 py-16 md:grid-cols-[7fr_5fr] md:py-24">
     <div>
-     <p className="mono mb-5 text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--color-text-faint)]">{T.ldEyebrow}</p>
-     <h1 className="max-w-[14ch] text-balance text-[36px] font-semibold leading-[1.06] tracking-tight md:max-w-[20ch] md:text-[52px]">{T.ldHeroTitle}</h1>
+     <p className="mono mb-5 text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--color-accent-on-tint)]">{T.ldEyebrow}</p>
+     <h1 className="max-w-[14ch] text-balance text-[34px] font-semibold leading-[1.08] tracking-tight md:max-w-[20ch] md:text-[46px]">{T.ldHeroTitle}</h1>
      <p className="mt-5 max-w-[46ch] text-[16px] leading-relaxed text-[var(--color-text-secondary)]">{T.ldHeroSub}</p>
      <div className="mt-8 flex flex-wrap items-center gap-3">
       <button onClick={goMarket} className="rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-[16px] font-semibold text-white hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldCtaBrowse} →</button>
-      <button onClick={()=>act.enterHost()} className="rounded-lg border border-[var(--color-border-strong)] px-5 py-2.5 text-[16px] text-[var(--color-text-secondary)] hover:border-[var(--color-text-faint)] active:translate-y-[1px]">{T.ldCtaHost}</button>
+      <button onClick={()=>act.enterHost()} className="rounded-lg border border-[var(--color-border-strong)] px-5 py-2.5 text-[16px] text-[var(--color-text-secondary)] hover:border-[var(--color-accent-on-tint)] active:translate-y-[1px]">{T.ldCtaHost}</button>
      </div>
     </div>
     {/* 真实 OFFERS 采样数据面板（非 fake screenshot：直接渲染数据层采样） */}
@@ -2940,14 +3188,14 @@ function LandingPage({S,act,setS,adminCfg}){
      <div className="mb-2 flex items-center justify-between">
       <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">{T.ldTickerTitle}</span>
       <span className="mono flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-[var(--color-text-faint)]">
-       <span className="dot-pulse inline-block h-[6px] w-[6px] shrink-0 rounded-full" style={{background:"var(--color-success)"}}></span>{T.ldTickerLive}
+       <span className="inline-block h-[6px] w-[6px] shrink-0 rounded-full" style={{background:"var(--color-success)"}}></span>{T.ldTickerLive}
       </span>
      </div>
      <div className="divide-y divide-[var(--color-border)]">
       {picks.map(o=>(
        <div key={o.id} className="flex items-baseline justify-between gap-3 py-2.5">
         <span className="mono text-[13px] text-[var(--color-text-secondary)]">{o.numGpu}× {o.gpu}</span>
-        <span className="mono text-[16px] font-semibold text-[var(--color-success)]">${lp$(o.dph)}<span className="text-[11px] font-normal text-[var(--color-text-faint)]">/hr</span></span>
+        <span className="mono text-[16px] font-bold text-[var(--color-success)]">${lp$(o.dph)}<span className="text-[11px] font-normal text-[var(--color-text-faint)]">/hr</span></span>
        </div>))}
      </div>
     </div>
@@ -2955,9 +3203,10 @@ function LandingPage({S,act,setS,adminCfg}){
 
    {/* 市场活力 KPI 带（2026-10-08 · 对齐 Vast.ai 首页结构）：Hero 与地图之间，让未登录访客在首屏之后
        立刻读到「这是一个有量的活跃市场」。四个数字全部派生自 listedSupply（与目录表/规模行同源），
-       空供给回退「—」；脚注免责与目录表同口径，避免与下方数据漂移 */}
-   <section className="border-t border-[var(--color-border)]">
-    <div className="grid grid-cols-2 gap-x-6 gap-y-7 py-8 sm:grid-cols-4">
+       空供给回退「—」；脚注免责与目录表同口径，避免与下方数据漂移。
+       2026-10-27：改品牌浅底色带（原 border-t 移除）——色相自证边界，不靠线；圆角与卡语法一致 */}
+   <section className="rounded-xl bg-[var(--color-surface-brand)]">
+    <div className="grid grid-cols-2 gap-x-6 gap-y-7 px-5 py-8 sm:grid-cols-4">
      {[
       [listed.length?ldGpus.toLocaleString():"—", T.ldKpiGpus],
       [String(mkModels), T.ldKpiModels],
@@ -2965,16 +3214,18 @@ function LandingPage({S,act,setS,adminCfg}){
       [ldFloor!=null?"$"+lp$(ldFloor):"—", T.ldKpiFloor],
      ].map(([v,l],i)=>(
       <div key={i} className="text-center">
-       <div className="mono text-[28px] font-semibold leading-none tracking-tight md:text-[34px]">{v}{i===3&&ldFloor!=null&&<span className="ml-1 text-[13px] font-normal text-[var(--color-text-faint)]">{T.ldKpiUnit}</span>}</div>
+       <div className="mono tabular-nums text-[24px] font-bold leading-none tracking-tight md:text-[34px]">{v}{i===3&&ldFloor!=null&&<span className="ml-1 text-[13px] font-normal text-[var(--color-text-faint)]">{T.ldKpiUnit}</span>}</div>
        <div className="mt-2 text-[12px] tracking-wide text-[var(--color-text-muted)]">{l}</div>
       </div>))}
     </div>
    </section>
 
 
-   {/* 算力目录：型号卡网格（要素卡式，无说明行）；行为只读，单动线 Rent＝进市场并预筛该型号（未登录下单仍走 openRent 登录门） */}
-   <section className="border-t border-[var(--color-border)] py-16 md:py-24">
-    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldMarketTitle}</h2>
+   {/* 算力目录：型号卡网格（要素卡式，无说明行）；行为只读，单动线 Rent＝进市场并预筛该型号（未登录下单仍走 openRent 登录门）。
+       2026-10-27：KPI 色带改为品牌浅底后，本节 border-t 与色带圆角底边贴死会被误读成色带的边框，故移除靠留白分隔 */}
+   <section className="py-16 md:py-24">
+    <p className="mono mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--color-accent-on-tint)]">{T.ldMarketEyebrow}</p>
+    <h2 className="text-[28px] md:text-[32px] font-semibold tracking-tight">{T.ldMarketTitle}</h2>
     <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldMarketSub(listed.length,mkModels,ldGpus,ldRegions)}</p>
     <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
      {ldCards.map(r=>{
@@ -3010,7 +3261,7 @@ function LandingPage({S,act,setS,adminCfg}){
      {!cat.length && <p className="col-span-full py-6 text-center text-[var(--color-text-faint)]">—</p>}
     </div>
     <div className="mt-8 flex flex-col items-center gap-3">
-     <button onClick={()=>setS(p=>({...p,view:"search"}))} className="rounded-lg border border-[var(--color-border-strong)] px-5 py-2.5 text-[14px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-text-faint)] active:translate-y-[1px]">{T.ldCatCta} →</button>
+     <button onClick={()=>setS(p=>({...p,view:"search"}))} className="rounded-lg border border-[var(--color-border-strong)] px-5 py-2.5 text-[14px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent-on-tint)] active:translate-y-[1px]">{T.ldCatCta} →</button>
     </div>
    </section>
 
@@ -3018,7 +3269,7 @@ function LandingPage({S,act,setS,adminCfg}){
        这道气质差就是这个 section 的存在理由。排在报价目录之后收尾：访客先读价格与型号，再看地理分布。
        留白刻意收紧——309px 低密度内容自带呼吸，section 再加满留白会把页面拉太长 */}
    <section className="border-t border-[var(--color-border)] py-14 md:py-16">
-    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldWhereTitle}</h2>
+    <h2 className="text-[24px] font-semibold tracking-tight">{T.ldWhereTitle}</h2>
     <div className="mx-auto mt-6 w-full max-w-[960px]">
      <WorldMapSVG T2={T}/>
     </div>
@@ -3029,29 +3280,29 @@ function LandingPage({S,act,setS,adminCfg}){
        满宽 divide-y 横线因此有 500px 不承载任何内容——空白来自列宽本身，不是 max-w（[60ch] ≈ 450px 从未生效，
        25 字 × 13.5px ≈ 338px 远未触到约束），所以调 max-width 治不了，只能改布局。卡片语法复用下方双主体
        section 的 1px 描边网格，卡片等高由 grid 拉伸保证 */}
-   <section className="border-t border-[var(--color-border)] py-16 md:py-24">
-    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldSupplyTitle}</h2>
+   <section className="border-t border-[var(--color-border)] py-14 md:py-16">
+    <h2 className="text-[24px] font-semibold tracking-tight">{T.ldSupplyTitle}</h2>
     <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldSupplySub}</p>
     <div className="mt-7 grid gap-px overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-border)] md:grid-cols-3">
      {[["01",T.ldSrc1T,T.ldSrc1D],["02",T.ldSrc2T,T.ldSrc2D],["03",T.ldSrc3T,T.ldSrc3D]].map(([n,t,d])=>(
       <div key={n} className="bg-[var(--color-surface)] p-6">
-       <span className="mono block text-[12px] text-[var(--color-text-faint)]">{n}</span>
-       <div className="mt-2 text-[15px] font-semibold">{t}</div>
+       <span className="mono block text-[12px] text-[var(--color-accent-on-tint)]">{n}</span>
+       <div className="mt-2 text-[16px] font-semibold">{t}</div>
        <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{d}</p>
       </div>))}
     </div>
    </section>
 
    {/* 信任合规：2×2（escrow / 一次性门 / 出口管制 / 实名宿主） */}
-   <section className="border-t border-[var(--color-border)] py-16 md:py-24">
-    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldTrustTitle}</h2>
+   <section className="py-14 md:py-16">
+    <h2 className="text-[24px] font-semibold tracking-tight">{T.ldTrustTitle}</h2>
     <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldTrustSub}</p>
     <div className="mt-7 grid gap-x-14 gap-y-6 sm:grid-cols-2">
      {[[P.dollar,T.ldTrust1T,T.ldTrust1D],[P.info,T.ldTrust2T,T.ldTrust2D],[P.port,T.ldTrust3T,T.ldTrust3D],[P.plug,T.ldTrust4T,T.ldTrust4D]].map(([ic,t,d],i)=>(
       <div key={i} className="flex gap-3.5">
        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-accent-hover)]"><Icon d={ic} size={15}/></span>
        <div>
-        <div className="text-[15px] font-semibold">{t}</div>
+        <div className="text-[16px] font-semibold">{t}</div>
         <div className="mt-1 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{d}</div>
        </div>
       </div>))}
@@ -3060,13 +3311,14 @@ function LandingPage({S,act,setS,adminCfg}){
 
    {/* 适用场景（2026-10-08）：三条映射平台模板真实分类（inference/training/image），非营销声明；
        置于信任合规之后、双主体之前——为访客在「如何开始」之前先回答「能用来做什么」 */}
-   <section className="border-t border-[var(--color-border)] py-16 md:py-24">
-    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldUcTitle}</h2>
+   <section className="py-14 md:py-16">
+    <h2 className="text-[24px] font-semibold tracking-tight">{T.ldUcTitle}</h2>
     <p className="mt-1.5 text-[13px] text-[var(--color-text-muted)]">{T.ldUcSub}</p>
     <div className="mt-7 grid gap-px overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-border)] md:grid-cols-3">
-     {[[T.ldUc1T,T.ldUc1D],[T.ldUc2T,T.ldUc2D],[T.ldUc3T,T.ldUc3D]].map(([t,d],i)=>(
+     {[[P.play,T.ldUc1T,T.ldUc1D],[P.term,T.ldUc2T,T.ldUc2D],[P.image,T.ldUc3T,T.ldUc3D]].map(([ic,t,d],i)=>(
       <div key={i} className="bg-[var(--color-surface)] p-6">
-       <div className="text-[15px] font-semibold">{t}</div>
+       <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-alt)] text-[var(--color-accent-hover)]"><Icon d={ic} size={15}/></span>
+       <div className="mt-3 text-[16px] font-semibold">{t}</div>
        <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-muted)]">{d}</p>
       </div>))}
     </div>
@@ -3077,7 +3329,8 @@ function LandingPage({S,act,setS,adminCfg}){
    <section className="border-t border-[var(--color-border)] py-16 md:py-24">
     <div className="grid gap-10 md:grid-cols-[5fr_7fr] md:items-center">
      <div>
-      <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldDevTitle}</h2>
+      <p className="mono mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--color-accent-on-tint)]">{T.ldDevEyebrow}</p>
+      <h2 className="text-[28px] md:text-[32px] font-semibold tracking-tight">{T.ldDevTitle}</h2>
       <p className="mt-3 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">{T.ldDevSub}</p>
       <p className="mono mt-5 text-[12px] uppercase tracking-[0.18em] text-[var(--color-text-faint)]">{T.ldDevModes}</p>
       <button onClick={()=>act.toast(T.ldFootStub)} className="mt-7 rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldDevCta} →</button>
@@ -3096,7 +3349,8 @@ function LandingPage({S,act,setS,adminCfg}){
 
    {/* 双主体 + 如何开始（合并 section）：对称 split，1px 内分隔线 */}
    <section className="border-t border-[var(--color-border)] py-12 md:py-16">
-    <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldRolesTitle}</h2>
+    <p className="mono mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--color-accent-on-tint)]">{T.ldRolesEyebrow}</p>
+    <h2 className="text-[28px] md:text-[32px] font-semibold tracking-tight">{T.ldRolesTitle}</h2>
     <div className="mt-7 grid gap-px overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-border)] md:grid-cols-2">
      {[
       {t:T.ldRoleTenantT,lead:T.ldRoleTenantLead,steps:[T.ldHowT1,T.ldHowT2,T.ldHowT3],cta:"login",ctaLbl:T.ldCtaBrowse},
@@ -3108,14 +3362,14 @@ function LandingPage({S,act,setS,adminCfg}){
            按钮有垂直 padding，items-baseline 会把按钮底缘顶出基线。触达区 20+20=40px，与全站 CTA 同量级
            （hero 42.5px / 目录表 41px），未凑 44px：次要动作在卡片角上凑满会显得笨重。 */}
        <div className="flex items-center justify-between gap-3">
-        <span className="text-[15px] font-semibold">{r.t}</span>
+        <span className="text-[16px] font-semibold">{r.t}</span>
         <button onClick={()=>r.cta==="register"? act.enterHost() : goTenant()} className="shrink-0 rounded-lg border border-[var(--color-border-strong)] px-4 py-2.5 text-[13px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-text)] active:translate-y-[1px]">{r.ctaLbl}</button>
        </div>
        <p className="mt-2 max-w-[46ch] text-[13px] leading-relaxed text-[var(--color-text-muted)]">{r.lead}</p>
        <ol className="mt-5 space-y-2.5">
         {r.steps.map((s,j)=>(
          <li key={j} className="flex items-baseline gap-3 text-[13px] text-[var(--color-text-secondary)]">
-          <span className="mono shrink-0 text-[12px] text-[var(--color-text-faint)]">{j+1}</span>{s}
+          <span className="mono shrink-0 text-[12px] text-[var(--color-accent-on-tint)]">{j+1}</span>{s}
          </li>))}
        </ol>
       </div>))}
@@ -3126,11 +3380,12 @@ function LandingPage({S,act,setS,adminCfg}){
         升级为页面收尾动作区（surface 卡 + 实心主按钮）。原 ldEntFoot 免责脚注已移除——那是对外文档话术，
         演示页由口头说明承担，留在页上只余自我拆台 */}
    <section className="border-t border-[var(--color-border)] py-16 md:py-24">
-    <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-10 md:px-12 md:py-12">
+    <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-brand)] px-6 py-10 md:px-12 md:py-12">
      <div className="flex flex-wrap items-center justify-between gap-6">
       <div className="min-w-0">
-       <h2 className="text-[24px] font-semibold tracking-tight md:text-[28px]">{T.ldEntTitle}</h2>
+       <h2 className="text-[28px] md:text-[32px] font-semibold tracking-tight">{T.ldEntTitle}</h2>
        <p className="mt-2 max-w-[56ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">{T.ldEntDesc}</p>
+       <p className="mt-2 text-[13px] text-[var(--color-text-muted)]">{T.ldEntMail}：<a href="mailto:contact@mekong.com" className="font-medium text-[var(--color-accent-on-tint)] transition-colors hover:underline">contact@mekong.com</a></p>
       </div>
       <a href="./enterprise.html" className="shrink-0 rounded-lg bg-[var(--color-accent)] px-5 py-3 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--color-accent-strong)] active:translate-y-[1px]">{T.ldEntBtn} →</a>
      </div>
@@ -3138,12 +3393,12 @@ function LandingPage({S,act,setS,adminCfg}){
    </section>
 
 
-   {/* Footer 多列信息架构（2026-10-08 · 骨架对齐 Vast.ai）：品牌列承担 subscribe，市场/资源/法律三列导航。
+   {/* Footer 多列信息架构（2026-10-08 · 骨架对齐 Vast.ai；2026-10-27 支持列自资源列拆出，FAQ+联系邮箱成对）：品牌列承担 subscribe，市场/资源/支持/法律四列导航。
        链接除品牌与版权外均为 stub（toast）；登录/注册入口仍只保留顶栏那一份，footer 不复刻 */}
    <footer className="border-t border-[var(--color-border)] pt-12 pb-8">
-    <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+    <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
      <div>
-      <div className="text-[15px] font-semibold tracking-tight">Mekong</div>
+      <div className="text-[16px] font-semibold tracking-tight">Mekong</div>
       <p className="mt-2 max-w-[32ch] text-[13px] leading-5 text-[var(--color-text-muted)]">{T.ldFootNews}</p>
       <form onSubmit={e=>{e.preventDefault();act.toast(T.ldFootNewsOk);}} className="mt-3 flex max-w-[300px] items-center gap-2">
        <input type="email" required placeholder={T.ldFootNewsPh} aria-label={T.ldFootNews} className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-[13px] outline-none focus-visible:border-[var(--color-focus)]"/>
@@ -3152,11 +3407,12 @@ function LandingPage({S,act,setS,adminCfg}){
      </div>
      {[
       [T.ldFootMarket,[[T.ldFootM1],[T.ldFootM2],[T.ldFootM3,"./enterprise.html"]]],
-      [T.ldFootRes,[[T.ldFootR1],[T.ldFootR2],[T.ldFootR3]]],
+      [T.ldFootRes,[[T.ldFootR1],[T.ldFootR3]]],
+      [T.ldFootSupport,[[T.ldFootR2],[T.ldFootContact,"mailto:contact@mekong.com"]]],
       [T.ldFootLegal,[[T.ldFootTerms],[T.ldFootPrivacy],[T.ldFootDocs]]],
      ].map(([title,items])=>(
       <div key={title}>
-       <div className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text-secondary)]">{title}</div>
+       <div className="text-[12px] font-semibold uppercase tracking-wider text-[var(--color-text)]">{title}</div>
        <ul className="mt-3 space-y-2.5">
         {items.map(([it,href])=>(<li key={it}>{href?<a href={href} className="text-left text-[13px] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]">{it}</a>:<button onClick={()=>act.toast(T.ldFootStub)} className="text-left text-[13px] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]">{it}</button>}</li>))}
        </ul>
@@ -3214,7 +3470,7 @@ function AuthModal({S,act,setS}){
       <label className="block text-[13px] text-[var(--color-text-muted)]">{T.auEmail}
        <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setErr("");}} placeholder={T.auEmailPh} autoComplete="email" autoFocus aria-describedby={err?"auth-err":undefined} className={inputCls}/></label>
       {err && <p id="auth-err" role="alert" className="text-[13px] text-[var(--color-error-on-tint)]">{err}</p>}
-      <button type="submit" className="min-h-[44px] w-full rounded-lg bg-[var(--color-accent)] py-2.5 text-[15px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.auNext}</button>
+      <button type="submit" className="min-h-[44px] w-full rounded-lg bg-[var(--color-accent)] py-2.5 text-[16px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.auNext}</button>
      </form>
     ) : (
      <form onSubmit={e=>{e.preventDefault();verify();}} className="mt-8 space-y-6">
@@ -3222,7 +3478,7 @@ function AuthModal({S,act,setS}){
        <input value={code} onChange={e=>{setCode(e.target.value.replace(/\D/g,"").slice(0,6));setErr("");}} maxLength={6} inputMode="numeric" autoFocus placeholder={T.auCodePh} aria-label={T.auCodeTitle} aria-invalid={!!err} aria-describedby={err?"auth-err":undefined}
         className="mono mt-3 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-center text-[20px] tracking-[0.4em]"/></label>
       {err && <p id="auth-err" role="alert" className="text-[13px] text-[var(--color-error-on-tint)]">{err}</p>}
-            <button type="submit" disabled={code.length<6} className={`min-h-[44px] w-full rounded-lg py-2.5 text-[15px] font-semibold ${code.length>=6?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"}`}>{T.auVerifyBtn}</button>
+            <button type="submit" disabled={code.length<6} className={`min-h-[44px] w-full rounded-lg py-2.5 text-[16px] font-semibold ${code.length>=6?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface-alt)] text-[var(--color-text-faint)]"}`}>{T.auVerifyBtn}</button>
       <button type="button" onClick={()=>{setStep(0);setCode("");setErr("");}} className="w-full text-center text-[13px] text-[var(--color-text-faint)] hover:text-[var(--color-text-secondary)] hover:underline">{T.auBackEdit}</button>
      </form>
     )}
@@ -3842,9 +4098,12 @@ function EarningsStats({S,setS}){
   const platFee=totalGross-totalNet;
   // 违约风险卡数据源：违约事件行（evBreach，引擎写入；事件行无 hostEarn 标记故收益明细不显示，此处单独取）
   const breachRows=(S.ledger||[]).filter(e=>e.msgKey==="evBreach");
-  // 提现入口状态（合并提现页后由行动卡承载）：在审申请禁再次发起；< $20 常显禁用+提示（防按钮凭空消失）
-  const pendingWd=(S.payoutReqs||[]).find(q=>q.email===S.user?.email&&q.status==="pending");
-  const canWithdraw=S.hostEarnings>=20;
+  // 出金口径（2026-10-27 六态）：可用 = 累计收益 − approved 未扣款（放行后即冻结）；进行中（pending/approved/processing/sent）禁再发起
+  const _mine=(S.payoutReqs||[]).filter(q=>q.email===S.user?.email);
+  const frozen=+_mine.filter(q=>q.status==="approved"&&!q.deducted).reduce((a,q)=>a+(q.amt||0),0).toFixed(2);
+  const available=+(S.hostEarnings-frozen).toFixed(2);
+  const activeWd=_mine.find(q=>PO_ACTIVE.includes(q.status));
+  const canWithdraw=available>=20;
  // 趋势图：近30天按天聚合（净额口径）；依赖按天取整的 simT，避免逐 tick 重算
  const _day=Math.floor(S.simT/86400);
  const trend=useMemo(()=>{
@@ -3862,16 +4121,17 @@ return (<>
    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
     <section className="rounded-xl border border-[var(--color-warning)]/30 bg-[var(--color-warning)]/[.05] p-4">
      <div className={NUM.label}>{T.eaWithdrawable}</div>
-     <div className={NUM.displayMoney + " mt-1"}>${S.hostEarnings.toFixed(2)}</div>
-     <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-      <span className={NUM.caption}>{T.eaWithdrawableSub}</span>
-      <button disabled={!canWithdraw||!!pendingWd} onClick={()=>setS(p=>({...p,modal:"withdraw"}))}
-       title={pendingWd?T.wdPendingT:(!canWithdraw?T.eaWdThreshold:"")}
-       className={`shrink-0 rounded-md px-2.5 py-1 text-[12px] font-bold ${canWithdraw&&!pendingWd?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-faint)]"}`}>
-       {pendingWd?T.wdPendingBtn:T.eaWdTitle}</button>
-     </div>
-     {pendingWd && <div className="mt-2 text-[12px] leading-snug text-[var(--color-text-muted)]">{T.wdPendingT} · <span className="mono text-[var(--color-warning)]">${(+pendingWd.amt||0).toFixed(2)}</span></div>}
-     {!canWithdraw && <div className="mt-2 text-[12px] leading-snug text-[var(--color-warning)]/70">{T.eaWdWarn}</div>}
+      <div className={NUM.displayMoney + " mt-1"}>${available.toFixed(2)}</div>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+       <span className={NUM.caption}>{T.eaWithdrawableSub}</span>
+       <button disabled={!canWithdraw||!!activeWd} onClick={()=>setS(p=>({...p,modal:"withdraw"}))}
+        title={activeWd?T.wdPendingT:(!canWithdraw?T.eaWdThreshold:"")}
+        className={`shrink-0 rounded-md px-2.5 py-1 text-[12px] font-bold ${canWithdraw&&!activeWd?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-faint)]"}`}>
+        {activeWd?(T[PO_STATUS[activeWd.status].key]||T.wdPendingBtn):T.eaWdTitle}</button>
+      </div>
+      {frozen>0 && <div className="mt-2 text-[12px] leading-snug text-[var(--color-text-muted)]">{T.eaFrozenTip(frozen.toFixed(2))}</div>}
+      {activeWd && <div className="mt-2 text-[12px] leading-snug text-[var(--color-text-muted)]">{(activeWd.status==="processing"||activeWd.status==="sent")?T.wdInFlightT:T.wdPendingT} · <span className="mono text-[var(--color-warning)]">${(+activeWd.amt||0).toFixed(2)}</span></div>}
+      {!canWithdraw && <div className="mt-2 text-[12px] leading-snug text-[var(--color-warning)]/70">{T.eaWdWarn}</div>}
     </section>
     <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
      <div className={NUM.label}>{T.eaMonthly}</div>
@@ -3910,33 +4170,82 @@ return (<>
    </section>
   </>);
 }
-/* 提现弹窗（2026-09-20 合并自独立提现页）：金额 + 通道 + 实到预估，一次决策点确认 */
+/* ============ 出金（2026-10-27 · 六态 · 单一 PSP / 仅同名银行账户） ============
+   为什么没有「通道矩阵 + 费率表」：一期第三方支付只接一家收单/出款机构，出金轨道只有同名银行账户；
+   费率、到账币种、中间行成本由出款时报价返回（fee_amount / amount_beneficiary_receives），
+   平台不预先承诺，故页面只回答三件事：给谁（同名核验）、批不批、什么时候批。
+   状态机：pending 申请 → approved 放行并冻结（不扣款）→ processing 发起出款（此时才扣）
+           → sent 已汇出 → paid 已到账；failed 失败退回余额；rejected 驳回不扣款。 */
+const PO_STATUS={
+ pending:{key:"eaPoPending",cls:"text-[var(--color-warning-on-tint)] bg-[var(--color-warning)]/10"},
+ approved:{key:"eaPoApproved",cls:"text-[var(--color-info-on-tint)] bg-[var(--color-info)]/10"},
+ processing:{key:"eaPoProcessing",cls:"text-[var(--color-info-on-tint)] bg-[var(--color-info)]/10"},
+ sent:{key:"eaPoSent",cls:"text-[var(--color-success-on-tint)] bg-[var(--color-success)]/10"},
+ paid:{key:"eaPoPaid",cls:"text-[var(--color-success-on-tint)] bg-[var(--color-success)]/10"},
+ failed:{key:"eaPoFailed",cls:"text-[var(--color-error-on-tint)] bg-[var(--color-error)]/10"},
+ rejected:{key:"eaPoRejected",cls:"text-[var(--color-error-on-tint)] bg-[var(--color-error)]/10"},
+};
+// 核验结果对齐官方 Verify a beneficiary account 返回（本会话读文档）：
+//   高层 code：VERIFIED / INVALID / CANNOT_VERIFY / EXTERNAL_SERVICE_UNAVAILABLE
+//   名称匹配：FULL_MATCH / PARTIAL_MATCH / NOT_MATCHED / *_INCORRECT_TYPE
+// 原型四态：match=VERIFIED+FULL_MATCH（唯一可出金）/ partial=PARTIAL_MATCH / nomatch=NOT_MATCHED|INVALID /
+//           cannot=CANNOT_VERIFY|服务不可用。*_INCORRECT_TYPE（户名对但主体类型错）归 partial 一并提示人工确认。
+const PO_VERIFIED_KEY={match:"poVerifyOk",partial:"poVerifyPartial",nomatch:"poVerifyNo",cannot:"poVerifyCannot"};
+const PO_VERIFY_TONE={
+ match:"text-[var(--color-success-on-tint)] bg-[var(--color-success)]/10",
+ partial:"text-[var(--color-warning-on-tint)] bg-[var(--color-warning)]/10",
+ nomatch:"text-[var(--color-error-on-tint)] bg-[var(--color-error)]/10",
+ cannot:"text-[var(--color-error-on-tint)] bg-[var(--color-error)]/10"};
+// 路由类型由开户国决定（官方 account_routing_type1 是按国家的具名类型，不由用户选 SWIFT/IBAN/ABA——
+// SWIFT 是 transfer_method 不是 routing type）。表单里的类型与格式提示按下表自适应；正式版按出款场景的
+// dynamic schema 生成字段，本映射只承担演示期的输入引导。
+const PO_ROUTING_BY_CC={
+ US:{type:"ABA routing number",ph:"9 位数字"},
+ GB:{type:"Sort code",ph:"6 位数字"},
+ SG:{type:"银行代码 + 分行代码",ph:"如 DBSSSGSG 001"},
+ HK:{type:"Bank code · FPS 行识别",ph:"如 012 000 · 8 位以上"},
+ DE:{type:"IBAN",ph:"DE 开头 22 位"},
+ FR:{type:"IBAN",ph:"FR 开头 27 位"},
+ NL:{type:"IBAN",ph:"NL 开头 18 位"},
+ AE:{type:"IBAN",ph:"AE 开头 23 位"},
+ JP:{type:"Zengin code",ph:"3 位银行码 + 分行 + 账号"},
+ AU:{type:"BSB",ph:"6 位数字（如 062-000）"}
+};
+// 开户行不给用户填：官方 Create a new beneficiary 的请求里不提交 bank_name，由 Airwallex 解析补全
+// （响应才回 bank_name）。此处以国家映射演示「平台解析回填」的结果。
+const PO_BANK_BY_CC={SG:"DBS Bank",HK:"HSBC Hong Kong",US:"JPMorgan Chase Bank, NA",GB:"Barclays Bank PLC",DE:"Deutsche Bank AG",FR:"BNP Paribas",NL:"ING Bank N.V.",AE:"Emirates NBD",JP:"MUFG Bank",AU:"Commonwealth Bank of Australia"};
+// 演示推进的下一步与按钮文案（仅原型：真实环境由平台运营推进，此处用同一套 rank 口径）
+const PO_NEXT={pending:"approved",approved:"processing",processing:"sent",sent:"paid"};
+const PO_NEXT_LBL={pending:"poDemoRelease",approved:"poDemoSend",processing:"poDemoSent",sent:"poDemoPaid"};
+
+/* 提现（出金申请）弹窗：金额 + 收款账户（同名核验通过才可选）+ 二次验证，一次决策点确认 */
 function WithdrawModal({S,act,setS}){
  const POUTS=S.payouts||[];
- const defCh=POUTS.find(x=>x.isDefault);
- const [wdAmt,setWdAmt]=useState(()=>Math.min(20,S.hostEarnings).toFixed(2)); // 起提默认 $20；余额不足则预填余额
- const [wdCh,setWdCh]=useState(defCh?.channel||null); // 切换后若通道被删除回退默认
+ const mine=(S.payoutReqs||[]).filter(q=>q.email===S.user?.email);
+ // 可提现口径：可用余额 = 累计收益 − 进行中申请已冻结金额（approved 未扣款）
+ const frozen=+(mine.filter(q=>q.status==="approved"&&!q.deducted).reduce((a,q)=>a+(q.amt||0),0)).toFixed(2);
+ const available=+(S.hostEarnings-frozen).toFixed(2);
+ const defAcct=POUTS.find(a=>a.isDefault)||POUTS[0]||null;
+ const [acctId,setAcctId]=useState(defAcct?defAcct.id:null);
+ const [wdAmt,setWdAmt]=useState(()=>Math.min(20,Math.max(available,0)).toFixed(2));
  const [stage,setStage]=useState("form"); // form → verify：出金二次验证（step-up）
  const [wdCode,setWdCode]=useState("");
  const [wdErr,setWdErr]=useState("");
- // 演示：验证码固定 123456，无对客提示文案；正式产品经账号邮箱下发，错误码被拒
- const [demoCode]=useState("123456");
- const activeCh=POUTS.some(x=>x.channel===wdCh)?wdCh:(defCh?.channel||null);
+ const [demoCode]=useState("123456"); // 演示：验证码固定，正式产品经账号邮箱下发
+ const acct=POUTS.find(a=>a.id===acctId)||defAcct;
+ const verified=acct?.verified==="match";
  const wdVal=parseFloat(wdAmt);
- const wdOk=Number.isFinite(wdVal)&&wdVal>=20&&wdVal<=S.hostEarnings+1e-9;
- const canWithdraw=S.hostEarnings>=20;
+ const wdOk=Number.isFinite(wdVal)&&wdVal>=20&&wdVal<=available+1e-9;
+ const canWithdraw=available>=20;
  const close=()=>setS(p=>({...p,modal:null}));
- // 实到金额预估：费率展示串解析为数值（区间取上限为保守值，如 "0.25–1%"→1%）；平台不代扣，仅作参考【MK】
- const netOf=ch=>{ const rate=PAYOUT_RATES[ch]||""; const rn=+(String(rate).match(/[\d.]+/g)?.slice(-1)[0]??0); return ((wdOk?wdVal:0)*(1-rn/100)).toFixed(2); };
- const toVerify=()=>{ if(!wdOk||!activeCh) return; setWdErr(""); setStage("verify"); };
- const confirm=()=>{ // step-up：验证码经账号邮箱校验，错误码被拒（演示防线）
-  const c=wdCode.replace(/\D/g,"");
+ const toVerify=()=>{ if(!wdOk||!acct||!verified) return; setWdErr(""); setStage("verify"); };
+ const confirm=()=>{ const c=wdCode.replace(/\D/g,"");
   if(c.length<6) return setWdErr(T.eaErrCode);
   if(c!==demoCode) return setWdErr(T.eaErrCodeWrong);
-  act.withdraw(wdVal,activeCh); close(); }; // act.withdraw 不关弹窗，此处显式关闭
+  act.withdraw(wdVal,acct.id); close(); };
  const email=S.user?.email||"—";
  return (
- <ModalShell width="max-w-sm" onClose={close}>
+ <ModalShell width="max-w-md" onClose={close}>
   <div className="flex items-center justify-between gap-2 border-b border-[var(--color-border)] px-5 py-3">
    <h2 className="text-[16px] font-semibold">{stage==="form"?T.eaWdTitle:T.eaWdVerify}</h2>
    <div className="flex items-center gap-1.5">
@@ -3950,49 +4259,52 @@ function WithdrawModal({S,act,setS}){
   <div className="p-5">
    <div className="flex items-baseline justify-between gap-2">
     <span className="text-[13px] text-[var(--color-text-muted)]">{T.eaWithdrawable}</span>
-    <span className="mono text-[20px] font-bold text-[var(--color-warning)]">${S.hostEarnings.toFixed(2)}</span>
+    <span className="mono text-[20px] font-bold text-[var(--color-warning)]">${available.toFixed(2)}</span>
    </div>
+   {frozen>0 && <p className="mt-1 text-[12px] leading-snug text-[var(--color-text-faint)]">{T.eaFrozenTip(frozen.toFixed(2))}</p>}
    <div className="mt-3">
     <label className="block text-[13px] text-[var(--color-text-muted)]">{T.eaWdAmt}
      <div className="mt-1 flex items-center gap-2">
       <input value={wdAmt} onChange={e=>setWdAmt(e.target.value)} inputMode="decimal" aria-label={T.eaWdAmt}
        className="mono w-[140px] rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-[14px] text-[var(--color-text-secondary)]"/>
-      <button onClick={()=>setWdAmt(S.hostEarnings.toFixed(2))}
+      <button onClick={()=>setWdAmt(Math.max(available,0).toFixed(2))}
        className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.eaWdAll}</button>
      </div>
     </label>
     <p className="mt-1 text-[12px] text-[var(--color-text-faint)]">{T.eaWdAmtSub}</p>
    </div>
    <div className="mt-3">
-    <div className="mb-1 text-[13px] text-[var(--color-text-muted)]">{T.eaWdChannel}</div>
+    <div className="mb-1 text-[13px] text-[var(--color-text-muted)]">{T.eaWdAcct}</div>
     {POUTS.length? (
      <div className="space-y-2">
-      {POUTS.map(p=>(
-       <button key={p.channel} onClick={()=>setWdCh(p.channel)}
-        className={`w-full rounded-xl border p-3 text-left transition-colors ${activeCh===p.channel?"border-[var(--color-accent)] bg-[var(--color-accent)]/10 ring-1 ring-sky-500/40":"border-[var(--color-border)] hover:border-[var(--color-border-strong)]"}`}>
+      {POUTS.map(p=>{ const ok=p.verified==="match";
+       return (
+       <button key={p.id} onClick={()=>setAcctId(p.id)} aria-pressed={acct?.id===p.id}
+        className={`w-full rounded-xl border p-3 text-left transition-colors ${acct?.id===p.id?"border-[var(--color-accent)] bg-[var(--color-accent)]/[.08]":"border-[var(--color-border)] hover:border-[var(--color-border-strong)]"}`}>
         <div className="flex items-center justify-between gap-2">
-         <span className={`text-[13px] font-medium ${activeCh===p.channel?"text-[var(--color-accent-hover)]":"text-[var(--color-text-secondary)]"}`}>{p.channel.split(" ")[0]}{p.isDefault?` · ${T.eaChDefault}`:""}</span>
-         <span className="mono text-[12px] font-semibold text-[var(--color-success)]">{PAYOUT_RATES[p.channel]||"—"}</span>
+         <span className={`truncate text-[13px] font-medium ${acct?.id===p.id?"text-[var(--color-accent-hover)]":"text-[var(--color-text-secondary)]"}`}>{p.holderName}</span>
+         <span className={`shrink-0 rounded px-1 py-px text-[11px] font-medium ${PO_VERIFY_TONE[p.verified]||PO_VERIFY_TONE.nomatch}`}>{T[PO_VERIFIED_KEY[p.verified]||"poVerifyNo"]}</span>
         </div>
-        <div className="mt-0.5 truncate text-[12px] text-[var(--color-text-faint)]">{p.email}</div>
-        {activeCh===p.channel && wdOk && <div className="mono mt-1 text-[12px] text-[var(--color-success)]">{T.eaWdNet(netOf(p.channel),PAYOUT_RATES[p.channel])}</div>}
-       </button>
-      ))}
+        <div className="mono mt-0.5 truncate text-[12px] text-[var(--color-text-faint)]">{p.bankName} · {acctMask(p.accountNumber)} · {p.currency}{p.isDefault?` · ${T.eaChDefault}`:""}</div>
+       </button>);})}
      </div>
     ):(
      <div className="rounded-lg border border-dashed border-[var(--color-border)] p-4 text-center text-[13px] text-[var(--color-text-faint)]">
       <p>{T.eaNoChannels}</p>
-      <button onClick={()=>setS(p=>({...p,modal:"payout",payoutDraft:null}))}
+      <button onClick={()=>setS(p=>({...p,modal:"payout"}))}
        className="mt-2 rounded-lg border border-[var(--color-accent)]/50 px-3 py-1.5 text-[13px] font-semibold text-[var(--color-accent-hover)] hover:border-[var(--color-accent)]">{T.eaChAdd}</button>
      </div>
     )}
    </div>
-   <button disabled={!canWithdraw||!activeCh||!wdOk} onClick={toVerify}
-    title={!activeCh?T.eaWdNoCh:!canWithdraw?T.eaWdThreshold:(!wdOk?T.eaWdInvalid:"")}
-    className={`mt-4 w-full rounded-lg py-2 text-[16px] font-bold ${canWithdraw&&activeCh&&wdOk?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-faint)]"}`}>
+   <p className="mt-2 text-[12px] leading-snug text-[var(--color-text-faint)]">{T.eaWdSameName}</p>
+   {acct && !verified && <p className="mt-1 text-[12px] leading-snug text-[var(--color-warning)]">{T.eaWdVerifyBlock}</p>}
+   <button disabled={!canWithdraw||!acct||!verified||!wdOk} onClick={toVerify}
+    title={!acct?T.eaWdNoCh:(!verified?T.eaWdVerifyBlock:(!canWithdraw?T.eaWdThreshold:(!wdOk?T.eaWdInvalid:"")))}
+    className={`mt-4 w-full rounded-lg py-2 text-[16px] font-bold ${canWithdraw&&acct&&verified&&wdOk?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-faint)]"}`}>
     {T.eaWdBtn(wdOk?wdVal:0)}</button>
    {!canWithdraw && <p className="mt-2 text-[13px] leading-snug text-[var(--color-warning)]/70">{T.eaWdWarn}</p>}
    {canWithdraw && !wdOk && <p className="mt-2 text-[13px] leading-snug text-[var(--color-text-muted)]">{T.eaWdInvalid}</p>}
+   <p className="mt-2 text-[12px] leading-snug text-[var(--color-text-faint)]">{T.eaWdFeeNote}</p>
   </div>
   ) : (
   <div className="p-5">
@@ -4000,12 +4312,17 @@ function WithdrawModal({S,act,setS}){
     <span className="text-[13px] text-[var(--color-text-muted)]">{T.eaWdVerifyAmt}</span>
     <span className="mono text-[20px] font-bold text-[var(--color-warning)]">${wdVal.toFixed(2)}</span>
    </div>
-   <p className="mt-1 text-[13px] text-[var(--color-text-muted)]">{T.eaWdVerifySent(email)}</p>
+   <div className="mt-1 flex items-baseline justify-between gap-2 text-[13px]">
+    <span className="text-[var(--color-text-muted)]">{T.eaWdAcct}</span>
+    <span className="mono text-[var(--color-text-secondary)]">{acct?`${acct.holderName} · ${acctMask(acct.accountNumber)}`:"—"}</span>
+   </div>
+   <p className="mt-2 text-[13px] text-[var(--color-text-muted)]">{T.eaWdVerifySent(email)}</p>
    <label className="mt-3 block text-[13px] text-[var(--color-text-muted)]">{T.eaWdCode}
     <input value={wdCode} onChange={e=>{setWdCode(e.target.value.replace(/\D/g,"").slice(0,6));setWdErr("");}} maxLength={6} inputMode="numeric" autoFocus placeholder={T.auCodePh} aria-label={T.eaWdCode} aria-invalid={!!wdErr} aria-describedby={wdErr?"wd-err":undefined}
      className="mono mt-1 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-center text-[20px] tracking-[0.4em]"/></label>
    {wdErr && <p id="wd-err" role="alert" className="mt-2 text-[13px] text-[var(--color-error-on-tint)]">{wdErr}</p>}
-      <div className="mt-4 flex gap-2">
+   <p className="mt-2 text-[12px] leading-snug text-[var(--color-text-faint)]">{T.eaWdFeeNote}</p>
+   <div className="mt-4 flex gap-2">
     <button type="button" onClick={()=>{setStage("form");setWdCode("");setWdErr("");}}
      className="rounded-lg border border-[var(--color-border)] px-3.5 py-2 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.wzPrev}</button>
     <button disabled={wdCode.length<6} onClick={confirm}
@@ -4015,18 +4332,18 @@ function WithdrawModal({S,act,setS}){
   </div>
   )}
  </ModalShell>);
- }
-/* 出金通道管理弹窗：设为默认 / 删除 / 新增（从提现弹窗进入） */
+}
+
+/* 收款账户管理弹窗：设为默认 / 删除 / 新增（从提现弹窗进入） */
 function PayoutManageModal({S,act,setS}){
  const POUTS=S.payouts||[];
- const defCh=POUTS.find(x=>x.isDefault);
  const close=()=>setS(p=>({...p,modal:null}));
  return (
  <ModalShell width="max-w-md" onClose={close}>
   <div className="flex items-center justify-between gap-2 border-b border-[var(--color-border)] px-5 py-3">
    <h2 className="text-[16px] font-semibold">{T.eaChTitle}</h2>
    <div className="flex items-center gap-1.5">
-    <button onClick={()=>setS(p=>({...p,modal:"payout",payoutDraft:null}))}
+    <button onClick={()=>setS(p=>({...p,modal:"payout"}))}
      className="rounded-lg border border-[var(--color-accent)]/50 px-3 py-1.5 text-[13px] font-semibold text-[var(--color-accent-hover)] hover:border-[var(--color-accent)]">{T.eaChAdd}</button>
     <button onClick={close} aria-label={T.eaClose}
      className="rounded-md px-2 py-1 text-[14px] leading-none text-[var(--color-text-muted)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]">✕</button>
@@ -4036,18 +4353,19 @@ function PayoutManageModal({S,act,setS}){
    {POUTS.length? (
     <div className="grid gap-2">
      {POUTS.map(p=>(
-      <div key={p.channel} className={`rounded-xl border p-3 ${p.isDefault?"border-[var(--color-accent)] bg-[var(--color-accent)]/[.06] ring-1 ring-sky-500/30":"border-[var(--color-border)]"}`}>
+      <div key={p.id} className={`rounded-xl border p-3 ${p.isDefault?"border-[var(--color-accent)] bg-[var(--color-accent)]/[.06]":"border-[var(--color-border)]"}`}>
        <div className="flex items-center justify-between gap-2">
-        <div className="truncate text-[14px] font-medium text-[var(--color-text-secondary)]">{p.channel.split(" ")[0]}</div>
-        {p.isDefault && <span className="shrink-0 rounded bg-[var(--color-accent)]/15 px-1.5 py-px text-[11px] font-semibold text-[var(--color-accent-hover)]">{T.eaChDefault}</span>}
-       </div>
-       <div className="mt-0.5 truncate text-[12px] text-[var(--color-text-faint)]">{p.email}</div>
-       <div className="mt-2 flex items-center justify-between gap-2">
-        <div className="mono text-[13px] font-semibold text-[var(--color-success)]">{PAYOUT_RATES[p.channel]||"—"}</div>
-        <div className="flex gap-2">
-         {!p.isDefault && <button onClick={()=>act.setDefaultPayout(p.channel)} className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.eaChSetDefault}</button>}
-         <button onClick={()=>act.removePayout(p.channel)} className="rounded-md border border-[var(--color-error)]/25 px-2 py-1 text-[12px] text-[var(--color-error)]/80 hover:border-[var(--color-error)]/60 hover:text-[var(--color-error)]">{T.eaChRemove}</button>
+        <div className="truncate text-[14px] font-medium text-[var(--color-text-secondary)]">{p.holderName}</div>
+        <div className="flex shrink-0 items-center gap-1.5">
+         <span className={`rounded px-1 py-px text-[11px] font-medium ${PO_VERIFY_TONE[p.verified]||PO_VERIFY_TONE.nomatch}`}>{T[PO_VERIFIED_KEY[p.verified]||"poVerifyNo"]}</span>
+         {p.isDefault && <span className="rounded bg-[var(--color-accent)]/15 px-1.5 py-px text-[11px] font-semibold text-[var(--color-accent-hover)]">{T.eaChDefault}</span>}
         </div>
+       </div>
+       <div className="mono mt-0.5 truncate text-[12px] text-[var(--color-text-faint)]">{p.bankName} · {acctMask(p.accountNumber)} · {p.currency}</div>
+       <div className="mt-0.5 truncate text-[12px] text-[var(--color-text-faint)]">{p.entityType==="org"?T.poEntityOrg:T.poEntityInd} · {p.bankCountry} · {p.routingType} {p.routingValue}</div>
+       <div className="mt-2 flex items-center justify-end gap-2">
+        {!p.isDefault && <button onClick={()=>act.setDefaultPayout(p.id)} className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.eaChSetDefault}</button>}
+        <button onClick={()=>act.removePayout(p.id)} className="rounded-md border border-[var(--color-error)]/25 px-2 py-1 text-[12px] text-[var(--color-error)]/80 hover:border-[var(--color-error)]/60 hover:text-[var(--color-error)]">{T.eaChRemove}</button>
        </div>
       </div>
      ))}
@@ -4055,13 +4373,15 @@ function PayoutManageModal({S,act,setS}){
    ):(
     <div className="rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center text-[13px] text-[var(--color-text-faint)]">
      <p>{T.eaNoChannels}</p>
-     <p className="mt-1 text-[12px] opacity-70">{T.eaChAdd} · {T.eaWdNoCh}</p>
+     <p className="mt-1 text-[12px] opacity-70">{T.eaWdNoCh}</p>
     </div>
    )}
-   {defCh && <p className="mt-3 text-[13px] text-[var(--color-text-muted)]">{T.eaActive(defCh.channel,defCh.email)}</p>}
+   <p className="mt-3 text-[12px] leading-snug text-[var(--color-text-faint)]">{T.eaWdSameName}</p>
+   <p className="mt-1 text-[12px] leading-snug text-[var(--color-text-faint)]">{T.poVerifyNote}</p>
   </div>
  </ModalShell>);
 }
+
 /* 收益明细 + 出金记录（同卡片双分块：钱从哪来 / 到哪去）+ 导出 */
 function EarningsLedger({S,act}){
  const rows=S.ledger.filter(e=>e.hostEarn);
@@ -4081,21 +4401,34 @@ function EarningsLedger({S,act}){
    ):(
     <p className="text-[13px] text-[var(--color-text-faint)]">{T.eaDetailSub}</p>
    )}
-   {/* 出金记录（第二分块）：申请时间=真实时钟，金额/渠道随申请快照 */}
+   {/* 出金记录（第二分块）：状态六态 + 收款账户快照（账户改名/删除后历史记录口径仍可追溯） */}
    <div className="mt-4 border-t border-[var(--color-border)] pt-4">
     <h3 className="mb-2 text-[16px] font-semibold">{T.eaPoTitle}</h3>
     {myPayouts.length? (
      <div className="overflow-x-auto"><table className="w-full text-left mono text-[13px]">
-      <thead><tr className="border-b border-[var(--color-border)] text-[11px] uppercase tracking-wider text-[var(--color-text-faint)]"><th className="py-1.5">{T.blThTime}</th><th className="text-right">{T.blThAmt}</th><th className="pl-3">{T.eaWdChannel}</th><th className="pl-3 text-right">{T.eaPoStatus}</th></tr></thead>
-      <tbody>{myPayouts.map(q=>(
+      <thead><tr className="border-b border-[var(--color-border)] text-[11px] uppercase tracking-wider text-[var(--color-text-faint)]"><th className="py-1.5">{T.blThTime}</th><th>{T.eaPoAcct}</th><th className="text-right">{T.blThAmt}</th><th className="pl-3 text-right">{T.eaPoStatus}</th></tr></thead>
+      <tbody>{myPayouts.map(q=>{ const st=PO_STATUS[q.status]||PO_STATUS.pending;
+       return (
        <tr key={q.id} className="border-b border-[var(--color-border)]/40">
         <td className="py-1.5 text-[var(--color-text-muted)]">{new Date(q.t).toISOString().slice(5,16).replace("T"," ")}</td>
-        <td className="text-right text-[var(--color-warning)]">-${(+(q.amt)||0).toFixed(2)}</td>
-        <td className="pl-3 text-[var(--color-text-faint)]">{q.channel?.split(" ")[0]||"—"}</td>
-        <td className="pl-3 text-right"><span className={`rounded px-1 py-px text-[11px] ${q.status==="approved"?"bg-[var(--color-success)]/10 text-[var(--color-success-on-tint)]":q.status==="rejected"?"bg-[var(--color-error)]/10 text-[var(--color-error-on-tint)]":"bg-[var(--color-warning)]/10 text-[var(--color-warning-on-tint)]"}`}>{q.status==="approved"?T.eaPoApproved:q.status==="rejected"?T.eaPoRejected:T.eaPoPending}</span></td>
-       </tr>))}
+        <td className="py-1.5 text-[var(--color-text-faint)]">{q.holderName?`${q.holderName} · ${acctMask(q.tail||"")}`:"—"}</td>
+        <td className={`text-right ${q.status==="failed"||q.status==="rejected"?"text-[var(--color-text-faint)] line-through":"text-[var(--color-warning)]"}`}>-${(+(q.amt)||0).toFixed(2)}</td>
+        <td className="pl-3 text-right">
+         <span className={`whitespace-nowrap rounded px-1 py-px text-[11px] ${st.cls}`}>{T[st.key]}</span>
+         {PO_ACTIVE.includes(q.status) && (
+          <div className="mt-1 flex flex-wrap justify-end gap-1">
+           <button onClick={()=>act.advancePayout(q.id,PO_NEXT[q.status])}
+            className="rounded border border-[var(--color-accent)]/50 px-1.5 py-px text-[11px] font-semibold text-[var(--color-accent-hover)] hover:border-[var(--color-accent)]">{T[PO_NEXT_LBL[q.status]]}</button>
+           {q.status!=="pending" && (
+            <button onClick={()=>act.advancePayout(q.id,"failed")}
+             className="rounded border border-[var(--color-error)]/30 px-1.5 py-px text-[11px] text-[var(--color-error-on-tint)] hover:border-[var(--color-error)]/60">{T.poDemoFail}</button>)}
+          </div>)}
+        </td>
+       </tr>);})}
       </tbody></table></div>
     ):<p className="text-[13px] text-[var(--color-text-faint)]">{T.eaPoEmpty}</p>}
+    <p className="mt-2 text-[12px] leading-snug text-[var(--color-text-faint)]">{T.eaPoStateNote}</p>
+    {myPayouts.some(q=>PO_ACTIVE.includes(q.status)) && <p className="mt-1 text-[12px] leading-snug text-[var(--color-text-muted)]">{T.poDemoNote}</p>}
    </div>
   </section>
  );
@@ -4109,50 +4442,152 @@ function EarningsPage({S,act,setS}){
  </main>);
 }
 
-/* ================= Payout 绑定弹窗（2026-09-18 多通道） ================= */
+/* ================= 收款账户绑定弹窗（2026-10-27 · 同名银行账户 · 分步表单） =================
+   承载方式：分三步 + 加宽（用户 2026-10-27 拍板）。理由是第一性——账户要素本身有 8-10 个，
+   一屏塞进窄弹窗必然拥挤；而官方真实流程本就是两步（Validate a beneficiary 结构校验 →
+   verify_account 语义核验），分步不是样式偏好，是对齐真实结构。
+   2026-10-27 对照 Airwallex Payouts 官方文档的修正：
+   · 路由类型按开户国自适应——官方 account_routing_type1 是按国家的具名类型（aba/sort_code…），
+     不由用户在 SWIFT/IBAN/ABA 里挑（SWIFT 是 transfer_method，不是 routing type）
+   · 开户行不给用户填——官方请求不提交 bank_name，由 Airwallex 解析后回填（此处按国家演示解析结果）
+   · 出款到账通知是「发给受益人」的可选能力（additional_info.personal_email），不预填用户邮箱
+   · 核验四态对齐官方返回；账户核验官方仅覆盖本地转账方式（LOCAL）——该边界与「字段按
+     dynamic schema 生成」已登记规格 §6 / §11 待定项 24，不在表单里占位（表单只留操作信息）
+   核验未取得「完全匹配」仍可保存，但该账户不可发起出金——不做成「填完就能提」。 */
 function BindPayoutModal({S,act,setS}){
- const CHANNELS=PAYOUT_CHANNELS;
- const RATES=PAYOUT_RATES;
- const _bound=(S.payouts||[]).map(x=>x.channel);
- const [ch,setCh]=useState(()=>{ // 默认选中：未绑定通道优先，否则回退首通；payoutDraft 已弃用（页面统一走本弹窗）
-   const init=S.payoutDraft&&CHANNELS.some(([n])=>n===S.payoutDraft)?S.payoutDraft:null;
-   return init||CHANNELS.find(([n])=>!_bound.includes(n))?.[0]||"Wise";
- });
- const boundEmail=(S.payouts||[]).find(x=>x.channel===ch)?.email||"";
- const [email,setEmail]=useState(boundEmail||"finance@sea-replica.demo");
- const ok=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
- // 切换通道时回填已绑定邮箱（避免渲染期 setState）
- useEffect(()=>{ if(boundEmail) setEmail(boundEmail); },[ch]); // eslint-disable-line react-hooks/exhaustive-deps
-  return (
- <ModalShell width="max-w-sm" onClose={()=>setS(p=>({...p,modal:null}))}>
-    <div className="border-b border-[var(--color-border)] px-5 py-3"><h2 className="text-[16px] font-semibold">{T.poTitle(ch)}</h2></div>
+ const close=()=>setS(p=>({...p,modal:null}));
+ const [f,setF]=useState({entityType:"org",holderName:"",accountNumber:"",bankCountry:"SG",routingValue:"",currency:"USD",notifyEmail:""});
+ const [sameName,setSameName]=useState(false);
+ const [simVerify,setSimVerify]=useState("match"); // 演示：模拟 verify_account 返回；勾同名默认 FULL_MATCH，可手动切换查看各态
+ const [step,setStep]=useState(1); // 1 账户信息 → 2 同名确认与核验 → 3 结果
+ const [saving,setSaving]=useState(false);
+ const [done,setDone]=useState(null); // 保存后的结果（verified + 解析回填的开户行），结果步展示
+ const set=(k,v)=>setF(p=>({...p,[k]:v}));
+ const digits=f.accountNumber.replace(/\D/g,"");
+ const route=PO_ROUTING_BY_CC[f.bankCountry]||PO_ROUTING_BY_CC.SG;
+ const step1Ok=f.holderName.trim()&&digits.length>=6&&f.routingValue.trim();
+ const step2Ok=sameName; // 同名确认是前置：账户名与实名主体一致的声明未落，不发起核验（仅 FULL_MATCH 才可出金）
+ const toggleSameName=(v)=>{ setSameName(v); setSimVerify(v?"match":"partial"); };
+ const submit=()=>{
+  if(!step1Ok||!step2Ok||saving) return;
+  setSaving(true);
+  const verified=simVerify;
+  const bankName=PO_BANK_BY_CC[f.bankCountry]||"—"; // 演示「平台解析回填」：真实为创建受益人时返回的 bank_name
+  setTimeout(()=>{
+   act.bindPayoutAccount({entityType:f.entityType,holderName:f.holderName.trim(),accountNumber:digits,
+    bankName,bankCountry:f.bankCountry,routingType:route.type,routingValue:f.routingValue.trim(),
+    currency:f.currency,notifyEmail:f.notifyEmail.trim(),verified});
+   setSaving(false);
+   setDone({verified,bankName}); // 结果由第 3 步呈现（替代 toast：同一动作不重复表达）
+   setStep(3);
+  },1100);
+ };
+ const LBL="text-[13px] text-[var(--color-text-muted)]";
+ const INP="mono mt-1 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-[14px]";
+ const INP_RO="mono mt-1 w-full cursor-not-allowed rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-[14px] text-[var(--color-text-faint)]";
+ const summary=(
+  <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-[12.5px]">
+   <div className="flex items-baseline justify-between gap-2"><span className={LBL}>{T.poHolder}</span><span className="mono truncate font-medium text-[var(--color-text-secondary)]">{f.holderName||"—"}</span></div>
+   <div className="mt-1 flex items-baseline justify-between gap-2"><span className={LBL}>{T.poAcctNo}</span><span className="mono text-[var(--color-text-secondary)]">{digits?`•••• ${digits.slice(-4)}`:"—"}</span></div>
+   <div className="mt-1 flex items-baseline justify-between gap-2"><span className={LBL}>{T.poCountry}</span><span className="mono text-[var(--color-text-secondary)]">{f.bankCountry} · {route.type} · {f.routingValue||"—"} · {f.currency}</span></div>
+   <div className="mt-1 flex items-baseline justify-between gap-2"><span className={LBL}>{T.poBank}</span><span className="mono text-[var(--color-text-secondary)]">{PO_BANK_BY_CC[f.bankCountry]||"—"}</span></div>
+  </div>);
+ const stepTitle=step===1?T.poStep1:step===2?T.poStep2:T.poStep3;
+ return (
+ <ModalShell width="max-w-lg" onClose={close}>
+  <div className="border-b border-[var(--color-border)] px-5 py-3">
+   <div className="flex items-center justify-between gap-2">
+    <h2 className="text-[16px] font-semibold">{T.poTitle}</h2>
+    <button onClick={close} aria-label={T.eaClose}
+     className="rounded-md px-2 py-1 text-[14px] leading-none text-[var(--color-text-muted)] hover:bg-[var(--color-bg)] hover:text-[var(--color-text)]">✕</button>
+   </div>
+   {/* 步骤指示：分步的可见进度（步骤名即导航说明，不需要额外图注） */}
+   <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px]">
+    <span className="text-[var(--color-text-muted)]">{T.poStepOf(step===3?3:step)} · <span className="font-semibold text-[var(--color-text-secondary)]">{stepTitle}</span></span>
+    {[1,2,3].map(n=>(
+     <span key={n} aria-hidden="true" className={`inline-block h-1.5 w-1.5 rounded-full ${step>=n?"bg-[var(--color-accent)]":"bg-[var(--color-border)]"}`}/>))}
+   </div>
+  </div>
+  {saving? (
+   <div className="flex flex-col items-center gap-3 px-6 py-14">
+    <span aria-hidden="true" className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-accent)] motion-reduce:animate-none"/>
+    <p className="text-[14px] font-medium text-[var(--color-text-secondary)]">{T.poVerifying}</p>
+    <p className="text-[12px] text-[var(--color-text-faint)]">{T.poVerifyHint}</p>
+   </div>
+  ) : step===1 ? (
    <div className="space-y-3 p-5">
-    <div>
-     <div className="mb-1 text-[13px] text-[var(--color-text-muted)]">{T.eaWdChannel}</div>
-     <div className="grid grid-cols-3 gap-2">
-      {CHANNELS.map(([n,r])=>(
-       <button key={n} onClick={()=>setCh(n)}
-        className={`rounded-xl border p-2.5 text-left transition-colors ${ch===n?"border-[var(--color-accent)] bg-[var(--color-accent)]/10 ring-1 ring-sky-500/40":"border-[var(--color-border)] hover:border-[var(--color-border-strong)]"}`}>
-        <div className={`text-[13px] font-medium ${ch===n?"text-[var(--color-accent-hover)]":"text-[var(--color-text-secondary)]"}`}>{n.split(" ")[0]}</div>
-        <div className="mono mt-0.5 text-[12px] font-semibold text-[var(--color-success)]">{r}</div>
-        {_bound.includes(n) && <div className="mt-0.5 text-[11px] font-medium text-[var(--color-text-muted)]">✓ {T.poBound}</div>}
-       </button>))}
-     </div>
-     {_bound.includes(ch) && <p className="mt-1.5 text-[11px] text-[var(--color-text-muted)]">{T.poBoundHint}{" "}{T.eaActive(ch,boundEmail||"—")}</p>}
+    <p className="text-[13px] leading-snug text-[var(--color-text-muted)]">{T.poLead}</p>
+    <div className="grid grid-cols-2 gap-2">
+     {[["org",T.poEntityOrg],["ind",T.poEntityInd]].map(([v,l])=>(
+      <button key={v} onClick={()=>set("entityType",v)} aria-pressed={f.entityType===v}
+       className={`rounded-lg border px-3 py-1.5 text-[13px] font-medium transition-colors ${f.entityType===v?"border-[var(--color-accent)] bg-[var(--color-accent)]/[.08] text-[var(--color-accent-hover)]":"border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]"}`}>{l}</button>))}
     </div>
-    <label className="block text-[13px] text-[var(--color-text-muted)]">{T.poEmail}
-     <input value={email} onChange={e=>setEmail(e.target.value)} aria-label={T.poEmailAria}
-      className="mono mt-1 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-[14px]"/></label>
-    <p className="text-[13px] leading-snug text-[var(--color-text-muted)]">{T.poRateNote(RATES[ch])}</p>
+    <label className={"block "+LBL}>{T.poHolder}
+     <input value={f.holderName} onChange={e=>set("holderName",e.target.value)} placeholder={T.poHolderPh} className={INP}/></label>
+    <label className={"block "+LBL}>{T.poAcctNo}
+     <input value={f.accountNumber} onChange={e=>set("accountNumber",e.target.value)} inputMode="numeric" placeholder={T.poAcctNoPh} className={INP}/></label>
+    <div className="grid grid-cols-2 gap-2">
+     <label className={"block "+LBL}>{T.poCountry}
+      <select value={f.bankCountry} onChange={e=>set("bankCountry",e.target.value)} className={INP}>
+       {Object.keys(PO_ROUTING_BY_CC).map(c=><option key={c} value={c}>{c}</option>)}
+      </select></label>
+     <label className={"block "+LBL}>{T.poCurrency}
+      <select value={f.currency} onChange={e=>set("currency",e.target.value)} className={INP}>
+       {["USD","EUR","HKD","GBP","SGD"].map(c=><option key={c} value={c}>{c}</option>)}
+      </select></label>
+    </div>
+    <div className="grid grid-cols-2 gap-2">
+     <label className={"block "+LBL}>{T.poRouteAuto} · {route.type}
+      <input value={route.type} readOnly aria-label={T.poRouteAuto+" "+route.type} className={INP_RO}/></label>
+     <label className={"block "+LBL}>{T.poRouteVal}
+      <input value={f.routingValue} onChange={e=>set("routingValue",e.target.value)} placeholder={route.ph} className={INP}/></label>
+    </div>
+    <label className={"block "+LBL}>{T.poNotify}
+     <input value={f.notifyEmail} onChange={e=>set("notifyEmail",e.target.value)} placeholder={T.poNotifyPh} className={INP}/></label>
+    {/* 本步唯一一条说明：只留「填的时候要知道的」（解析回填 + 路由自适应）；边界性注释见规格 §6/§11 */}
+    <p className="text-[12px] leading-snug text-[var(--color-text-faint)]">{T.poAcctFormNote}</p>
    </div>
-   <div className="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
-    <button onClick={()=>setS(p=>({...p,modal:null}))} className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{T.poCancel}</button>
-    <button disabled={!ok} onClick={()=>{act.bindPayout(ch,email);act.toast(T.poOk(ch));}}
-     className={`rounded-lg px-4 py-1.5 text-[14px] font-semibold ${ok?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-faint)]"}`}>{T.poConfirm}</button>
+  ) : step===2 ? (
+   <div className="space-y-3 p-5">
+    {summary}
+    <label className="flex items-start gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5 text-[12.5px] leading-snug text-[var(--color-text-secondary)]">
+     <input type="checkbox" checked={sameName} onChange={e=>toggleSameName(e.target.checked)} className="mt-0.5 shrink-0 accent-[var(--color-accent)]"/>{T.poSameName}</label>
+    {/* 演示开关：真实结果由 verify_account 返回，正式实现移除本控件 */}
+    <label className={"block "+LBL}>{T.poSimVerify}
+     <select value={simVerify} onChange={e=>setSimVerify(e.target.value)} aria-label={T.poSimVerify} className={INP}>
+      <option value="match">{T.poVerifyOk}</option>
+      <option value="partial">{T.poVerifyPartial}</option>
+      <option value="nomatch">{T.poVerifyNo}</option>
+      <option value="cannot">{T.poVerifyCannot}</option>
+     </select></label>
+    <p className="text-[12px] leading-snug text-[var(--color-text-faint)]">{T.poVerifyHint}</p>
    </div>
-  </ModalShell>);
+  ) : (
+   <div className="p-5">
+    <div className="flex items-center gap-2">
+     <span className={`shrink-0 rounded px-2 py-0.5 text-[12px] font-medium ${PO_VERIFY_TONE[done?.verified]||PO_VERIFY_TONE.nomatch}`}>{T[PO_VERIFIED_KEY[done?.verified]||"poVerifyNo"]}</span>
+     <span className="text-[13px] text-[var(--color-text-muted)]">{T.poDoneTitle}</span>
+    </div>
+    <p className="mt-2 text-[13px] leading-snug text-[var(--color-text-secondary)]">
+     {done?.verified==="match"?T.poDoneOk:done?.verified==="partial"?T.poDonePartial:done?.verified==="nomatch"?T.poDoneNo:T.poDoneCannot}
+    </p>
+    <div className="mt-3">{summary}</div>
+    <p className="mt-2 text-[12px] leading-snug text-[var(--color-text-faint)]">{T.poDoneTip}</p>
+   </div>
+  )}
+  {!saving && (
+  <div className="flex justify-end gap-2 border-t border-[var(--color-border)] px-5 py-3">
+   {step<3 && <button onClick={step===1?close:(()=>setStep(1))}
+    className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-[14px] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]">{step===1?T.poCancel:T.poPrev}</button>}
+   {step===1 && <button disabled={!step1Ok} onClick={()=>setStep(2)}
+    className={`rounded-lg px-4 py-1.5 text-[14px] font-semibold ${step1Ok?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-faint)]"}`}>{T.poNext}</button>}
+   {step===2 && <button disabled={!step2Ok} onClick={submit}
+    className={`rounded-lg px-4 py-1.5 text-[14px] font-semibold ${step2Ok?"bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]":"cursor-not-allowed bg-[var(--color-surface)] text-[var(--color-text-faint)]"}`}>{T.poConfirm}</button>}
+   {step===3 && <button onClick={close}
+    className="rounded-lg bg-[var(--color-accent)] px-4 py-1.5 text-[14px] font-semibold text-white hover:bg-[var(--color-accent-strong)]">{T.poFinish}</button>}
+  </div>)}
+ </ModalShell>);
 }
-
 
 /* ================= mount ================= */
 class ErrorBoundary extends React.Component {

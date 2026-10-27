@@ -29,7 +29,7 @@ window.addEventListener('error',function(e){
   /* tokens:begin —— 以下整块由 tools/sync-tokens.mjs 生成，勿手改 */
   :root {
   /* 令牌由 tools/sync-tokens.mjs 生成 —— 不要手改本块；改脚本后重跑。四页共用同一份取值。 */
-    --color-bg: #f8fafc; --color-surface: #ffffff; --color-surface-alt: #f1f5f9;
+    --color-bg: #f8fafc; --color-surface: #ffffff; --color-surface-alt: #f1f5f9; --color-surface-brand: #e6edff;
     --color-text: #0f172a; --color-text-secondary: #334155; --color-text-muted: #475569; --color-text-faint: #5b6673;
     --color-border: #e2e8f0; --color-border-strong: #cbd5e1;
     --color-accent: #2563eb; --color-accent-hover: #1d4ed8; --color-accent-strong: #1d4ed8; --color-focus: #2563eb;
@@ -43,7 +43,7 @@ window.addEventListener('error',function(e){
   }
   .dark {
   /* 同浅色档的同一套取值；深色下语义色底是亮色，字色改用 --color-on-solid / --color-*-on-tint。 */
-    --color-bg: #0f172a; --color-surface: #1e293b; --color-surface-alt: #1e293b;
+    --color-bg: #0f172a; --color-surface: #1e293b; --color-surface-alt: #1e293b; --color-surface-brand: #1a2747;
     --color-text: #f1f5f9; --color-text-secondary: #e2e8f0; --color-text-muted: #cbd5e1; --color-text-faint: #94a3b8;
     --color-border: #334155; --color-border-strong: #475569;
     --color-accent: #2563eb; --color-accent-hover: #3b82f6; --color-accent-strong: #1d4ed8; --color-focus: #3b82f6;
@@ -127,11 +127,26 @@ const listLeads=()=>{ const out=[]; try{ for(let i=0;i<localStorage.length;i++){
 // 状态徽章配色（文本+边框双通道，颜色非唯一信号）；状态中文名走 I18N elSt* 键
 const LEAD_CLS={ new:"text-[var(--color-warning)] border-[var(--color-warning)]/40", contacted:"text-[var(--color-info)] border-[var(--color-info)]/40", proposal:"text-[var(--color-accent-on-tint)] border-[var(--color-accent)]/40", won:"text-[var(--color-success)] border-[var(--color-success)]/40", lost:"text-[var(--color-text-faint)] border-[var(--color-border)]" };
 const LEAD_STATUSES=["new","contacted","proposal","won","lost"];   // won 唯一终态；其余可互通（迁移时强制写 timeline 留痕）
+/* 出金六态（对齐客户端状态机）：approved=放行并冻结（不扣款）、processing=发起出款（此时才扣）、
+   sent=已汇出、paid=已到账、failed=失败退回余额、rejected=驳回不动钱。
+   cfg.payouts 只记事件，客户端按 rank 只前进、幂等，重复广播不重复扣/退。 */
+const PO_STATUS={
+ approved:{zh:"已放行 · 冻结中",en:"Released · frozen",cls:"text-[var(--color-info-on-tint)] border-[var(--color-info)]/40"},
+ processing:{zh:"出款中",en:"Processing",cls:"text-[var(--color-info-on-tint)] border-[var(--color-info)]/40"},
+ sent:{zh:"已汇出",en:"Sent",cls:"text-[var(--color-success-on-tint)] border-[var(--color-success)]/40"},
+ paid:{zh:"已到账",en:"Paid",cls:"text-[var(--color-success-on-tint)] border-[var(--color-success)]/40"},
+ failed:{zh:"失败 · 已退回",en:"Failed · refunded",cls:"text-[var(--color-error-on-tint)] border-[var(--color-error)]/40"},
+ rejected:{zh:"已驳回",en:"Rejected",cls:"text-[var(--color-text-faint)] border-[var(--color-border)]"},
+};
+// 收款账户显示口径：同名账户 + 尾号 + 银行（单一 PSP 下没有「通道」概念，钱只到银行账户）
+const poAcctLbl=(q)=>q&&q.holderName?`${q.holderName} · •••• ${q.tail||"—"}${q.bankName?" · "+q.bankName:""}`:"—";
+// 事件快照：只记 id/金额/收款账户，客户端按 id 匹配自己的申请，其余字段仅用于审计
+const poEvt=(q)=>({id:q.id,email:q.email,amt:q.amt,t:q.t,holderName:q.holderName,tail:q.tail,bankName:q.bankName,currency:q.currency,at:Date.now()});
 const loadStore=()=>{ try{ return JSON.parse(localStorage.getItem(STORE_KEY))||null }catch(e){ return null } };
 const loadAccounts=()=>{ try{ return JSON.parse(localStorage.getItem(ACCOUNTS_KEY))||{} }catch(e){ return {} } };
 const loadAdminCfg=()=>{ try{ return JSON.parse(localStorage.getItem(ADMIN_KEY))||{} }catch(e){ return {} } };
 const saveAdminCfg=(c)=>{ try{ localStorage.setItem(ADMIN_KEY,JSON.stringify(c)) }catch(e){} };
-const defaultCfg=()=>({v:1, commission:0, transitionStorageFee:true, delisted:[], banned:[], approved:[], forceStops:[], backup:null, audit:[], payouts:{approved:[],rejected:[]}});
+const defaultCfg=()=>({v:1, commission:0, transitionStorageFee:true, delisted:[], banned:[], approved:[], forceStops:[], backup:null, audit:[], payouts:{approved:[],processing:[],sent:[],paid:[],failed:[],rejected:[]}});
 // 写配置 + 广播（用户端 storage/BroadcastChannel 双通道感知）
 let _BC=null; try{ _BC=new BroadcastChannel("gpu-market-admin-v1"); }catch(e){}
 const send=(msg)=>{ try{ _BC&&_BC.postMessage(msg) }catch(e){} };
@@ -177,7 +192,7 @@ const OFFERS_SUMMARY=[
  {id:"46112205",gpu:"RTX 5090",dph:0.802,geo:", CN"},
  {id:"46773231",gpu:"RTX 5080",dph:0.269,geo:"Hong Kong, HK"},
 ];
-const INST_META = { Creating:{zh:"创建中",cls:"text-[var(--color-accent-on-tint)]"}, Loading:{zh:"拉取镜像",cls:"text-[var(--color-accent-on-tint)]"}, Connecting:{zh:"连接中",cls:"text-[var(--color-accent-on-tint)]"}, Running:{zh:"运行中",cls:"text-[var(--color-success)]"}, Inactive:{zh:"已停止",cls:"text-[var(--color-text-secondary)]"}, Scheduling:{zh:"排队中",cls:"text-[var(--color-warning)]"}, Offline:{zh:"宿主断连",cls:"text-[var(--color-error)]"}, Rebooting:{zh:"重启中",cls:"text-[var(--color-info)]"}, Expired:{zh:"租约过期",cls:"text-red-300"}, Destroyed:{zh:"已销毁",cls:"text-[var(--color-text-faint)]"} };
+const INST_META = { Creating:{zh:"创建中",cls:"text-[var(--color-accent-on-tint)]"}, Loading:{zh:"拉取镜像",cls:"text-[var(--color-accent-on-tint)]"}, Connecting:{zh:"连接中",cls:"text-[var(--color-accent-on-tint)]"}, Running:{zh:"运行中",cls:"text-[var(--color-success)]"}, Inactive:{zh:"已停止",cls:"text-[var(--color-text-secondary)]"}, Scheduling:{zh:"排队中",cls:"text-[var(--color-warning)]"}, Offline:{zh:"宿主断连",cls:"text-[var(--color-error)]"}, Rebooting:{zh:"重启中",cls:"text-[var(--color-info)]"}, Expired:{zh:"租约过期",cls:"text-[var(--color-error)]"}, Destroyed:{zh:"已销毁",cls:"text-[var(--color-text-faint)]"} };
 const ACTIVE_STATES=["Running","Loading","Creating","Connecting","Scheduling","Rebooting"];
 
 /* ================= i18n（与对客端共用 vast-demo-lang 键；每键 zh/en 双录） ================= */
@@ -194,11 +209,16 @@ zh:{
   iForceStop:"强制停机", iForceDestroy:"强制销毁", iContract:"合约", iAcc:"未结算", iActive:"活跃", iTip:"干预经 BroadcastChannel 下发，用户端实时执行自身 Stop/Destroy 路径（写权在用户端）",
   fCommission:"平台抽成比例", fCommissionTip:"默认 0%（与用户端 1:1 全额入账基线一致）；调整后仅影响新增消费，宿主按 (1−r) 入账、平台按 r 计收入", fApply:"应用", fApplied:(p)=>`抽成已调整为 ${p}%（仅影响后续消费）`,
   fTransFee:"过渡态存储费", fTransFeeOn:"开启", fTransFeeOff:"关闭", fTransFeeTip:"计费引擎参数：实例启动/排队/断连等过渡态是否收取 0.6× 存储费。属平台单方条款，用户端只读镜像、无配置权（默认开启）", fTransFeeApplied:(on)=>`过渡态存储费已${on?"开启":"关闭"}（用户端实时生效）`,
-  poTitle:"出金审批 · 宿主提现申请", poEmpty:"暂无提现申请——用户端 Earnings 页发起后实时出现在此",
-  poApprove:"批准", poPending:"待审", poApproved:"已放行", poRejectedN:"已驳回",
-  poColChannel:"通道", poColTime:"申请时间", poColStatus:"状态",
-  poTotal:"累计已出金", poTotalSub:(n)=>`共 ${n} 笔 · 以 Admin 审批账本为准`, poPendingN:"待审笔数",
-  poNote:"批准即时扣减用户端宿主收益（在线实时生效、离线挂载补扣）；出金不产生 ledger 流水，下方对账表保持租客↔宿主入账口径",
+  poTitle:"出金审批 · 宿主提现申请", poEmpty:"暂无待审申请——用户端 Earnings 页发起后实时出现在此",
+  poApprove:"放行（冻结）", poPending:"待审", poApproved:"已放行", poRejectedN:"已驳回",
+  poColAcct:"收款账户", poColTime:"申请时间", poColStatus:"状态",
+  poTotal:"累计已出金", poTotalSub:(n)=>`已到账 ${n} 笔 · 以客户端申请状态为准`, poPendingN:"待审笔数",
+  poFrozen:"待出款 · 冻结中", poFrozenSub:(n)=>`${n} 笔已放行，尚未发起出款`, poInFlight:"出款中 / 已汇出",
+  poBatchTitle:"已放行批次 · 出款推进", poBatchEmpty:"暂无已放行申请",
+  poBatchNote:"放行只冻结不扣款；点「发起出款」才从可提现余额扣款（对应真实出款接口调用），出款失败自动退回余额。",
+  poSend:"发起出款", poMarkSent:"标记已汇出", poMarkPaid:"标记到账", poMarkFail:"标记失败（退回）",
+  poInsufficient:(e,avail)=>`无法放行 ${e}：可出金额不足（当前可出 ${avail}）`,
+  poNote:"一期出金只有同名银行账户一条轨道，费率与到账币种以出款时报价为准；放行=冻结（钱还在用户账户里但不计可用），发起出款才扣款，失败退回。出金不产生 ledger 流水，下方对账表保持租客↔宿主入账口径。",
   reconTitle:"双边对账（以 ledger 流水为准）", reconRent:"租客消费（host 源）", reconHost:"宿主净入账 (1−r)", reconPlat:"平台抽成 (r)", reconCheck:"守恒校验", reconOk:"通过（±0.01）", reconErr:"校验失败，差值", reconSplit:(a,b)=>`rate>0 共 ${a} 笔 · rate=0 共 ${b} 笔（切抽成前后分段记账）`,
   uEmail:"邮箱", uProvider:"注册方式", uRegAt:"注册时间", uRole:"状态", uBan:"封禁", uUnban:"解封", uBanned:"已封禁", uNormal:"正常", uCurrent:"当前登录", uBanTip:(e)=>`已封禁 ${e}（用户端即时登出并拦截登录）`, uUnbanTip:(e)=>`已解封 ${e}`,
   genTitle:"演示数据生成器", genBody:"注入 2 个演示账号 + 1 台待审宿主机器（RTX 4090）+ 3 条历史流水（含 1 笔 rate=10% 的宿主收益）+ $40 余额 + 3 条企业需求种子（待联系/沟通中/已成交）。注入前自动快照当前现场，可一键还原。", genBtn:"注入演示数据", genDone:"已注入；用户端在线时会自动刷新", genSnap:"已快照当前现场", genNoSnap:"尚无快照", genRestore:"还原快照", genRestoreTip:"将把快照写回用户端两键，并通知用户端刷新。建议先关闭用户端标签页再还原（避免其内存态覆盖）", genRestored:"已还原快照，用户端已通知刷新",
@@ -206,7 +226,7 @@ zh:{
   aTitle:"操作审计", aEmpty:"暂无操作记录", aAction:"动作", aDetail:"对象/明细", aTime:"时间",
   adBannedLogout:"你的账号已被平台封禁（Admin 干预）", adForceStop:"后台已强制停机（Admin 干预）", adForceDestroy:"后台已强制销毁（Admin 干预）", adInjected:"测试数据已注入（Admin 生成器）",
   errBanned:"该账号已被封禁，请联系平台客服",
-  aDelist:"Offer 下架", aRestore:"Offer 恢复", aApprove:"宿主审核通过", aReject:"宿主审核驳回", aBan:"账号封禁", aUnban:"账号解封", aComm:"抽成调整", aTransFee:"过渡费调整", aStop:"强制停机", aDestroy:"强制销毁", aGen:"注入演示数据", aReset:"重置 Admin 配置", aSnapRestore:"还原快照", aPayoutOk:"出金批准", aPayoutNo:"出金驳回",
+  aDelist:"Offer 下架", aRestore:"Offer 恢复", aApprove:"宿主审核通过", aReject:"宿主审核驳回", aBan:"账号封禁", aUnban:"账号解封", aComm:"抽成调整", aTransFee:"过渡费调整", aStop:"强制停机", aDestroy:"强制销毁", aGen:"注入演示数据", aReset:"重置 Admin 配置", aSnapRestore:"还原快照", aPayoutOk:"出金放行", aPayoutNo:"出金驳回", aPayoutSend:"发起出款", aPayoutSent:"标记已汇出", aPayoutPaid:"标记到账", aPayoutFail:"出款失败 · 已退回",
   confirmGen:"注入会合并数据到当前用户端现场（原数据不删除，快照可还原）。继续？",
   none:"—", yes:"是", sidenavHint:"单登录双主体 · 写权分离：本端只写 ADMIN 配置键，用户端只读",
   navEnt:"企业需求",
@@ -238,11 +258,16 @@ en:{
   iForceStop:"Force stop", iForceDestroy:"Force destroy", iContract:"Contract", iAcc:"Unsettled", iActive:"Active", iTip:"Interventions go via BroadcastChannel; the client executes its own Stop/Destroy path (write authority stays client-side)",
   fCommission:"Platform commission", fCommissionTip:"Default 0% (matches the client's 1:1 baseline); affects new spend only — host receives (1−r), platform earns r", fApply:"Apply", fApplied:(p)=>`Commission set to ${p}% (new spend only)`,
   fTransFee:"Transition storage fee", fTransFeeOn:"On", fTransFeeOff:"Off", fTransFeeTip:"Billing-engine parameter: whether transitional states (startup/queuing/disconnected) incur 0.6× storage. A platform-side clause — the client only mirrors it, with no config authority (default on)", fTransFeeApplied:(on)=>`Transition storage fee ${on?"enabled":"disabled"} (applies client-side instantly)`,
-  poTitle:"Payout approvals · host withdrawal requests", poEmpty:"No withdrawal requests yet — they appear here live once started from the client's Earnings page",
-  poApprove:"Release", poPending:"Pending", poApproved:"Released", poRejectedN:"Rejected",
-  poColChannel:"Channel", poColTime:"Requested", poColStatus:"Status",
-  poTotal:"Total paid out", poTotalSub:(n)=>`${n} payout(s) · per Admin approval ledger`, poPendingN:"Pending requests",
-  poNote:"Approving deducts the client's host earnings instantly (live when online, replayed on mount when offline); payouts create no ledger rows — the reconciliation table keeps the tenant↔host credit scope",
+  poTitle:"Payout approvals · host withdrawal requests", poEmpty:"No pending requests — they appear here live once started from the client's Earnings page",
+  poApprove:"Release (freeze)", poPending:"Pending", poApproved:"Released", poRejectedN:"Rejected",
+  poColAcct:"Payout account", poColTime:"Requested", poColStatus:"Status",
+  poTotal:"Total paid out", poTotalSub:(n)=>`${n} paid · per client request status`, poPendingN:"Pending requests",
+  poFrozen:"Awaiting payout · frozen", poFrozenSub:(n)=>`${n} released, payout not initiated yet`, poInFlight:"Sending / sent",
+  poBatchTitle:"Released batch · payout progress", poBatchEmpty:"Nothing released yet",
+  poBatchNote:"Release only freezes the amount. “Initiate payout” is when it leaves the withdrawable balance (the real payout call); a failed payout returns it automatically.",
+  poSend:"Initiate payout", poMarkSent:"Mark sent", poMarkPaid:"Mark paid", poMarkFail:"Mark failed (refund)",
+  poInsufficient:(e,avail)=>`Cannot release ${e}: not enough withdrawable funds (available ${avail})`,
+  poNote:"Phase one pays out to same-name bank accounts only; fees and the settlement currency are quoted at payout time. Release freezes the amount (still the user's, just not available); it is deducted when the payout is initiated and refunded if it fails. Payouts create no ledger rows — the reconciliation table keeps the tenant↔host credit scope.",
   reconTitle:"Two-sided reconciliation (from ledger)", reconRent:"Tenant spend (host source)", reconHost:"Host net (1−r)", reconPlat:"Platform commission (r)", reconCheck:"Conservation check", reconOk:"passed (±0.01)", reconErr:"FAILED, diff", reconSplit:(a,b)=>`${a} entries with rate>0 · ${b} with rate=0 (segmented at commission switch)`,
   uEmail:"Email", uProvider:"Provider", uRegAt:"Registered", uRole:"Status", uBan:"Ban", uUnban:"Unban", uBanned:"Banned", uNormal:"Normal", uCurrent:"Signed in", uBanTip:(e)=>`Banned ${e} (client logs out & blocks sign-in instantly)`, uUnbanTip:(e)=>`Unbanned ${e}`,
   genTitle:"Demo data generator", genBody:"Injects 2 demo accounts + 1 host machine pending review (RTX 4090) + 3 ledger entries (incl. one hostEarn at rate=10%) + $40 balance + 3 enterprise lead seeds (new / contacted / won). Snapshots the current scene first; one-click restore.", genBtn:"Inject demo data", genDone:"Injected; open client tabs will auto-refresh", genSnap:"Scene snapshotted", genNoSnap:"No snapshot yet", genRestore:"Restore snapshot", genRestoreTip:"Writes the snapshot back to the two client keys and asks the client to reload. Close client tabs first (their in-memory state would overwrite)", genRestored:"Snapshot restored; client reload requested",
@@ -250,7 +275,7 @@ en:{
   aTitle:"Audit log", aEmpty:"No operations yet", aAction:"Action", aDetail:"Target / detail", aTime:"Time",
   adBannedLogout:"Your account was suspended (Admin action)", adForceStop:"Instance force-stopped (Admin action)", adForceDestroy:"Instance force-destroyed (Admin action)", adInjected:"Test data injected (Admin generator)",
   errBanned:"This account has been suspended. Contact support.",
-  aDelist:"Offer delisted", aRestore:"Offer restored", aApprove:"Host listing approved", aReject:"Host listing rejected", aBan:"Account banned", aUnban:"Account unbanned", aComm:"Commission changed", aTransFee:"Transition fee changed", aStop:"Force stop", aDestroy:"Force destroy", aGen:"Demo data injected", aReset:"Admin config reset", aSnapRestore:"Snapshot restored", aPayoutOk:"Payout released", aPayoutNo:"Payout rejected",
+  aDelist:"Offer delisted", aRestore:"Offer restored", aApprove:"Host listing approved", aReject:"Host listing rejected", aBan:"Account banned", aUnban:"Account unbanned", aComm:"Commission changed", aTransFee:"Transition fee changed", aStop:"Force stop", aDestroy:"Force destroy", aGen:"Demo data injected", aReset:"Admin config reset", aSnapRestore:"Snapshot restored", aPayoutOk:"Payout released", aPayoutNo:"Payout rejected", aPayoutSend:"Payout initiated", aPayoutSent:"Marked sent", aPayoutPaid:"Marked paid", aPayoutFail:"Payout failed · refunded",
   confirmGen:"Data will be MERGED into the current client scene (nothing deleted; snapshot restorable). Continue?",
   none:"—", yes:"Yes", sidenavHint:"Single sign-in, dual principals · Split write authority: this console writes only ADMIN key; client reads it",
   navEnt:"Enterprise Leads",
@@ -459,11 +484,17 @@ function Fund({d,cfg,act}){
   const [draft,setDraft]=useState(ratePct);
   useEffect(()=>setDraft(ratePct),[ratePct]);
   const ok=d.reconDiff<=0.011;
-  // 出金审批派生：待审 = 用户端 pending 且本端账本未批/未驳（用户端离线时已批申请由挂载重放补扣，不再重复展示）
-  const poCfg=cfg.payouts||{approved:[],rejected:[]};
-  const _done=new Set([...poCfg.approved,...poCfg.rejected].map(x=>x.id));
-  const pending=d.payoutReqs.filter(q=>q.status==="pending"&&!_done.has(q.id));
-  const totalOut=poCfg.approved.reduce((a,x)=>a+(x.amt||0),0);
+  // 出金派生（2026-10-27 六态）：cfg.payouts 是事件日志（approved/processing/sent/paid/failed/rejected），
+  // 客户端按 rank 只前进、幂等；此处以「客户端申请状态」为准展示，事件日志只用于判定该笔是否已被本端推过。
+  const poCfg=cfg.payouts||{};
+  const _known=new Set(["approved","processing","sent","paid","failed","rejected"].flatMap(k=>(poCfg[k]||[]).map(x=>x&&x.id).filter(Boolean)));
+  const pending=d.payoutReqs.filter(q=>q.status==="pending"&&!_known.has(q.id));          // 待审：可放行（冻结）或驳回
+  const batch=d.payoutReqs.filter(q=>["approved","processing","sent"].includes(q.status)); // 已放行：待出款 → 到账
+  const waitingOut=batch.filter(q=>q.status==="approved");
+  const totalFrozen=waitingOut.reduce((a,q)=>a+(q.amt||0),0);
+  const sentCount=batch.filter(q=>q.status!=="approved").length;
+  const totalOut=d.payoutReqs.filter(q=>["sent","paid"].includes(q.status)).reduce((a,q)=>a+(q.amt||0),0);
+  const paidCount=d.payoutReqs.filter(q=>q.status==="paid").length;
   return (<div className="space-y-6">
     <div className="grid gap-5 xl:grid-cols-2">
       <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
@@ -495,8 +526,10 @@ function Fund({d,cfg,act}){
     </div>
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
       <div className="border-b border-[var(--color-border)] px-5 py-3 text-[14px] font-semibold">{T.poTitle}</div>
-      <div className="grid grid-cols-2 gap-5 p-5">
-        <Card label={T.poTotal} value={fmt$(totalOut)} cls="text-[var(--color-warning)]" sub={T.poTotalSub(poCfg.approved.length)}/>
+      <div className="grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Card label={T.poFrozen} value={fmt$(totalFrozen)} cls="text-[var(--color-warning)]" sub={T.poFrozenSub(waitingOut.length)}/>
+        <Card label={T.poInFlight} value={sentCount} live/>
+        <Card label={T.poTotal} value={fmt$(totalOut)} sub={T.poTotalSub(paidCount)}/>
         <Card label={T.poPendingN} value={pending.length} live/>
       </div>
       <p className="px-5 pb-3 text-[13px] leading-snug text-[var(--color-text-muted)]">{T.poNote}</p>
@@ -504,15 +537,41 @@ function Fund({d,cfg,act}){
       <div className="table-scroll">
       <table className="w-full text-[14px]">
         <caption className="sr-only">{T.poTitle}</caption>
-        <thead><tr><Th>{T.uEmail}</Th><Th>{T.poColChannel}</Th><Th cls="text-right">{T.colAmt}</Th><Th>{T.poColTime}</Th><Th>{T.poColStatus}</Th><Th>{T.colAct}</Th></tr></thead>
+        <thead><tr><Th>{T.uEmail}</Th><Th>{T.poColAcct}</Th><Th cls="text-right">{T.colAmt}</Th><Th>{T.poColTime}</Th><Th>{T.poColStatus}</Th><Th>{T.colAct}</Th></tr></thead>
         <tbody>{pending.map(q=>(
           <tr key={q.id}>
-            <Td cls="mono">{q.email}</Td><Td>{q.channel||T.none}</Td>
+            <Td cls="mono">{q.email}</Td><Td>{poAcctLbl(q)}</Td>
             <Td cls="mono text-right">{fmt$(q.amt)}</Td>
             <Td cls="mono text-[var(--color-text-faint)]">{fmtDate(q.t)}</Td>
             <Td><span className="text-[var(--color-warning)]">{T.poPending}</span></Td>
             <Td><div className="flex gap-2"><Btn tone="ok" onClick={()=>act.payoutOk(q)}>{T.poApprove}</Btn><Btn tone="danger" onClick={()=>act.payoutNo(q)}>{T.mReject}</Btn></div></Td>
           </tr>))}
+        </tbody>
+      </table>
+      </div>)}
+    </div>
+    {/* 已放行批次：放行只冻结、发起出款才扣款，失败退回——每一步都由这里推进 */}
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="border-b border-[var(--color-border)] px-5 py-3 text-[14px] font-semibold">{T.poBatchTitle}</div>
+      <p className="px-5 pt-3 text-[13px] leading-snug text-[var(--color-text-muted)]">{T.poBatchNote}</p>
+      {batch.length===0? <div className="px-5 pb-6 pt-3 text-[14px] text-[var(--color-text-faint)]">{T.poBatchEmpty}</div> : (
+      <div className="table-scroll">
+      <table className="w-full text-[14px]">
+        <caption className="sr-only">{T.poBatchTitle}</caption>
+        <thead><tr><Th>{T.uEmail}</Th><Th>{T.poColAcct}</Th><Th cls="text-right">{T.colAmt}</Th><Th>{T.poColStatus}</Th><Th>{T.colAct}</Th></tr></thead>
+        <tbody>{batch.map(q=>{
+          const st=PO_STATUS[q.status]||PO_STATUS.approved;
+          return (<tr key={q.id}>
+            <Td cls="mono">{q.email}</Td><Td>{poAcctLbl(q)}</Td>
+            <Td cls="mono text-right">{fmt$(q.amt)}</Td>
+            <Td><span className={"rounded border px-1.5 py-px text-[12px] "+st.cls}>{st[_LANG]}</span></Td>
+            <Td><div className="flex flex-wrap gap-2">
+              {q.status==="approved" && <Btn tone="ok" onClick={()=>act.payoutSend(q)}>{T.poSend}</Btn>}
+              {q.status==="processing" && <Btn tone="ok" onClick={()=>act.payoutSent(q)}>{T.poMarkSent}</Btn>}
+              {q.status==="sent" && <Btn tone="ok" onClick={()=>act.payoutPaid(q)}>{T.poMarkPaid}</Btn>}
+              <Btn tone="danger" onClick={()=>act.payoutFail(q)}>{T.poMarkFail}</Btn>
+            </div></Td>
+          </tr>);})}
         </tbody>
       </table>
       </div>)}
@@ -655,7 +714,7 @@ function EntLeads({act,leads}){
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="mono text-[13px] text-[var(--color-text-faint)]">{cur.ref}</div>
-            <h2 className="mt-0.5 text-[18px] font-bold tracking-tight">{cur.draft?.company||T.elDetail}</h2>
+            <h2 className="mt-0.5 text-[16px] font-bold tracking-tight">{cur.draft?.company||T.elDetail}</h2>
             <span className={`mt-2 inline-block rounded border px-1.5 py-px text-[12px] ${LEAD_CLS[cur.status]||""}`}>{stName(cur.status)}</span>
           </div>
           <button onClick={close} aria-label={T.elClose}
@@ -781,14 +840,37 @@ function App(){
     forceDestroy:(key)=>{ send({type:"forceDestroy",key}); setCfg(c=>commitCfg(c,T.aDestroy,key)); flash(T.aDestroy+" · "+key); },
     setCommission:(pct)=>{ setCfg(c=>commitCfg({...c,commission:pct/100},T.aComm,pct+"%")); flash(T.fApplied(pct)); },
     setTransFee:(on)=>{ setCfg(c=>commitCfg({...c,transitionStorageFee:on},T.aTransFee,on?"on":"off")); flash(T.fTransFeeApplied(on)); },
-    payoutOk:(q)=>{ setCfg(c=>{ const po=c.payouts||{approved:[],rejected:[]};
-      if(po.approved.some(x=>x.id===q.id)) return c; // 幂等：重复点击不重复入账本
-      return commitCfg({...c,payouts:{approved:[...po.approved,{id:q.id,email:q.email,channel:q.channel,amt:q.amt,t:q.t,at:Date.now()}],rejected:po.rejected}},T.aPayoutOk,q.email+" · $"+q.amt); });
+    /* 出金推进（2026-10-27 六态）：每次只往事件日志追加一条 {id,...}，客户端按 rank 只前进。
+       放行前校验「该宿主当前可出金额」——冻结不改 hostEarnings，故可出 = hostEarnings − 已放行未扣款。 */
+    payoutOk:(q)=>{
+      const st=loadStore()||{};
+      const he=+(st.hostEarnings||0);
+      const frozen=(st.payoutReqs||[]).filter(x=>x.email===q.email&&x.status==="approved"&&!x.deducted).reduce((a,x)=>a+(x.amt||0),0);
+      if(he-frozen+1e-9<(q.amt||0)){ flash(T.poInsufficient(q.email,fmt$(he-frozen))); return; }
+      setCfg(c=>{ const po=c.payouts||{};
+        if((po.approved||[]).some(x=>x.id===q.id)) return c; // 幂等
+        return commitCfg({...c,payouts:{...po,approved:[...(po.approved||[]),poEvt(q)]}},T.aPayoutOk,q.email+" · $"+q.amt); });
       flash(T.aPayoutOk+" · "+q.email+" $"+q.amt); },
-    payoutNo:(q)=>{ setCfg(c=>{ const po=c.payouts||{approved:[],rejected:[]};
-      if(po.rejected.some(x=>x.id===q.id)) return c;
-      return commitCfg({...c,payouts:{approved:po.approved,rejected:[...po.rejected,{id:q.id,email:q.email,amt:q.amt,t:q.t,at:Date.now()}]}},T.aPayoutNo,q.email+" · $"+q.amt); });
+    payoutNo:(q)=>{ setCfg(c=>{ const po=c.payouts||{};
+      if((po.rejected||[]).some(x=>x.id===q.id)) return c;
+      return commitCfg({...c,payouts:{...po,rejected:[...(po.rejected||[]),poEvt(q)]}},T.aPayoutNo,q.email+" · $"+q.amt); });
       flash(T.aPayoutNo+" · "+q.email); },
+    payoutSend:(q)=>{ setCfg(c=>{ const po=c.payouts||{};
+      if((po.processing||[]).some(x=>x.id===q.id)) return c;
+      return commitCfg({...c,payouts:{...po,processing:[...(po.processing||[]),poEvt(q)]}},T.aPayoutSend,q.email+" · $"+q.amt); });
+      flash(T.aPayoutSend+" · "+q.email+" $"+q.amt); },
+    payoutSent:(q)=>{ setCfg(c=>{ const po=c.payouts||{};
+      if((po.sent||[]).some(x=>x.id===q.id)) return c;
+      return commitCfg({...c,payouts:{...po,sent:[...(po.sent||[]),poEvt(q)]}},T.aPayoutSent,q.email+" · $"+q.amt); });
+      flash(T.aPayoutSent+" · "+q.email); },
+    payoutPaid:(q)=>{ setCfg(c=>{ const po=c.payouts||{};
+      if((po.paid||[]).some(x=>x.id===q.id)) return c;
+      return commitCfg({...c,payouts:{...po,paid:[...(po.paid||[]),poEvt(q)]}},T.aPayoutPaid,q.email+" · $"+q.amt); });
+      flash(T.aPayoutPaid+" · "+q.email); },
+    payoutFail:(q)=>{ setCfg(c=>{ const po=c.payouts||{};
+      if((po.failed||[]).some(x=>x.id===q.id)) return c; // 幂等：重复点击不重复退
+      return commitCfg({...c,payouts:{...po,failed:[...(po.failed||[]),poEvt(q)]}},T.aPayoutFail,q.email+" · $"+q.amt); });
+      flash(T.aPayoutFail+" · "+q.email); },
     ban:(e)=>{ setCfg(c=>commitCfg({...c,banned:[...new Set([...(c.banned||[]),e])]},T.aBan,e)); flash(T.uBanTip(e)); },
     unban:(e)=>{ setCfg(c=>commitCfg({...c,banned:(c.banned||[]).filter(x=>x!==e)},T.aUnban,e)); flash(T.uUnbanTip(e)); },
     // 企业需求：先重读该键最新值再改（防覆盖 0.5s 轮询窗口内的并发写入）；won 终态拒绝迁移；每次迁移强制写 timeline
