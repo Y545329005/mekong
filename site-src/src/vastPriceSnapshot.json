@@ -1,0 +1,321 @@
+{
+  "source": "https://storage.googleapis.com/vast-public-gpu-pricing/gpu-pricing-public.json",
+  "updated": "2026-10-21T17:30:17Z",
+  "unit": "USD / GPU / hour",
+  "metric": "daily median",
+  "license": "Free for display and citation with attribution. Bulk collection, redistribution, or use in any index, benchmark, or derivative product requires a data license: data@vast.ai",
+  "gpus": {
+    "rtx 5090": {
+      "current": {
+        "min": 0.4407,
+        "available": 409,
+        "p10": 0.5761,
+        "median": 0.7655
+      },
+      "name": "RTX 5090",
+      "daily": [
+        {
+          "date": "2026-10-14",
+          "median": 0.55
+        },
+        {
+          "date": "2026-10-15",
+          "median": 0.56
+        },
+        {
+          "date": "2026-10-16",
+          "median": 0.565
+        },
+        {
+          "date": "2026-10-17",
+          "median": 0.59
+        },
+        {
+          "date": "2026-10-18",
+          "median": 0.59
+        },
+        {
+          "date": "2026-10-19",
+          "median": 0.6
+        },
+        {
+          "date": "2026-10-20",
+          "median": 0.58
+        }
+      ]
+    },
+    "rtx 4090": {
+      "current": {
+        "min": 0.1538,
+        "available": 334,
+        "p10": 0.4276,
+        "median": 0.6552
+      },
+      "name": "RTX 4090",
+      "daily": [
+        {
+          "date": "2026-10-14",
+          "median": 0.419
+        },
+        {
+          "date": "2026-10-15",
+          "median": 0.4
+        },
+        {
+          "date": "2026-10-16",
+          "median": 0.42
+        },
+        {
+          "date": "2026-10-17",
+          "median": 0.395
+        },
+        {
+          "date": "2026-10-18",
+          "median": 0.419
+        },
+        {
+          "date": "2026-10-19",
+          "median": 0.4
+        },
+        {
+          "date": "2026-10-20",
+          "median": 0.4
+        }
+      ]
+    },
+    "h100 pcie": {
+      "current": {
+        "min": 2.2708,
+        "available": 3,
+        "p10": 2.2708,
+        "median": 2.4014
+      },
+      "name": "H100 PCIE",
+      "daily": [
+        {
+          "date": "2026-10-14",
+          "median": 2.3049
+        },
+        {
+          "date": "2026-10-15",
+          "median": 1.8693
+        },
+        {
+          "date": "2026-10-16",
+          "median": 1.758
+        },
+        {
+          "date": "2026-10-17",
+          "median": 1.7125
+        },
+        {
+          "date": "2026-10-18",
+          "median": 1.8359
+        },
+        {
+          "date": "2026-10-19",
+          "median": 1.5886
+        },
+        {
+          "date": "2026-10-20",
+          "median": 1.5579
+        }
+      ]
+    },
+    "b300": {
+      "current": {
+        "min": 8.3804,
+        "available": 5,
+        "p10": 8.3804,
+        "median": 8.6781
+      },
+      "name": "B300",
+      "daily": [
+        {
+          "date": "2026-10-14",
+          "median": 7.944
+        },
+        {
+          "date": "2026-10-15",
+          "median": 7.944
+        },
+        {
+          "date": "2026-10-16",
+          "median": 7.944
+        },
+        {
+          "date": "2026-10-17",
+          "median": 7.947
+        },
+        {
+          "date": "2026-10-18",
+          "median": 7.95
+        },
+        {
+          "date": "2026-10-19",
+          "median": 7.944
+        },
+        {
+          "date": "2026-10-20",
+          "median": 7.3025
+        }
+      ]
+    },
+    "h100 sxm": {
+      "current": {
+        "min": 1.7337,
+        "available": 13,
+        "p10": 1.7337,
+        "median": 2.4005
+      },
+      "name": "H100 SXM",
+      "daily": [
+        {
+          "date": "2026-10-14",
+          "median": 2.2
+        },
+        {
+          "date": "2026-10-15",
+          "median": 2.2
+        },
+        {
+          "date": "2026-10-16",
+          "median": 2.0
+        },
+        {
+          "date": "2026-10-17",
+          "median": 1.8
+        },
+        {
+          "date": "2026-10-18",
+          "median": 1.8
+        },
+        {
+          "date": "2026-10-19",
+          "median": 1.8
+        },
+        {
+          "date": "2026-10-20",
+          "median": 1.8
+        }
+      ]
+    },
+    "h200": {
+      "current": {
+        "min": 3.4226,
+        "available": 41,
+        "p10": 3.4226,
+        "median": 4.6058
+      },
+      "name": "H200",
+      "daily": [
+        {
+          "date": "2026-10-14",
+          "median": 3.8
+        },
+        {
+          "date": "2026-10-15",
+          "median": 3.45
+        },
+        {
+          "date": "2026-10-16",
+          "median": 3.275
+        },
+        {
+          "date": "2026-10-17",
+          "median": 3.27
+        },
+        {
+          "date": "2026-10-18",
+          "median": 3.8
+        },
+        {
+          "date": "2026-10-19",
+          "median": 3.6521
+        },
+        {
+          "date": "2026-10-20",
+          "median": 3.6521
+        }
+      ]
+    },
+    "a100 sxm4": {
+      "current": {
+        "min": 0.4023,
+        "available": 110,
+        "p10": 0.4405,
+        "median": 0.7756
+      },
+      "name": "A100 SXM4",
+      "daily": [
+        {
+          "date": "2026-10-14",
+          "median": 0.5077
+        },
+        {
+          "date": "2026-10-15",
+          "median": 0.58
+        },
+        {
+          "date": "2026-10-16",
+          "median": 0.475
+        },
+        {
+          "date": "2026-10-17",
+          "median": 0.46
+        },
+        {
+          "date": "2026-10-18",
+          "median": 0.4475
+        },
+        {
+          "date": "2026-10-19",
+          "median": 0.43
+        },
+        {
+          "date": "2026-10-20",
+          "median": 0.435
+        }
+      ]
+    },
+    "rtx 5080": {
+      "current": {
+        "min": 0.1343,
+        "available": 54,
+        "p10": 0.2414,
+        "median": 0.4014
+      },
+      "name": "RTX 5080",
+      "daily": [
+        {
+          "date": "2026-10-14",
+          "median": 0.5
+        },
+        {
+          "date": "2026-10-15",
+          "median": 0.5
+        },
+        {
+          "date": "2026-10-16",
+          "median": 0.5
+        },
+        {
+          "date": "2026-10-17",
+          "median": 0.265
+        },
+        {
+          "date": "2026-10-18",
+          "median": 0.2785
+        },
+        {
+          "date": "2026-10-19",
+          "median": 0.41
+        },
+        {
+          "date": "2026-10-20",
+          "median": 0.5
+        }
+      ]
+    }
+  }
+}

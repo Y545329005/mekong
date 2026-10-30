@@ -1,0 +1,26 @@
+import type { Language } from './content'
+import type { ModalState } from './types'
+import Icon from './Icons'
+import s from './BusinessPages.module.css'
+
+export type BusinessKind='serverless'|'clusters'
+const content={
+ zh:{
+ serverless:{label:'无服务器推理',tag:'SERVERLESS INFERENCE',title:'让模型成为服务。\n把精力留给应用。',intro:'面向模型推理与应用服务，围绕模型大小、并发、响应时间和用量，规划适合的 GPU 与部署环境。',cta:'沟通推理需求',section:'从模型需求，规划推理服务。',body:'把模型、环境和服务要求放在一起评估，确定所需容量与扩缩策略。',cards:[['模型与环境','说明模型、量化方式、依赖和运行环境。'],['服务与并发','明确接口、响应时间、峰值并发与地区要求。'],['容量与用量','结合持续或波动负载，规划实例与容量安排。']],steps:[['定义服务','提供模型、用途与接口要求。'],['评估配置','确认显存、并发与服务性能。'],['规划部署','沟通资源组合、计量和扩缩安排。']]},
+ clusters:{label:'GPU 集群',tag:'DEDICATED GPU CLUSTERS',title:'为大规模计算，\n准备完整集群。',intro:'从多卡服务器到专属 GPU 集群，围绕训练规模、显存、互联和数据吞吐，沟通一体化资源方案。',cta:'咨询集群方案',section:'算力规模，需要系统配合。',body:'共同确认节点配置、网络拓扑、存储性能和容量时间，明确集群验收与运行支持。',cards:[['GPU 与节点','比较 H100、H200、B300 与 GB300 等资源，明确节点数量与配置。'],['高速互联','结合任务评估 NVLink、InfiniBand 或以太网，以及数据吞吐要求。'],['专属容量','按使用周期规划集群容量、维护窗口、续期和扩容。']],steps:[['明确训练规模','模型、数据、节点与使用期限。'],['确认集群方案','GPU、互联、存储、服务与价格。'],['约定交付验收','容量时间、开通安排、性能检查与责任窗口。']]},
+ },
+ en:{
+ serverless:{label:'Serverless',tag:'SERVERLESS INFERENCE',title:'Turn models into services.\nFocus on your application.',intro:'Plan GPU capacity around model size, concurrency, response times, and inference usage.',cta:'Discuss inference needs',section:'Plan inference around your model.',body:'Review models, environments, and service requirements together to define capacity and scaling.',cards:[['Model and environment','Model size, quantization, dependencies, and runtime.'],['Service and concurrency','Interfaces, response times, peaks, and locations.'],['Capacity and usage','Plan instances and capacity around steady or variable demand.']],steps:[['Define the service','Model, use case, and interface.'],['Evaluate configuration','Memory, concurrency, and service performance.'],['Plan deployment','Resources, metering, and scaling arrangements.']]},
+ clusters:{label:'GPU clusters',tag:'DEDICATED GPU CLUSTERS',title:'Complete clusters\nfor large-scale compute.',intro:'Plan multi-GPU servers and dedicated clusters around training scale, memory, interconnect, and throughput.',cta:'Discuss cluster capacity',section:'Scale the whole system.',body:'Review node configuration, network topology, storage, availability, acceptance, and support.',cards:[['GPUs and nodes','Compare H100, H200, B300, and GB300 resources and agree node counts.'],['Interconnect','Evaluate NVLink, InfiniBand, or Ethernet against workload requirements.'],['Dedicated capacity','Plan capacity, maintenance windows, renewals, and expansion.']],steps:[['Define scale','Models, data, nodes, and duration.'],['Agree configuration','GPUs, networking, storage, service, and pricing.'],['Plan acceptance','Availability, provisioning, performance checks, and responsibilities.']]},
+ },
+}
+
+export default function BusinessPage({kind,lang,open}:{kind:BusinessKind;lang:Language;open:(action:ModalState)=>void}){
+ const t=content[lang][kind],zh=lang==='zh'
+ const action=()=>open({type:'inquiry'})
+ return <div className={s.page}><div className={s.container}><div className={s.breadcrumb}><a href="#main">{zh?'首页':'Home'}</a><span>/</span>{t.label}</div><section className={s.hero}><div><span className={s.eyebrow}>{t.tag}</span><h1>{t.title}</h1><p>{t.intro}</p><button className={s.primary} onClick={action}>{t.cta}<Icon name="arrow" size={18}/></button></div><div className={s.diagram} aria-label={zh?'供给与交付':'Supply and delivery'}><div className={s.diagramHeader}><span>MEKONG</span><Icon name={'layers'} size={22}/></div><div className={s.nodes}>{(zh?['自有算力','合作资源','第三方供给']:['Owned capacity','Partner supply','Third-party supply']).map(label=><span key={label}>{label}</span>)}</div><div className={s.lines} aria-hidden="true">↓<span>↓</span>↓</div><div className={s.platform}><img src={`${import.meta.env.BASE_URL}assets/mekong-supercompute-white.svg`} alt="Mekong Supercompute"/><span>{zh?'资源 · 容量 · 服务':'Resources · Capacity · Service'}</span></div><div className={s.lines} aria-hidden="true">↓</div><div className={s.destination}>{zh?'你的团队 · 一个交付窗口':'Your team · One delivery window'}</div></div></section>
+ <section className={s.section}><span className={s.eyebrow}>{'COMPUTE, COORDINATED'}</span><h2>{t.section}</h2><p>{t.body}</p><div className={s.cards}>{t.cards.map(([title,body],index)=><article key={title}><Icon name={(['chip','layers','calendar'] as const)[index]} size={24}/><h3>{title}</h3><p>{body}</p></article>)}</div></section>
+ <section className={s.section}><span className={s.eyebrow}>{zh?'HOW WE WORK':'HOW WE WORK'}</span><h2>{zh?'从需求到交付，逐步确认。':'From requirements to delivery.'}</h2><div className={s.steps}>{t.steps.map(([title,body],i)=><article key={title}><span>0{i+1}</span><h3>{title}</h3><p>{body}</p></article>)}</div></section>
+ <section className={s.closing}><h2>{zh?'下一步，聊聊你的算力需求。':'Let’s discuss your compute needs.'}</h2><p>{zh?'从卡型、规模、地区和租期开始。':'Start with GPU models, scale, locations, and duration.'}</p><button className={s.primary} onClick={action}>{t.cta}<Icon name="arrow" size={18}/></button><button className={s.secondary} onClick={()=>open({type:'rent'})}>{zh?'浏览可租资源':'Browse GPUs'}<Icon name="diagonal" size={15}/></button></section>
+ </div></div>
+}

@@ -1,0 +1,85 @@
+.salesPage { --sales-panel:#080f16;--sales-input:#121a23;padding:106px 0 90px;min-height:100svh;background:#050b11;color:#fff; }
+.container { max-width:1408px;margin-inline:auto;padding-inline:64px; }
+.breadcrumb { display:flex;gap:12px;color:var(--copy-secondary);font-size:11px;margin-bottom:36px; }
+.breadcrumb a { color:var(--accent);text-decoration:none; }
+.introduction { max-width:1040px;margin:0 auto 36px;text-align:center; }
+.introduction h1 { font-size:40px;line-height:1.4;letter-spacing:-.035em;font-weight:500;margin:0 0 16px; }
+.introduction p { color:var(--copy-primary);font-size:14px;line-height:1.95;margin:0;max-width:780px;margin-inline:auto; }
+.formPanel { min-width:0;background:var(--sales-panel);border:0;border-radius:23px;padding:34px 38px;max-width:1040px;margin:0 auto; }.formPanel h2 { font-size:23px;letter-spacing:-.02em;font-weight:500;margin:0 0 11px; }.formIntro { color:var(--copy-primary);font-size:14px;line-height:1.8;margin:0; }.formHeading { display:flex;justify-content:space-between;gap:20px;align-items:start;margin-bottom:30px; }.formHeading>small { padding-top:7px;color:var(--copy-secondary);font-size:10px;white-space:nowrap; }.form { display:grid;grid-template-columns:repeat(6,minmax(0,1fr));column-gap:22px;row-gap:25px; }.field { min-width:0;display:flex;flex-direction:column;gap:10px; }.field>label { color:#fff;font-size:14px;display:flex;align-items:center;gap:8px; }.field>label>b { color:var(--accent);font-size:11px;font-weight:400; }.field>label>small { color:var(--copy-secondary);font-size:10px;margin-left:2px; }.field>input,.field>select,.field>textarea,.countryControl>input { width:100%;border:1px solid #ffffff30;border-radius:14px;background:var(--sales-input);color:#fff;padding:12px 13px;min-height:43px;font-size:14px;color-scheme:dark;transition:border-color .15s; }.field>input:hover,.field>select:hover,.field>textarea:hover,.countryControl>input:hover { border-color:var(--accent); }.field>input:focus,.field>select:focus,.field>textarea:focus,.countryControl>input:focus { outline:2px solid #83a8d055;outline-offset:1px;border-color:var(--accent); }.field>input::placeholder,.field>textarea::placeholder,.countryControl>input::placeholder { color:var(--copy-secondary); }.field>select:has(option:checked[value=""]) { color:var(--copy-secondary); }.field>select { cursor:pointer; }.field>textarea { line-height:1.9;resize:vertical;min-height:150px;font:inherit;font-size:14px;line-height:1.9; }.halfWidth { grid-column:span 3; }.thirdWidth { grid-column:span 2; }.fullWidth { grid-column:1/-1; }.submitRow { border-top:1px solid #ffffff1a;padding-top:24px;display:flex;align-items:center;justify-content:space-between;gap:22px; }.submit { min-height:44px;padding:0 19px;display:inline-flex;align-items:center;justify-content:center;gap:25px;background:linear-gradient(100deg,#1265cd,#2a4d78);border:1px solid #416fa7;border-radius:5px;font-size:14px;color:white;white-space:nowrap;transition:filter .15s; }.submit:hover { filter:brightness(1.12); }
+.countrySelect { position:relative; }.countryControl { position:relative; }.countryControl>input { padding-right:36px; }.countryControl>button { position:absolute;right:3px;top:3px;width:35px;height:37px;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:var(--accent); }.fieldHelp { display:block;padding-inline:13px;font-size:11px;color:var(--copy-secondary);line-height:1.5;margin-top:6px; }.fieldError { display:block;margin-top:5px;color:#e1a590;font-size:10px; }.countryControl>input[aria-invalid=true] { border-color:#cb8b77; }.countryPopup { position:absolute;top:48px;left:0;right:0;z-index:5;border:1px solid #ffffff30;border-radius:14px;background:#080e15;box-shadow:0 14px 32px #0007;overflow:hidden; }.countryPopup>[role=listbox] { max-height:252px;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#ffffff30 #080e15; }.countryPopup button { width:100%;border:0;background:transparent;padding:11px 13px;text-align:left;display:flex;gap:10px;align-items:center;min-height:38px;color:#fff;font-size:14px; }.countryPopup button>small { margin-left:auto;color:var(--copy-secondary);font:10px Arial,sans-serif; }.countryPopup button>svg { color:var(--accent); }.countryPopup button[data-active=true],.countryPopup button:hover { background:#ffffff08;color:#fff; }.countryPopup button[aria-selected=true] { color:#fff; }.countryPopup p { font-size:11px;color:var(--copy-primary);padding:13px; }
+.successIcon { display:inline-flex;padding:12px;border-radius:50%;color:var(--accent);background:transparent;border:1px solid #416fa777;margin-bottom:23px; }.review { margin:25px 0;display:grid;grid-template-columns:1fr 1fr;gap:20px; }.review>div { padding-bottom:13px;border-bottom:1px solid #ffffff1a;min-width:0; }.review>div:last-child { grid-column:1/-1; }.review dt { font-size:12px;color:var(--copy-secondary);margin-bottom:9px; }.review dd { font-size:13px;line-height:1.9;color:#fff;margin:0;white-space:pre-wrap;overflow-wrap:anywhere; }.successActions { margin-top:27px;display:flex;gap:25px;align-items:center; }.successActions a { color:var(--accent);font-size:14px;text-decoration:none; }
+
+.advantages,.delivery { max-width:1120px;margin:0 auto;padding-top:90px; }
+.sectionHeading { margin-bottom:32px; }
+.sectionHeading h2 { margin:0 0 15px;color:#fff;font-size:32px;line-height:1.5;font-weight:500;letter-spacing:-.025em; }
+.sectionHeading p { margin:0;color:var(--copy-primary);font-size:14px;line-height:1.9; }
+.advantageGrid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px; }
+.advantageGrid article { padding:30px 28px;border:1px solid #ffffff26;border-radius:23px;background:transparent; }
+
+.advantageGrid h3,.deliverySteps h3 { font-size:20px;line-height:1.6;font-weight:500;margin:0 0 12px; }
+.advantageGrid p,.deliverySteps p { margin:0;color:var(--copy-primary);font-size:14px;line-height:1.95; }
+.deliverySteps { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:40px;margin:0;padding:0;list-style:none; }
+.deliverySteps li { min-width:0; }
+
+@media(max-width:1279px) { .container { padding-inline:40px; }.introduction h1 { font-size:36px; }.formPanel { padding-inline:30px; }.form { column-gap:20px; }.advantageGrid article { padding:25px; }.deliverySteps { gap:28px; } }
+
+.multiSelect { position:relative;min-width:0; }
+.multiControl { background:var(--sales-input);border:1px solid #ffffff30;border-radius:14px;min-height:45px; }
+.multiControl:hover { border-color:var(--accent); }
+.multiControl:focus-within { outline:2px solid #83a8d055;outline-offset:1px;border-color:var(--accent); }
+.multiControl[data-invalid=true] { border-color:#cb8b77; }
+.multiInput { display:flex;align-items:center; }
+.multiInput input { min-width:0;flex:1;width:100%;padding:12px 13px;font:inherit;font-size:14px;background:none;color:#fff;border:0;outline:none; }
+.multiInput input::placeholder { color:var(--copy-secondary); }
+.multiInput>button { width:35px;height:41px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:0;background:none;color:var(--accent); }
+.selectedTags { display:flex;flex-wrap:wrap;gap:6px;padding:9px 10px 0; }
+.selectedTags button { display:inline-flex;align-items:center;gap:7px;padding:4px 7px;border:1px solid #ffffff30;border-radius:4px;background:transparent;color:#fff;font-size:12px;line-height:1.5; }
+.selectedTags button:hover { background:#ffffff08; }
+.selectedTags button:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+.multiPopup { top:auto;margin-top:3px; }
+.optionCheck { width:15px;height:15px;flex-shrink:0;border:1px solid #ffffff45;border-radius:3px;display:flex;align-items:center;justify-content:center; }
+.multiPopup [aria-selected=true] .optionCheck { background:transparent;border-color:#fff;color:#fff; }
+
+/* Shared visual language: transparent surfaces, white data, two copy tones. */
+.salesPage h1,.salesPage h2,.salesPage h3 { color:#fff; }
+.salesPage a:hover,.countryControl>button:hover,.multiInput>button:hover { color:var(--accent-hover); }
+.field>select option { background:#080e15;color:#fff; }
+.countryPopup button:focus-visible { outline:2px solid var(--accent);outline-offset:-3px; }
+.field input,.field select,.field textarea,.multiControl { box-shadow:none; }
+.review dd { color:#fff; }
+@media(max-width:760px) {
+ .salesPage { padding-top:98px;padding-bottom:64px; }.container { padding-inline:20px; }
+ .breadcrumb { margin-bottom:28px; }.introduction { margin-bottom:30px; }.introduction h1 { font-size:30px; }
+ .formPanel { padding:26px 22px; }.formHeading { gap:12px; }.formPanel h2 { font-size:21px; }
+ .form { grid-template-columns:minmax(0,1fr);row-gap:23px; }.halfWidth,.thirdWidth { grid-column:1/-1; }
+ .advantageGrid,.deliverySteps { grid-template-columns:minmax(0,1fr);gap:20px; }
+ .advantages,.delivery { padding-top:64px; }.sectionHeading h2 { font-size:27px; }
+ .advantageGrid article { padding:26px 22px; }.review { grid-template-columns:minmax(0,1fr); }
+ .successActions { flex-wrap:wrap; }
+}
+
+/* Centered editorial steps enter once, without repeating the homepage path animation. */
+.delivery .sectionHeading { text-align:center;margin-bottom:38px; }
+.deliverySteps { max-width:1040px;margin-inline:auto; }
+.deliverySteps li { text-align:center; }
+.stepNumber { display:block;margin-bottom:16px;color:var(--accent);font-size:32px;line-height:1.2;font-weight:500;font-variant-numeric:tabular-nums; }
+.deliverySteps p { max-width:300px;margin-inline:auto; }
+.deliverySteps[data-revealed=true] li { animation:delivery-enter 440ms cubic-bezier(.22,1,.36,1) both; }
+.deliverySteps[data-revealed=true] li:nth-child(2) { animation-delay:110ms; }
+.deliverySteps[data-revealed=true] li:nth-child(3) { animation-delay:220ms; }
+@keyframes delivery-enter { from { opacity:0;transform:translateY(10px); } to { opacity:1;transform:translateY(0); } }
+@media(max-width:760px) {
+ .deliverySteps { gap:36px; }
+ .delivery .sectionHeading { margin-bottom:32px; }
+ .stepNumber { margin-bottom:12px; }
+}
+@media(prefers-reduced-motion:reduce) { .deliverySteps[data-revealed=true] li { animation:none; } }
+
+/* Selected options and the disclosure share one row; no empty add-more row. */
+.multiControl[data-has-value=true] { display:flex;align-items:center; }
+.multiControl[data-has-value=true] .selectedTags { flex:1;min-width:0;padding:8px 10px; }
+.multiControl[data-has-value=true] .multiInput { flex:0 0 35px; }
+.multiControl[data-has-value=true] .multiInput input { position:absolute;width:1px;height:1px;min-height:0;padding:0;opacity:0; }
+.multiControl[data-has-value=true][data-query=true] { flex-wrap:wrap; }
+.multiControl[data-has-value=true][data-query=true] .multiInput { flex:1 0 100%; }
+.multiControl[data-has-value=true][data-query=true] .multiInput input { position:static;width:100%;height:auto;min-height:41px;padding:12px 13px;opacity:1; }

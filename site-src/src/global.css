@@ -1,0 +1,43 @@
+:root {
+  font-family: "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+  color: #edf4f8;
+  background: #03080f;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --page: #071522;
+  --panel: #0a1c2c;
+  --muted: #91a7b9;
+  --line: rgba(152, 185, 207, .15);
+  --cyan: #6592c9;
+  --blue: #2875ed;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 1120px; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+button { color: inherit; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 5px; }
+::selection { color: white; background: #2a4c76; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+body:has([data-view=home]),body:has([data-view=rent]),body:has([data-view=contact-sales]) { min-width:0; }
+
+:root {
+  --surface-space:radial-gradient(ellipse at 12% 4%,#868b9326,transparent 58%),radial-gradient(ellipse at 92% 110%,#69717b1c,transparent 60%),linear-gradient(135deg,#101319,#090d12);
+  --surface-space-edge:#9299a44d;
+}
+
+:root {
+  --accent:#83a8d0;
+  --accent-hover:#afc9e8;
+  --accent-line:#416fa7;
+  --tab-idle:#b6bac1;
+  --tab-active:#fff;
+  --tab-outline:#e1e3e66b;
+}
+
+:root { --heading-text:#fff;--tag-text:#fff;--tag-border:#ffffff30;--tag-radius:4px;--copy-primary:#8ea4b5;--copy-secondary:#7e9bab; }

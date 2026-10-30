@@ -1,0 +1,22 @@
+{
+  "enterprise-configuration.webp": {
+    "source": "https://www.xatakamovil.com/tutoriales/que-router-switch-hub-que-se-diferencian",
+    "asset": "https://i.blogs.es/3df108/switch/1366_2000.jpg",
+    "kind": "real photograph; network connections"
+  },
+  "enterprise-acceptance.webp": {
+    "source": "https://grafana.com/grafana/dashboards/10553-k6-load-testing-results/",
+    "asset": "https://grafana.com/api/dashboards/10553/images/6668/image",
+    "kind": "actual published k6 load-testing dashboard screenshot"
+  },
+  "enterprise-delivery.webp": {
+    "source": "https://www.serversaustralia.com.au/articles/business/servers-australias-solution-to-modern-it-challenges",
+    "asset": "https://www.serversaustralia.com.au/assets/content/sau-staff-in-data-centre-with-server.jpg",
+    "kind": "real installation photograph"
+  },
+  "enterprise-operations.webp": {
+    "source": "user-approved generated image exec-b6f8deaf-7481-4fd4-8a4f-a173b13c02cf.png",
+    "kind": "generated; specifically approved by user",
+    "prompt_brief": "Photographic operations control room, rear view of engineer monitoring multiple service dashboards, server racks behind glass."
+  }
+}
