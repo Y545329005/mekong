@@ -9,6 +9,10 @@ import MarketPage, { ResourceDetail } from './MarketPage'
 import SalesPage from './SalesPage'
 import RentalPage from './RentalPage'
 import BusinessPage from './BusinessPages'
+import WalletPage from './WalletPage'
+import EarningsPage from './EarningsPage'
+import { useSession, LoginDialog } from './AuthGate'
+import type { Account } from './AuthGate'
 import type { BusinessKind } from './BusinessPages'
 import styles from './App.module.css'
 import { getHomeMarket } from './homeMarket'
@@ -16,7 +20,7 @@ import { useLiveTick } from './live'
 
 const price=(value:number)=>`$${value.toFixed(2)}`
 
-function Navigation({lang,t,browse,open,toggleLanguage}:{lang:Language;t:Copy;browse:()=>void;open:(modal:ModalState)=>void;toggleLanguage:()=>void}) {
+function Navigation({lang,t,browse,open,toggleLanguage,funds,account,login,signOut}:{lang:Language;t:Copy;browse:()=>void;open:(modal:ModalState)=>void;toggleLanguage:()=>void;funds:()=>void;account:Account|null;login:()=>void;signOut:()=>void}) {
   function action(index:number) {
     if(index===0)open({type:'rent'})
     else if(index===1)browse()
@@ -25,7 +29,7 @@ function Navigation({lang,t,browse,open,toggleLanguage}:{lang:Language;t:Copy;br
   return <header className={styles.header}><div className={styles.headerInner}>
     <a href="#main" className={styles.logo} aria-label="Mekong Supercompute"><img src={`${import.meta.env.BASE_URL}assets/mekong-supercompute-white.svg`} alt="Mekong Supercompute" width="148" height="52"/></a>
     <nav aria-label={lang==='zh'?'主导航':'Main navigation'} className={styles.navigation}>{t.nav.map((label,index)=><div key={label} className={styles.navItem}><button onClick={()=>action(index)}>{label}</button></div>)}</nav>
-    <div className={styles.headerActions}><button className={styles.language} onClick={toggleLanguage} aria-label={lang==='zh'?'Switch to English':'切换为中文'}><Icon name="globe" size={15}/>{lang==='zh'?'EN':'中文'}</button><button className={styles.salesButton} onClick={()=>open({type:'inquiry'})}>{t.sales}</button><button className={`${styles.salesButton} ${styles.rentButton}`} onClick={()=>open({type:'rent'})}>{lang==='zh'?'开始租用':'Start renting'}</button></div>
+    <div className={styles.headerActions}><button className={styles.language} onClick={toggleLanguage} aria-label={lang==='zh'?'Switch to English':'切换为中文'}><Icon name="globe" size={15}/>{lang==='zh'?'EN':'中文'}</button>{account?<button className={styles.salesButton} onClick={funds}>{account.role==='host'?(lang==='zh'?'收益':'Earnings'):(lang==='zh'?'资金':'Funds')}</button>:<button className={styles.salesButton} onClick={login}>{lang==='zh'?'登录':'Sign in'}</button>}{account&&<div className={styles.accountBox}><span className={styles.accountEmail} title={account.email}>{account.email.length>18?account.email.slice(0,16)+'…':account.email}</span><button className={styles.accountSignOut} onClick={signOut}>{lang==='zh'?'退出':'Sign out'}</button></div>}</div>
   </div></header>
 }
 
@@ -132,8 +136,8 @@ function Dialog({modal,t,lang,close}:{modal:DialogState;t:Copy;lang:Language;clo
 }
 
 
-type PageRoute={page:'home'|'rent'|'market'|'contact-sales'|BusinessKind;query:string;region:Region;view:'supply'|'prices'|'geography'}
-const pages=['rent','market','contact-sales','serverless','clusters'] as const
+type PageRoute={page:'home'|'rent'|'market'|'contact-sales'|'wallet'|'earnings'|BusinessKind;query:string;region:Region;view:'supply'|'prices'|'geography'}
+const pages=['rent','market','contact-sales','serverless','clusters','wallet','earnings'] as const
 const archivedRoutes=new Set(['hosting','datacenters','providers','developers','developer','developer-tools','docs','api','templates','about','company'])
 function readRoute():PageRoute {
  const [path,query]=window.location.hash.slice(1).split('?'), params=new URLSearchParams(query||'')
@@ -145,10 +149,12 @@ function readRoute():PageRoute {
 }
 export default function App() {
  const [lang,setLang]=useState<Language>('zh'),[modal,setModal]=useState<DialogState>(null),[route,setRoute]=useState<PageRoute>(readRoute),[scrolled,setScrolled]=useState(false)
+ // 资金属账号：会话在本机（演示态），未登录时资金页只给登录门
+ const {account,signIn,signOut}=useSession(),[loginOpen,setLoginOpen]=useState(false)
  // 每 10s 拉一次实时聚合（可租数/挂牌价/日期轴），数值本身按 20s/60s 桶演进，页面隐藏时暂停。
  useLiveTick()
  const marketRef=useRef<HTMLElement>(null),t=copy[lang],destination=useRef<string|null>(null)
- useEffect(()=>{document.documentElement.lang=lang==='zh'?'zh-CN':'en';const labels=lang==='zh'?{'home':'全球算力，触手可及','rent':'算力市场','market':'价格与行情','contact-sales':'企业算力与联系销售','serverless':'无服务器推理','clusters':'GPU 集群'}:{'home':'Global compute. Within reach.','rent':'Rent GPUs','market':'Market pricing','contact-sales':'Enterprise Compute & Contact Sales','serverless':'Serverless','clusters':'GPU clusters'};document.title=`${labels[route.page]} | Mekong Supercompute`},[lang,route.page])
+ useEffect(()=>{document.documentElement.lang=lang==='zh'?'zh-CN':'en';const labels=lang==='zh'?{'home':'全球算力，触手可及','rent':'算力市场','market':'价格与行情','contact-sales':'企业算力与联系销售','serverless':'无服务器推理','clusters':'GPU 集群','wallet':'资金与结算','earnings':'收益'}:{'home':'Global compute. Within reach.','rent':'Rent GPUs','market':'Market pricing','contact-sales':'Enterprise Compute & Contact Sales','serverless':'Serverless','clusters':'GPU clusters','wallet':'Funds & settlement','earnings':'Earnings'};document.title=`${labels[route.page as keyof typeof labels] ?? 'Mekong'} | Mekong Supercompute`},[lang,route.page])
  useEffect(()=>{const update=()=>setScrolled(window.scrollY>60);update();window.addEventListener('scroll',update,{passive:true});return()=>window.removeEventListener('scroll',update)},[])
  useEffect(()=>{const update=()=>{const next=readRoute();destination.current=next.page==='home'?(window.location.hash.slice(1)||'main'):next.page==='market'&&next.query?'gpu-quotes':'top';setRoute(next);setModal(null)};window.addEventListener('hashchange',update);return()=>window.removeEventListener('hashchange',update)},[])
  useEffect(()=>{if(!destination.current)return;const id=destination.current;destination.current=null;if(id==='top')window.scrollTo({top:0});else jumpTo(id)},[route])
@@ -168,5 +174,5 @@ export default function App() {
   }else setModal(next)
  }
  const browse=()=>open({type:'market',query:'',tab:'prices'})
- return <div className={styles.page} lang={lang==='zh'?'zh-CN':'en'} data-language={lang} data-view={route.page} data-scrolled={route.page!=='home'||scrolled}><a className={styles.skipLink} href="#main" onClick={event=>{event.preventDefault();document.getElementById('main')?.focus();window.scrollTo({top:0})}}>{t.skip}</a><Navigation lang={lang} t={t} browse={browse} open={open} toggleLanguage={()=>setLang(value=>value==='zh'?'en':'zh')}/><main id="main" tabIndex={-1}>{route.page==='contact-sales'?<SalesPage lang={lang}/>:route.page==='rent'?<RentalPage key={`${route.query}-${route.region}`} lang={lang} query={route.query} initialRegion={route.region} open={open}/>:route.page==='market'?<MarketPage lang={lang} open={open} request={route}/>:route.page!=='home'?<BusinessPage key={route.page} kind={route.page} lang={lang} open={open}/>:<><div className={styles.firstScreen}><Background/><div className={styles.main}><Hero t={t} search={query=>open({type:'rent',query})}/></div></div><div className={styles.marketSection}><MarketBand t={t} lang={lang} marketRef={marketRef} open={open}/></div><HomeSections lang={lang} open={open}/></>}</main>{route.page!=='rent'&&<HomeFooter lang={lang} open={open}/>}<Dialog modal={modal} t={t} lang={lang} close={()=>setModal(null)}/></div>
+ return <div className={styles.page} lang={lang==='zh'?'zh-CN':'en'} data-language={lang} data-view={route.page} data-scrolled={route.page!=='home'||scrolled}><a className={styles.skipLink} href="#main" onClick={event=>{event.preventDefault();document.getElementById('main')?.focus();window.scrollTo({top:0})}}>{t.skip}</a><Navigation lang={lang} t={t} browse={browse} open={open} funds={()=>navigate(account?.role==='host'?'earnings':'wallet')} account={account} login={()=>setLoginOpen(true)} signOut={signOut} toggleLanguage={()=>setLang(value=>value==='zh'?'en':'zh')}/><main id="main" tabIndex={-1}>{route.page==='contact-sales'?<SalesPage lang={lang}/>:route.page==='rent'?<RentalPage key={`${route.query}-${route.region}`} lang={lang} query={route.query} initialRegion={route.region} open={open} account={account} requireSignIn={()=>setLoginOpen(true)}/>:route.page==='market'?<MarketPage lang={lang} open={open} request={route}/>:route.page==='wallet'?<WalletPage lang={lang} account={account} onSignIn={signIn}/>:route.page==='earnings'?<EarningsPage lang={lang} account={account} onSignIn={signIn}/>:route.page!=='home'?<BusinessPage key={route.page} kind={route.page} lang={lang} open={open}/>:<><div className={styles.firstScreen}><Background/><div className={styles.main}><Hero t={t} search={query=>open({type:'rent',query})}/></div></div><div className={styles.marketSection}><MarketBand t={t} lang={lang} marketRef={marketRef} open={open}/></div><HomeSections lang={lang} open={open}/></>}</main>{route.page!=='rent'&&<HomeFooter lang={lang} open={open}/>}<Dialog modal={modal} t={t} lang={lang} close={()=>setModal(null)}/><LoginDialog open={loginOpen} lang={lang} onClose={()=>setLoginOpen(false)} onSignIn={signIn}/></div>
 }

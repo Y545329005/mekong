@@ -1,0 +1,82 @@
+/* 资金两页共用控件 · 白底（复用算力市场白区色板） */
+
+.overlay { position: fixed; inset: 0; margin: auto; width: 560px; max-width: calc(100vw - 48px); max-height: calc(100svh - 96px); overflow-y: auto; padding: 0; border: 1px solid #e1e6ec; border-radius: 14px; background: #fff; color: #34475a; box-shadow: 0 24px 70px rgba(23, 33, 44, .18); }
+.overlay::backdrop { background: rgba(7, 17, 27, .45); }
+.overlay:focus { outline: none; }
+.overlay:focus-visible { outline: 2px solid #315f90; outline-offset: 2px; }
+.close { position: absolute; right: 15px; top: 15px; padding: 5px; border: 0; background: none; color: #627386; }
+.close:hover { color: #17212c; }
+
+.head { padding: 28px 30px 0; }
+.head h2 { margin: 0 0 10px; font-size: 21px; font-weight: 500; line-height: 1.4; color: #17212c; }
+.head p { margin: 0; color: #627386; font-size: 12px; line-height: 1.85; }
+.body { padding: 22px 30px 4px; }
+.foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; padding: 20px 30px 26px; border-top: 1px solid #e1e6ec; margin-top: 20px; }
+
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 16px; border: 1px solid #dce2e8; border-radius: 8px; }
+.tab { display: inline-flex; align-items: baseline; justify-content: center; gap: 7px; min-height: 34px; border: 0; border-radius: 5px; background: transparent; color: #627386; font-size: 12.5px; }
+.tab[data-active=true] { background: #eef3f8; color: #17212c; font-weight: 500; }
+.tabPool { font-size: 10.5px; color: #315f90; }
+
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.preset { flex: 1 1 64px; min-height: 40px; border: 1px solid #dce2e8; border-radius: 8px; background: #fff; color: #34475a; font: 500 14px "SF Mono", Menlo, Consolas, monospace; }
+.preset:hover { border-color: #315f90; }
+.preset[data-active=true] { border-color: #315f90; background: #eef3f8; color: #17212c; }
+.presets .input { flex: 1 1 90px; width: 90px; }
+
+.input { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #dce2e8; border-radius: 8px; background: #fff; color: #17212c; font-size: 14px; color-scheme: light; }
+.input::placeholder { color: #627386; }
+.input:focus { outline: 2px solid rgba(49, 95, 144, .35); outline-offset: 1px; border-color: #315f90; }
+
+.fieldLabel { display: block; margin: 18px 0 8px; color: #17212c; font-size: 12.5px; }
+.methodGrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.method { min-height: 40px; border: 1px solid #dce2e8; border-radius: 8px; background: #fff; color: #34475a; font-size: 12.5px; text-align: left; padding: 0 12px; }
+.method[data-active=true] { border-color: #315f90; background: #eef3f8; color: #17212c; }
+.note { margin: 10px 0 0; color: #627386; font-size: 11.5px; line-height: 1.8; }
+.warn { margin: 10px 0 0; color: #a83a32; font-size: 11.5px; line-height: 1.8; }
+
+.amountRow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 14px; margin-bottom: 6px; border: 1px solid #dce2e8; border-radius: 10px; background: #f7f9fa; font-size: 12.5px; color: #627386; }
+.amountRow strong { color: #17212c; font-size: 18px; font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+.amountInput { display: flex; gap: 8px; }
+.amountInput .input { flex: 1; }
+.cryptoBox { display: flex; gap: 14px; margin-top: 14px; padding: 14px; border: 1px solid #dce2e8; border-radius: 10px; background: #f7f9fa; }
+.cryptoBox strong { display: block; font-size: 12.5px; margin-bottom: 6px; color: #17212c; }
+.cryptoBox p { margin: 0 0 4px; color: #627386; font-size: 11px; line-height: 1.75; word-break: break-all; }
+.qr { width: 74px; height: 74px; flex-shrink: 0; border: 1px solid #dce2e8; border-radius: 6px; background: repeating-conic-gradient(#dce2e8 0% 25%, #fff 0% 50%) 0 0 / 14px 14px; }
+.skeletonRow { display: grid; gap: 8px; }
+.skeletonRow span { height: 38px; border: 1px solid #dce2e8; border-radius: 8px; background: #f7f9fa; }
+
+.accountList { display: grid; gap: 8px; margin-top: 16px; }
+.account { display: grid; gap: 5px; padding: 12px 14px; border: 1px solid #dce2e8; border-radius: 10px; background: #fff; color: inherit; text-align: left; }
+.account[data-active=true] { border-color: #315f90; background: #eef3f8; }
+.account[data-static=true] { cursor: default; }
+.accountTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; color: #17212c; }
+.account span.mono { color: #627386; font-size: 11px; word-break: break-all; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.emptyBox { padding: 18px; border: 1px dashed #dce2e8; border-radius: 10px; text-align: center; color: #627386; font-size: 12px; }
+.emptyBox p { margin: 0 0 10px; }
+
+.miniBtn { min-height: 30px; padding: 0 11px; border: 1px solid #dce2e8; border-radius: 4px; background: #fff; color: #34475a; font-size: 11.5px; }
+.miniBtn:hover:not(:disabled) { border-color: #315f90; color: #315f90; }
+.miniBtn:disabled { opacity: .45; cursor: not-allowed; }
+.btnPrimary, .btnGhost { min-height: 40px; padding: 0 20px; border-radius: 5px; font-size: 12.5px; display: inline-flex; align-items: center; justify-content: center; transition: background .15s, border-color .15s, color .15s; }
+.btnPrimary { border: 1px solid #315f90; background: #315f90; color: #fff; }
+.btnPrimary:hover:not(:disabled) { background: #27507c; }
+.btnPrimary:disabled { opacity: .45; cursor: not-allowed; }
+.btnGhost { border: 1px solid #dce2e8; background: #fff; color: #315f90; }
+.btnGhost:hover:not(:disabled) { border-color: #315f90; }
+.btnGhost:disabled { opacity: .45; cursor: not-allowed; }
+
+.badge { display: inline-block; padding: 3px 8px; border: 1px solid #e1e6ec; border-radius: 4px; font-size: 11px; white-space: nowrap; }
+.badge[data-tone=ok] { border-color: #bfe0cf; color: #17683e; background: #f2faf5; }
+.badge[data-tone=info] { border-color: #c3d5e8; color: #315f90; background: #f0f5fa; }
+.badge[data-tone=warn] { border-color: #e6d3ac; color: #8a5d14; background: #fbf6ea; }
+.badge[data-tone=bad] { border-color: #e8c4bf; color: #a83a32; background: #fcf2f0; }
+.badge[data-tone=muted] { border-color: #e1e6ec; color: #627386; background: #f7f9fa; }
+
+.mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+.toast { position: fixed; left: 50%; bottom: 34px; z-index: 60; transform: translateX(-50%); padding: 11px 18px; border-radius: 8px; background: #17212c; color: #fff; font-size: 12.5px; box-shadow: 0 10px 30px rgba(23, 33, 44, .28); }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast, .btnPrimary, .btnGhost, .miniBtn { transition: none; }
+}

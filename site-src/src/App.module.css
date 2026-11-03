@@ -13,7 +13,11 @@
 .navigation { display: flex; align-items: center; gap: 26px; height: 100%; }.navItem { position: relative; height: 100%; display: flex; align-items: center; }
 .navItem > button { display: flex; align-items: center; gap: 5px; white-space: nowrap; color:#fff; font-size: 13px; font-weight: 500; padding: 25px 0; background: none; border: 0; transition: color .16s; }.navItem > button > svg { color: #7b8796; }.navItem > button:hover,.navItem > button[aria-expanded=true] { color: #fff; }
 .dropdown { position: absolute; left: -18px; top: 65px; min-width: 198px; padding: 10px; border: 1px solid #ffffff20; border-radius: 8px; background: #07131ff5; box-shadow: 0 18px 45px #0006; }.dropdown button { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 13px 11px; background: transparent; border: 0; width: 100%; color: #d3e0e8; font-size: 12px; text-align: left; border-radius: 4px; white-space: nowrap; }.dropdown button:hover { color: #6c97cb; background: #ffffff08; }
-.headerActions { display: flex; align-items: center; gap: 12px; margin-left: auto; }.language { display: inline-flex; align-items: center; gap: 6px; padding: 10px 3px; background: none; border: 0; color:var(--copy-secondary); font-size: 11px; margin-right: 5px; }
+.headerActions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.accountBox { display: inline-flex; align-items: center; gap: 8px; max-width: 230px; }
+.accountEmail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #a9c2dc; font-size: 11.5px; }
+.accountSignOut { border: 0; background: none; padding: 6px 2px; color: var(--copy-secondary); font-size: 11px; white-space: nowrap; }
+.accountSignOut:hover { color: white; }.language { display: inline-flex; align-items: center; gap: 6px; padding: 10px 3px; background: none; border: 0; color:var(--copy-secondary); font-size: 11px; margin-right: 5px; }
 .salesButton { min-height: 37px; border-radius: 4px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: transparent; font-size: 12px; font-weight: 500; white-space: nowrap; transition: background .16s,border-color .16s,color .16s; }.salesButton { color:var(--accent); border: 1px solid #618bbe70; }.salesButton:hover { background: #618bbe0a; border-color: #7699c3aa;color:var(--accent-hover); }
 .main { display:flex;flex-direction:column;height:100%;padding-top:94px; }
 .hero { display:flex;align-items:center;flex:1;min-height:0;padding:0 0 10svh; }.heroInner { width: 100%; max-width: 1408px; margin-inline: auto; padding: 0 64px; }
@@ -45,6 +49,10 @@
 
 .page[data-view=rent] { min-width:0;background:#050b11; }
 .page[data-view=rent] .header { height:66px;background:#050b11f5;border-bottom-color:#ffffff0d;box-shadow:none; }
+
+/* 资金/收益两页白底，header 保留深色（与市场页同一叠法）。 */
+.page[data-view=wallet],.page[data-view=earnings] { min-width:0;background:#fff;color:#17212c; }
+.page[data-view=wallet] .header,.page[data-view=earnings] .header { height:66px;background:#050b11f5;border-bottom-color:#ffffff0d;box-shadow:none; }
 
 :global([data-language=zh]) .eyebrow { display:none; }
 
@@ -145,6 +153,4 @@
  .page[data-view=contact-sales] footer>div>div:last-child>div { margin-left:0;flex-wrap:wrap;gap:18px; }
 }
 
-/* The second header action shares the sales treatment, with stronger emphasis. */
-.headerActions .rentButton { font-weight:700; }
 @media(max-width:760px) { .headerActions { gap:7px; }.headerActions .salesButton { padding-inline:9px;font-size:11px; }.headerActions .language { display:none; } }

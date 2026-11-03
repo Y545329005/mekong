@@ -1,0 +1,49 @@
+/* 站内账号层：登录门与登录表单（沿用 V5 令牌，无自造色） */
+
+/* —— 资金页未登录态 —— */
+.locked { min-height: 100svh; padding: 106px 0 96px; color: #fff; background: #050b11; }
+.lockedShell { max-width: 1296px; margin-inline: auto; padding-inline: 64px; }
+.lockedHead { margin-bottom: 32px; }
+.eyebrow { margin: 0 0 12px; font-size: 9px; letter-spacing: .13em; color: #618dc2; }
+.lockedHead h1 { margin: 0 0 14px; font-size: 40px; line-height: 1.3; font-weight: 500; letter-spacing: -.035em; }
+.lockedLead { margin: 0; max-width: 760px; color: var(--copy-primary); font-size: 14px; line-height: 1.9; }
+.lockedGrid { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 20px; align-items: start; }
+.lockedNote { padding: 30px 32px; border: 1px solid #ffffff1f; border-radius: 18px; background: #071522; }
+.lockMark { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; margin-bottom: 18px; border: 1px solid #2a4c76; border-radius: 10px; color: #8fb6de; background: #0e2740; }
+.lockedNote h2 { margin: 0 0 14px; font-size: 20px; font-weight: 500; line-height: 1.4; }
+.points { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.points li { position: relative; padding-left: 16px; color: var(--copy-secondary); font-size: 12.5px; line-height: 1.8; }
+.points li::before { content: ""; position: absolute; left: 0; top: .72em; width: 4px; height: 4px; border-radius: 50%; background: #618dc2; }
+
+/* —— 登录表单 —— */
+.panel { padding: 30px 32px; border: 1px solid #ffffff1f; border-radius: 18px; background: #071522; }
+.panelTitle { margin: 0 0 10px; font-size: 20px; font-weight: 500; line-height: 1.4; }
+.panelLead { margin: 0 0 22px; color: var(--copy-secondary); font-size: 12.5px; line-height: 1.85; }
+.form { display: grid; gap: 14px; }
+.field { display: grid; gap: 8px; color: #d8e7f3; font-size: 12.5px; }
+.input { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #ffffff30; border-radius: 8px; background: #121a23; color: #fff; font-size: 14px; color-scheme: dark; }
+.input::placeholder { color: #6e889b; }
+.input:focus { outline: 2px solid #83a8d055; outline-offset: 1px; border-color: var(--accent); }
+.code { font-family: "SF Mono", Menlo, Consolas, monospace; letter-spacing: .32em; font-size: 17px; }
+.hint { margin: 0; color: #8fb6de; font-size: 11.5px; line-height: 1.8; }
+.error { margin: 0; color: #e2a99c; font-size: 11.5px; line-height: 1.8; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.submit, .ghost { min-height: 42px; padding: 0 20px; border-radius: 5px; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.submit { border: 1px solid #237ec1; background: linear-gradient(100deg, #1265cd, #2a4d78); color: #fff; }
+.submit:hover { filter: brightness(1.14); }
+.ghost { border: 1px solid #497586; background: transparent; color: #aac0db; }
+.ghost:hover { border-color: #719acd; color: #fff; }
+
+/* —— 登录弹窗 —— */
+.dialog { width: 470px; max-width: calc(100vw - 64px); padding: 0; color: #eaf2f7; background: transparent; border: 0; }
+.dialog::backdrop { background: #01060dbf; backdrop-filter: blur(5px); }
+.dialogBody { position: relative; }
+.dialog .panel { border-color: #7ca8b94d; box-shadow: 0 30px 150px #0009; }
+.close { position: absolute; right: 17px; top: 17px; z-index: 2; border: 0; background: none; padding: 5px; display: flex; color: #95aebb; }
+.close:hover { color: #fff; }
+
+@media (max-width: 1279px) {
+  .lockedShell { padding-inline: 40px; }
+  .lockedGrid { grid-template-columns: minmax(0, 1fr); }
+  .lockedHead h1 { font-size: 34px; }
+}

@@ -3,6 +3,10 @@ import type { FormEvent, ReactNode } from 'react'
 import { marketData, regions } from './content'
 import type { Language, Region } from './content'
 import type { ModalState } from './types'
+import type { Account } from './AuthGate'
+import { useWallet, applyPayOrder, applyTopup, newId, money as walletMoney } from './wallet/store'
+import type { Rail } from './wallet/store'
+import { TopupFlow } from './wallet/Topup'
 import { offerPrice, findModel, templates, rentalModels, recommendationRank, defaultFilters, filterOffers } from './rentalModel'
 import type { Offer, RentalMode, RentalFilters } from './rentalModel'
 import Icon from './Icons'
@@ -40,14 +44,92 @@ function Range({label,value,min=0,max,step=1,unit='',change,hint}:{label:string;
  return <div className={s.range}><div><span>{label}</span><NumberValue label={label} value={value} min={min} max={max} step={step} unit={unit} change={change}/></div><input aria-label={`${label} ${unit} ${'slider'}`} type="range" min={min} max={max} step={step} value={value} onChange={event=>change(Number(event.target.value))}/>{hint&&<small>{hint}</small>}</div>
 }
 
-function RentalConfig({offer,lang,mode,disk,template,onClose,open}:{offer:Offer;lang:Language;mode:RentalMode;disk:number;volume:number;template:string;onClose:()=>void;open:(action:ModalState)=>void}){
+/* —— 确认页支付段（余额校验 + 平台扣款 + 订单取消）——
+   校验与扣款只看所选的单个池，不做两池合计；余额不足时说明两池各差多少，
+   充值后回到本单继续。订单取消的退款回原扣款池（见 wallet/store）。 */
+const payWords={
+  zh:{machineCode:'设备',payRail:'扣款池',balance:'余额',shortOf:'还差',payNow:'确认支付',insufficient:'余额不足',insufficientLead:'两池各差多少；充值后回到本单继续。',topupFiat:'充值法币池',topupCrypto:'充值链上池',doneTitle:'支付完成 · 已开通',doneLead:(v:string,p:string)=>`$${v} 已从${p}扣除，实例已自动开通并进入控制台。`,doneBalance:'扣款后余额',goConsole:'前往控制台管理',stay:'留在本页',reback:'返回修改',gate:'余额支付需登录后使用',signIn:'登录',abnormal:'异常支付已按原链退回，未计入余额',fiatPool:'法币池',cryptoPool:'链上池'},
+  en:{machineCode:'Device',payRail:'Pay from',balance:'Balance',shortOf:'short by',payNow:'Confirm & pay',insufficient:'Insufficient balance',insufficientLead:'Each pool is checked on its own; top up and return to this order.',topupFiat:'Top up fiat pool',topupCrypto:'Top up on-chain pool',doneTitle:'Paid · Instance provisioned',doneLead:(v:string,p:string)=>`$${v} was deducted from the ${p}; the instance is live in your console.`,doneBalance:'Balance after charge',goConsole:'Manage in console',stay:'Stay here',reback:'Back to config',gate:'Sign in to pay from your balance',signIn:'Sign in',abnormal:'Abnormal payment refunded on chain, not credited',fiatPool:'fiat pool',cryptoPool:'on-chain pool'},
+}
+
+/* 官网订单跳转单：支付成功后写给控制台（同源同 tab sessionStorage 直通），
+   控制台据它在实例页自动建机（见 proto 入站承接）。字段口径对齐 proto 实例构造所需。 */
+const SITE_ORDER_KEY='mk-site-order'
+type SiteOrderHandoff={
+  orderId:string;machineId:string;machine:string;
+  gpuId:string;gpuName:string;gpuMemory:string;numGpu:number;
+  hourlyPrice:number;hours:number;amount:number;pool:Rail;diskGb:number;
+  envName:string;envImage:string;envConnection:string;at:number
+}
+
+function PayPanel({email,lang,machine,offer,hours,env,diskGb,amount,onBack,onClose}:{email:string;lang:Language;machine:string;offer:Offer;hours:number;env:{name:string;image:string;connection:string};diskGb:number;amount:number;onBack:()=>void;onClose:()=>void}){
+ const t=payWords[lang],railText=lang==='zh'?{fiat:'法币池',crypto:'链上池'}:{fiat:'fiat pool',crypto:'on-chain pool'},money=walletMoney
+ const {wallet,setWallet}=useWallet(email)
+ const [rail,setRail]=useState<Rail>(()=>wallet.balance.fiat>=amount?'fiat':wallet.balance.crypto>=amount?'crypto':'fiat')
+ const [stage,setStage]=useState<'review'|'done'>('review')
+ const [orderId,setOrderId]=useState('')
+ const [topup,setTopup]=useState<Rail|null>(null)
+ const [notice,setNotice]=useState('')
+ const balance=wallet.balance[rail],canPay=balance>=amount-1e-9
+ const pay=()=>{
+  if(!canPay)return
+  const id=newId('o')
+  setWallet(prev=>applyPayOrder(prev,machine,rail,amount,id,hours).state)
+  setOrderId(id);setStage('done')
+ }
+ const goConsole=()=>{
+  const handoff:SiteOrderHandoff={orderId,machineId:offer.machineIds[0],machine:offer.machineIds[0],
+   gpuId:offer.gpu.id,gpuName:offer.gpu.name,gpuMemory:offer.gpu.memory,numGpu:offer.count,
+   hourlyPrice:offer.hourlyPrice,hours,amount:+amount.toFixed(2),pool:rail,diskGb,
+   envName:env.name,envImage:env.image,envConnection:env.connection,at:Date.now()}
+  try{sessionStorage.setItem(SITE_ORDER_KEY,JSON.stringify(handoff))}catch{/* 隐私模式下跳转不带单，控制台空手落实例页 */}
+  location.href='../proto/index.html?from=site&view=instances'
+ }
+ if(stage==='done')return <>
+  <p className={s.payDoneTitle}>{t.doneTitle}</p>
+  <p className={s.payDoneLead}>{t.doneLead(amount.toFixed(2),railText[rail])}</p>
+  <div className={s.payRow}><span>{t.machineCode}</span><b>{machine}</b></div>
+  <div className={s.payRow}><span>{t.doneBalance}</span><b>{money(wallet.balance[rail])}</b></div>
+  <div className={s.configActions}><button className={s.secondary} onClick={onClose}>{t.stay}</button><button className={s.primary} onClick={goConsole}>{t.goConsole}</button></div>
+ </>
+ return <>
+  <span className={s.payLabel}>{t.payRail}</span>
+  <div className={s.payRailRow}>{(['fiat','crypto'] as Rail[]).map(key=>{
+   const short=+(amount-wallet.balance[key]).toFixed(2)
+   return <button key={key} type="button" className={s.payRailBtn} aria-pressed={rail===key} data-short={wallet.balance[key]<amount-1e-9} onClick={()=>setRail(key)}>
+    <b>{key==='fiat'?t.fiatPool:t.cryptoPool}</b>
+    <span>{t.balance} {money(wallet.balance[key])}</span>
+    {wallet.balance[key]<amount-1e-9&&<em>{t.shortOf} {money(Math.abs(short))}</em>}
+   </button>})}
+  </div>
+  {canPay
+   ? <div className={s.configActions}><button className={s.secondary} onClick={onBack}>{t.reback}</button><button className={s.primary} onClick={pay}>{t.payNow} {money(amount)}</button></div>
+   : <>
+     <p className={s.payInsufficient} role="alert">{t.insufficient} · {t.insufficientLead}</p>
+     <div className={s.configActions}>
+      <button className={s.secondary} onClick={onBack}>{t.reback}</button>
+      <button className={s.secondary} onClick={()=>setTopup(rail)}>{rail==='fiat'?t.topupFiat:t.topupCrypto}</button>
+      <button className={s.primary} disabled>{t.payNow} {money(amount)}</button>
+     </div>
+   </>}
+  {notice&&<p className={s.payNotice}>{notice}</p>}
+  {topup!==null&&<TopupFlow lang={lang} rail={topup}
+   onClose={()=>setTopup(null)}
+   onCredit={(key,value)=>{setWallet(prev=>applyTopup(prev,key,value));setTopup(null)}}
+   onRefund={()=>{setNotice(t.abnormal);setTopup(null)}}/>}
+ </>
+}
+
+function RentalConfig({offer,lang,mode,disk,template,onClose,account,requireSignIn}:{offer:Offer;lang:Language;mode:RentalMode;disk:number;template:string;onClose:()=>void;account:Account|null;requireSignIn:()=>void}){
  const t=words[lang],ref=useRef<HTMLDialogElement>(null),[hours,setHours]=useState(1),[storage,setStorage]=useState(Math.min(disk,Math.floor(offer.disk))),[environment,setEnvironment]=useState(template||templates.find(item=>item.minVram<=parseInt(offer.gpu.memory)&&item.minCuda<=offer.cuda)!.id),[review,setReview]=useState(false)
  useEffect(()=>{ref.current?.showModal()},[])
  const env=templates.find(item=>item.id===environment)!,compute=offerPrice(offer,mode)*hours
  const title=useRef<HTMLHeadingElement>(null)
  const submit=(event:FormEvent)=>{event.preventDefault();setReview(true);requestAnimationFrame(()=>title.current?.focus())}
  return <dialog ref={ref} className={s.configDialog} onCancel={onClose} onClose={onClose} onClick={event=>{if(event.target===event.currentTarget)onClose()}} aria-labelledby="rental-config-title"><button className={s.close} aria-label={t.close} onClick={onClose}><Icon name="close" size={21}/></button><h2 id="rental-config-title" ref={title} tabIndex={-1}>{review?t.summary:t.config}</h2><div className={s.configResource}><div><strong>{offer.count} × {offer.gpu.name}</strong><small>{offer.machineIds[0]} · {regions.find(item=>item.id===offer.region)![lang]}</small></div><b>{money(offer.hourlyPrice)}<small>{t.unit}</small></b></div>
- {review?<><dl className={s.review}><div><dt>{t.machineCode}</dt><dd>{offer.machineIds[0]}</dd></div><div><dt>{t.env}</dt><dd>{env.name} · {env.connection}</dd></div><div><dt>{t.hours}</dt><dd>{hours}</dd></div><div><dt>{t.container}</dt><dd>{storage} GB</dd></div><div><dt>{t.compute}</dt><dd>{money(compute)}</dd></div></dl><h3>{t.details}</h3><p className={s.muted}>{lang==='zh'?'配置已就绪。开通、账户余额与资源可用性由销售顾问对接确认。':'Configuration ready. Provisioning, account credit, and availability are confirmed with our sales team.'}</p><div className={s.configActions}><button className={s.primary} onClick={()=>open({type:'inquiry'})}>{lang==='zh'?'联系销售开通':'Contact sales to provision'}<Icon name="arrow" size={16}/></button><button className={s.secondary} onClick={()=>setReview(false)}>{t.back}</button></div></>:<form onSubmit={submit}><label className={s.fullField}>{t.env}<select value={environment} onChange={e=>setEnvironment(e.target.value)}>{templates.filter(item=>item.minVram<=parseInt(offer.gpu.memory)&&item.minCuda<=offer.cuda).map(item=><option key={item.id} value={item.id}>{item.name} · {item.connection}</option>)}</select></label><div className={s.fields}>{[{label:t.hours,value:hours,set:setHours,min:1,max:offer.days*24},{label:`${t.container} (GB)`,value:storage,set:setStorage,min:32,max:Math.floor(offer.disk)}].map(field=><label key={field.label}>{field.label}<input type="number" required min={field.min} max={field.max} value={field.value} onChange={e=>field.set(Number(e.target.value))}/></label>)}</div><div className={s.fees}><div><span>{t.compute} · {money(offer.hourlyPrice)} × {hours} h</span><strong>{money(compute)}</strong></div></div><p className={s.costNote}>{lang==='zh'?'存储与网络费用按所选资源另行确认':'Storage and bandwidth charges are confirmed for the selected resource'}</p><button className={s.primary}>{t.review}<Icon name="arrow" size={16}/></button></form>}</dialog>
+ {review?<><dl className={s.review}><div><dt>{t.machineCode}</dt><dd>{offer.machineIds[0]}</dd></div><div><dt>{t.env}</dt><dd>{env.name} · {env.connection}</dd></div><div><dt>{t.hours}</dt><dd>{hours}</dd></div><div><dt>{t.container}</dt><dd>{storage} GB</dd></div><div><dt>{t.compute}</dt><dd>{money(compute)}</dd></div></dl>{account
+ ?<PayPanel key={account.email} email={account.email} lang={lang} machine={`${offer.machineIds[0]} · ${offer.gpu.name} ×${offer.count}`} offer={offer} hours={hours} env={env} diskGb={storage} amount={+compute.toFixed(2)} onBack={()=>setReview(false)} onClose={onClose}/>
+ :<><p className={s.muted}>{payWords[lang].gate}</p><div className={s.configActions}><button className={s.primary} onClick={requireSignIn}>{payWords[lang].signIn}</button><button className={s.secondary} onClick={()=>setReview(false)}>{t.back}</button></div></>}</>:<form onSubmit={submit}><label className={s.fullField}>{t.env}<select value={environment} onChange={e=>setEnvironment(e.target.value)}>{templates.filter(item=>item.minVram<=parseInt(offer.gpu.memory)&&item.minCuda<=offer.cuda).map(item=><option key={item.id} value={item.id}>{item.name} · {item.connection}</option>)}</select></label><div className={s.fields}>{[{label:t.hours,value:hours,set:setHours,min:1,max:offer.days*24},{label:`${t.container} (GB)`,value:storage,set:setStorage,min:32,max:Math.floor(offer.disk)}].map(field=><label key={field.label}>{field.label}<input type="number" required min={field.min} max={field.max} value={field.value} onChange={e=>field.set(Number(e.target.value))}/></label>)}</div><div className={s.fees}><div><span>{t.compute} · {money(offer.hourlyPrice)} × {hours} h</span><strong>{money(compute)}</strong></div></div><p className={s.costNote}>{lang==='zh'?'存储与网络费用按所选资源另行确认':'Storage and bandwidth charges are confirmed for the selected resource'}</p><button className={s.primary}>{t.review}<Icon name="arrow" size={16}/></button></form>}</dialog>
 }
 
 function OfferRow({offer,lang,mode,rent}:{offer:Offer;lang:Language;mode:RentalMode;rent:()=>void}) {
@@ -151,7 +233,7 @@ function OfferRow({offer,lang,mode,rent}:{offer:Offer;lang:Language;mode:RentalM
  </article>
 }
 
-export default function RentalPage({lang,query='',initialRegion='all',open}:{lang:Language;query?:string;initialRegion?:Region;open:(action:ModalState)=>void}){
+export default function RentalPage({lang,query='',initialRegion='all',open,account,requireSignIn}:{lang:Language;query?:string;initialRegion?:Region;open:(action:ModalState)=>void;account:Account|null;requireSignIn:()=>void}){
  const countStops = [0,1,2,4,8,9]
  const [filtersScrolling,setFiltersScrolling]=useState(false)
  const scrollEnd=useRef<ReturnType<typeof setTimeout>|null>(null)
@@ -193,6 +275,6 @@ export default function RentalPage({lang,query='',initialRegion='all',open}:{lan
   {rows.length>0&&<div className={s.offerList} role="list" aria-label={t.resultsTitle}>{rows.slice(0,limit).map(offer=><OfferRow key={offer.id} offer={offer} lang={lang} mode={mode} rent={()=>setSelected(offer)}/>)}</div>}{!rows.length&&<div className={s.empty}><h2>{t.empty}</h2><p>{t.emptyBody}</p><button className={s.secondary} onClick={reset}>{t.reset}</button></div>}{rows.length>limit&&<button className={s.loadMore} onClick={()=>setLimit(value=>value+20)}>{t.more}<Icon name="chevron" size={14}/></button>}
  </section></div>}</div>
  <dialog ref={chooser} className={s.templateDialog} onClose={()=>setTemplateOpen(false)} onClick={event=>{if(event.target===event.currentTarget)setTemplateOpen(false)}} aria-labelledby="template-title"><button className={s.close} onClick={()=>setTemplateOpen(false)} aria-label={t.close}><Icon name="close" size={20}/></button><h2 id="template-title">{t.template}</h2><div className={s.templateGrid}>{templates.map(item=><button key={item.id} aria-pressed={template===item.id} onClick={()=>{setTemplate(item.id);setTemplateOpen(false);setFilterOpen(false);setPanel('search');setLimit(20)}}><h3>{item.name}</h3><p>{item.description[lang==='zh'?0:1]}</p><small>{item.connection}</small><span>{item.minVram?`≥ ${item.minVram} GB`:t.any} · {item.minCuda?`CUDA ≥ ${item.minCuda}`:'Ubuntu 24.04'}</span></button>)}</div></dialog>
- {selected&&<RentalConfig key={selected.id} offer={selected} lang={lang} mode={mode} disk={filters.disk} volume={filters.volume} template={template} onClose={()=>setSelected(null)} open={open}/>}
+ {selected&&<RentalConfig key={selected.id} offer={selected} lang={lang} mode={mode} disk={filters.disk} template={template} onClose={()=>setSelected(null)} account={account} requireSignIn={requireSignIn}/>}
  </div>
 }
