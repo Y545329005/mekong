@@ -1,0 +1,124 @@
+/* 实例页（资产运维视图）：白底语言与资金页一致（#fff / #17212c / #34475a /
+   #627386 / #315f90 / #dce2e8、#e1e6ec）。页面骨架复用 WalletPage.module.css，
+   这里只承载实例卡：状态 pill、规格行、stat 列、进度条、操作行、警示条。 */
+
+.cards { display: grid; gap: 22px; margin-top: 0; }
+
+/* —— 一行工具区：标题 + 统计 + 筛选 + 紧凑分页 ——
+   页面只有一个标题（不再有「实例」与「实例列表」两层）；吸顶：长列表翻页与
+   切筛选不必滚回顶部，滚动时一直可用。站 header 固定 66px，故 top:66px。 */
+.headRow { position: sticky; top: 66px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  margin: 0 0 20px; padding: 16px 0 12px; background: #fff; border-bottom: 1px solid #edf0f4; }
+.title { margin: 0; font-size: 28px; font-weight: 500; letter-spacing: -.02em; color: #17212c; }
+.summary { margin: 0; font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 12px; color: #627386; }
+.toolbar { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+.toolbar > div[role=group] { margin-left: 0; }
+/* 筛选标签统一两字，等宽才不跳动 */
+.chip { min-width: 52px; }
+
+.pager { display: inline-flex; align-items: center; gap: 2px; }
+.pagerBtn { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 1px solid #dce2e8; border-radius: 5px; background: #fff; color: #34475a; cursor: pointer; }
+.pagerBtn:hover:not(:disabled) { border-color: #315f90; color: #17212c; }
+.pagerBtn:disabled { opacity: .35; cursor: not-allowed; }
+.pagerBtn:focus-visible { outline: 2px solid #315f90; outline-offset: 1px; }
+.pagerBtn:first-of-type > svg { transform: rotate(90deg); }
+.pagerBtn:last-of-type > svg { transform: rotate(-90deg); }
+.pagerPos { padding: 0 5px; font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 11.5px; color: #627386; }
+
+.card { border: 1px solid #d3dbe4; border-radius: 14px; padding: 24px 28px 20px; background: #fff; }
+/* 已销毁：记录保留但不参与当前操作，整体压暗一档 */
+.card[data-destroyed] { border-color: #e1e6ec; background: #fbfcfd; }
+
+/* —— 标题行：状态 pill + 可编辑名称 + SKU/欠费徽章 —— */
+.cardHead { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+.statusPill { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid #e1e6ec; border-radius: 999px; background: #f7f9fa; color: #627386; font-size: 11.5px; font-weight: 500; white-space: nowrap; }
+.statusPill[data-tone=ok] { border-color: #bfe0cf; background: #f2faf5; color: #17683e; }
+.statusPill[data-tone=info] { border-color: #c3d5e8; background: #f0f5fa; color: #315f90; }
+.statusPill[data-tone=warn] { border-color: #e6d3ac; background: #fbf6ea; color: #8a5d14; }
+.statusPill[data-tone=bad] { border-color: #e8c4bf; background: #fcf2f0; color: #a83a32; }
+
+.pulseDot { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: currentColor; animation: instPulse 1.6s ease-in-out infinite; }
+@keyframes instPulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .pulseDot { animation: none; } }
+
+.name { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 500; color: #17212c; cursor: text; }
+.nameHint { margin-left: 6px; font-size: 11px; font-weight: 400; color: #627386; }
+.nameInput { min-width: 0; width: 220px; padding: 2px 8px; border: 1px solid #315f90; border-radius: 6px; background: #fff; font-size: 14px; font-weight: 500; color: #17212c; }
+.nameInput:focus { outline: 2px solid rgba(49, 95, 144, .35); outline-offset: 1px; }
+
+.skuTag { flex: 0 0 auto; padding: 2px 8px; border-radius: 4px; background: #f0f5fa; color: #315f90; font-size: 10.5px; font-weight: 500; white-space: nowrap; }
+.skuTag[data-tone=bad] { background: #fcf2f0; color: #a83a32; }
+.skuTag[data-tone=muted] { background: #f3f5f7; color: #627386; }
+
+/* —— 规格行 —— */
+.specRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 10px; font-size: 12.5px; color: #34475a; }
+.specImage { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: #627386; }
+
+.divider { margin-top: 16px; border-top: 1px solid #e9edf1; }
+
+/* —— stat 四列（已销毁三列：时价 / 已花费 / 使用时段，压在历史语义上）—— */
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 24px; margin-top: 16px; }
+.statsQuiet { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; margin-top: 16px; }
+.statSub { margin-top: 2px; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: #627386; }
+.statLabel { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #627386; }
+.statValue { margin-top: 4px; font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 500; color: #17212c; }
+.statValue[data-tone=ok] { color: #17683e; }
+/* 完整时间戳（带年份）比金额长，降一档字号避免挤压右侧 */
+.statValue[data-dense] { font-size: 13px; }
+.ipBtn { margin-top: 4px; padding: 0; border: 0; background: none; text-align: left; font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 500; color: #17212c; cursor: pointer; }
+.ipBtn:hover { color: #315f90; }
+.ipBtn:focus-visible { outline: 2px solid #315f90; outline-offset: 2px; border-radius: 2px; }
+
+.reservedEcho { margin-top: 16px; font-size: 12.5px; color: #34475a; }
+
+/* —— 订单进度条 —— */
+.bar { margin-top: 14px; }
+.barTrack { height: 6px; overflow: hidden; border-radius: 999px; background: #eef2f6; }
+.barFill { height: 100%; border-radius: 999px; background: #315f90; transition: width .5s; }
+.barFill[data-warn=true] { background: #d9a441; }
+.barText { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 7px; font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 11.5px; color: #34475a; }
+.barText[data-warn=true] { color: #8a5d14; }
+.barMuted { color: #627386; }
+.barNote { margin: 5px 0 0; font-size: 11px; color: #8a5d14; }
+
+/* —— 操作行 —— */
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.actBtn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border: 1px solid #dce2e8; border-radius: 6px; background: #fff; color: #34475a; font-size: 12px; text-decoration: none; cursor: pointer; }
+.actBtn:hover:not(:disabled) { border-color: #315f90; color: #17212c; }
+.actBtn:focus-visible { outline: 2px solid #315f90; outline-offset: 1px; }
+.actBtn:disabled { opacity: .45; cursor: not-allowed; }
+/* 主操作（打开工作区）：卡片里唯一高频动作，实底让它在浏览路径上先被看到 */
+.actBtn[data-primary] { border-color: #315f90; background: #315f90; color: #fff; }
+.actBtn[data-primary]:hover { border-color: #27507c; background: #27507c; color: #fff; }
+.actBtn[data-kind=start] { border-color: #bfe0cf; background: #f2faf5; color: #17683e; }
+.actBtn[data-kind=start]:hover:not(:disabled) { border-color: #17683e; }
+.actBtn[data-kind=danger] { border-color: #e8c4bf; color: #a83a32; }
+.actBtn[data-kind=danger]:hover:not(:disabled) { border-color: #a83a32; background: #fcf2f0; color: #a83a32; }
+
+/* —— 销毁二次确认条 —— */
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 16px; padding: 10px 14px; border: 1px solid #e8c4bf; border-radius: 8px; background: #fcf2f0; color: #a83a32; font-size: 12px; line-height: 1.6; }
+.confirmBtn { flex: 0 0 auto; padding: 4px 12px; border: 0; border-radius: 5px; background: #a83a32; color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; }
+.confirmBtn:hover { background: #8f2f28; }
+.confirmBtn:focus-visible { outline: 2px solid #a83a32; outline-offset: 2px; }
+.confirmCancel { flex: 0 0 auto; padding: 4px 12px; border: 1px solid #dce2e8; border-radius: 5px; background: #fff; color: #34475a; font-size: 12px; cursor: pointer; }
+.confirmCancel:hover { border-color: #315f90; }
+
+/* —— 警示条 —— */
+.alert { margin-top: 14px; padding: 10px 14px; border-radius: 8px; font-size: 12px; line-height: 1.7; }
+.alert[data-tone=warn] { border: 1px solid #e6d3ac; background: #fbf6ea; color: #8a5d14; }
+.alert[data-tone=bad] { border: 1px solid #e8c4bf; background: #fcf2f0; color: #a83a32; }
+
+/* —— 弹窗内容（外壳复用 wallet/ui.module.css 的 Overlay）—— */
+.sshCmd { margin: 0 0 12px; padding: 12px 14px; border: 1px solid #dce2e8; border-radius: 8px; background: #f7f9fa; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 13px; color: #17683e; overflow-x: auto; }
+.sshNotes { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.9; color: #627386; }
+.copyBtn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border: 1px solid #dce2e8; border-radius: 6px; background: #fff; color: #315f90; font-size: 12px; cursor: pointer; }
+.copyBtn:hover { border-color: #315f90; }
+.copyBtn:focus-visible { outline: 2px solid #315f90; outline-offset: 1px; }
+.logLines { margin: 0; max-height: 280px; overflow-y: auto; padding: 12px 14px; border: 1px solid #dce2e8; border-radius: 8px; background: #f7f9fa; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; line-height: 1.9; color: #627386; }
+
+@media (max-width: 720px) {
+  .card { padding: 20px 18px 16px; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nameInput { width: 100%; }
+}

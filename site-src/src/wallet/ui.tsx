@@ -37,3 +37,29 @@ export function Overlay({ lang, children, onClose, label }: { lang: Language; ch
 export function Badge({ tone, children }: { tone: 'ok' | 'info' | 'warn' | 'bad' | 'muted'; children: ReactNode }) {
   return <span className={u.badge} data-tone={tone}>{children}</span>
 }
+
+/* 页码工具条（资金页 / 收益页共用）：上一页 / 第 x / y 页 / 下一页 + 总条数 */
+export type PagerCopy = {
+  total: (count: number) => string
+  prev: string
+  next: string
+  pageOf: (page: number, pages: number) => string
+  pagination: string
+}
+
+export function PageNav({ page, pages, count, t, onPage }: {
+  page: number
+  pages: number
+  count?: number
+  t: PagerCopy
+  onPage: (next: number) => void
+}) {
+  return <div className={u.pager}>
+    {count != null && <span className={u.pagerCount}>{t.total(count)}</span>}
+    <nav className={u.pagerNav} aria-label={t.pagination}>
+      <button type="button" className={u.pagerBtn} disabled={page <= 1} onClick={() => onPage(page - 1)}>{t.prev}</button>
+      <span className={u.pagerPos} aria-live="polite">{t.pageOf(page, pages)}</span>
+      <button type="button" className={u.pagerBtn} disabled={page >= pages} onClick={() => onPage(page + 1)}>{t.next}</button>
+    </nav>
+  </div>
+}

@@ -1,4 +1,4 @@
-/* 资金与结算 · 租户页 · 白底（复用算力市场白区色板：
+/* 资金 · 租户页 · 白底（复用算力市场白区色板：
    #fff / #17212c / #34475a / #627386 / #315f90 / #dce2e8、#e1e6ec） */
 
 .page { min-height: 100svh; padding: 118px 0 96px; color: #34475a; background: #fff; }
@@ -7,28 +7,32 @@
 /* —— 页头 —— */
 .head h1 { margin: 0; font-size: 40px; line-height: 1.25; font-weight: 500; letter-spacing: -.035em; color: #17212c; }
 .lead { margin: 16px 0 0; max-width: 74ch; color: #34475a; font-size: 13.5px; line-height: 1.95; }
-.accountLine { display: inline-flex; align-items: baseline; gap: 8px; justify-self: start; margin: 16px 0 0; padding: 5px 10px; border: 1px solid #dce2e8; border-radius: 6px; color: #627386; font-size: 11.5px; }
-.accountLine b { color: #17212c; font-weight: 500; font-family: "SF Mono", Menlo, Consolas, monospace; }
 
-/* —— 两池并列（不设合计） —— */
-.pools { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-top: 34px; }
-.pool { border: 1px solid #dce2e8; border-radius: 14px; padding: 24px 26px 26px; background: #fff; }
+/* —— 单余额卡：金额为左主角，退回/充值为右 —— */
+.pools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 34px; }
+.pool { border: 1px solid #dce2e8; border-radius: 14px; padding: 26px 30px 28px; background: #fff; }
 .poolHead { display: flex; align-items: center; gap: 10px; }
 .poolMark { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #3f74b3; box-shadow: 0 0 0 4px rgba(63, 116, 179, .12); }
-.pool[data-rail=crypto] .poolMark { background: #3e9182; box-shadow: 0 0 0 4px rgba(62, 145, 130, .12); }
 .poolIdentity { display: grid; gap: 3px; min-width: 0; }
 .poolVendor { font-size: 18px; font-weight: 500; letter-spacing: -.015em; color: #17212c; }
 .poolRole { color: #627386; font-size: 11px; }
-.poolTag { margin-left: auto; padding: 4px 9px; border: 1px solid #dce2e8; border-radius: 4px; color: #627386; font-size: 10.5px; white-space: nowrap; }
-.poolFigure { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 22px 0 20px; }
-.poolFigure span { color: #627386; font-size: 10.5px; }
-.poolFigure strong { font: 500 30px/1.2 "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: -.02em; color: #17212c; }
+.poolFoot { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 24px; }
+.poolActions { display: flex; align-items: center; gap: 8px; }
+.poolNote { margin: 10px 0 0; color: #627386; font-size: 11px; line-height: 1.6; }
+.poolAmount { font: 500 36px/1.15 "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: -.02em; color: #17212c; }
 
 /* —— 区块与表格 —— */
 .section { margin-top: 44px; }
 .sectionHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px; margin-bottom: 12px; }
 .sectionHead h2 { margin: 0; font-size: 17px; font-weight: 500; letter-spacing: -.01em; color: #17212c; }
 .sectionHead p { margin: 0; color: #627386; font-size: 11.5px; }
+
+/* 流水类型筛选：与分页并存（找账入口） */
+.filters { display: inline-flex; gap: 4px; margin-left: auto; }
+.filter { min-height: 30px; padding: 0 11px; border: 1px solid #dce2e8; border-radius: 6px; background: #fff; color: #627386; font-size: 11.5px; cursor: pointer; }
+.filter:hover { border-color: #315f90; }
+.filter[data-active=true] { border-color: #315f90; background: #eef3f8; color: #17212c; font-weight: 500; }
+
 .empty { margin: 0; padding: 24px; border: 1px dashed #dce2e8; border-radius: 12px; color: #627386; font-size: 12.5px; text-align: center; }
 
 .tableWrap { overflow-x: auto; border: 1px solid #e1e6ec; border-radius: 12px; background: #fff; }
@@ -38,13 +42,50 @@
 .table th { padding: 13px 18px; color: #627386; font-size: 10.5px; font-weight: 400; text-align: left; white-space: nowrap; border-bottom: 1px solid #e1e6ec; }
 .table td { padding: 13px 18px; border-bottom: 1px solid #e9edf1; vertical-align: middle; color: #34475a; }
 .table tr:last-child td { border-bottom: 0; }
-.right { text-align: right; }
+/* 提特异性：.table th 自带 text-align:left（0,1,1），单类 .right（0,1,0）压不过它 */
+.table .right { text-align: right; }
 .machine { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11.5px; color: #17212c; }
 .descWrap { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.poolChip { display: inline-flex; align-items: center; gap: 6px; color: #34475a; font-size: 11px; white-space: nowrap; }
-.poolChip::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #3f74b3; }
-.poolChip[data-rail=crypto]::before { background: #3e9182; }
 .descLabel { color: #627386; font-size: 11px; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.advanceRow { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+
+/* —— 消费构成（近 30 天 · 段结算口径）—— */
+.asof { color: #315f90; font-size: 11.5px; font-weight: 500; }
+.usageBody { display: grid; gap: 14px; border: 1px solid #e1e6ec; border-radius: 12px; padding: 20px 24px 16px; background: #fff; }
+.usageBar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: #eef1f5; }
+.usageBar span { display: block; height: 100%; }
+.usageBar [data-k="gpu"], .dot[data-k="gpu"] { background: #315f90; }
+.usageBar [data-k="bw"], .dot[data-k="bw"] { background: #8aa5c4; }
+.usageBar [data-k="storage"], .dot[data-k="storage"] { background: #b45309; }
+.usageLegend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 22px; }
+.usageLegend li { display: flex; align-items: baseline; gap: 7px; color: #34475a; font-size: 12px; }
+.usageLegend b { font-family: "SF Mono", Menlo, Consolas, monospace; font-weight: 500; color: #17212c; }
+.legendPct { color: #627386; font-size: 11px; }
+.legendTotal { margin-left: auto; color: #627386; }
+.legendTotal b { font-size: 13px; }
+.dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 2px; align-self: center; }
+.rollingNote { margin: 0; color: #627386; font-size: 11px; }
+/* —— 流水用量依据（展开凭证面板）—— */
+.proofBtn { display: inline-flex; align-items: center; gap: 5px; border: 0; background: none; padding: 2px 4px; color: #315f90; font-size: 11px; cursor: pointer; }
+.proofBtn::after { content: ''; border: 4px solid transparent; border-top-color: currentColor; margin-top: 3px; transition: transform .15s ease-out; }
+.proofBtn:hover { color: #17212c; }
+.proofBtn[aria-expanded="true"] { color: #17212c; }
+.proofBtn[aria-expanded="true"]::after { transform: rotate(180deg); }
+.proofRow td { background: #f7f9fb; }
+.proofPanel { display: grid; gap: 12px; font-size: 11.5px; }
+.proofGrid { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+.proofGrid > span { display: grid; gap: 2px; }
+.proofLabel { color: #627386; font-size: 10.5px; }
+.proofGrid b { font-family: "SF Mono", Menlo, Consolas, monospace; font-weight: 500; color: #17212c; overflow-wrap: anywhere; }
+.proofSegsTitle { margin: 0 0 6px; color: #627386; font-size: 10.5px; }
+.segTable { width: 100%; border-collapse: collapse; font-size: 11px; }
+.segTable th { padding: 6px 10px; color: #627386; font-weight: 400; text-align: left; border-bottom: 1px solid #e1e6ec; }
+.segTable td { padding: 6px 10px; color: #34475a; border-bottom: 1px solid #eef1f5; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.segTable tr:last-child td { border-bottom: 0; }
+.segPill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-family: inherit; font-size: 10.5px; }
+.segPill[data-run="true"] { background: #eef3f8; color: #315f90; }
+.segPill[data-run="false"] { background: #eceff2; color: #627386; }
+.proofRef { margin: 0; color: #627386; font-size: 10.5px; font-family: "SF Mono", Menlo, Consolas, monospace; overflow-wrap: anywhere; }
 
 @media (max-width: 1279px) {
   .shell { padding-inline: 40px; }
@@ -52,5 +93,5 @@
 }
 @media (max-width: 900px) {
   .lead { font-size: 13px; }
-  .pools { grid-template-columns: 1fr; }
+  .poolFoot { flex-wrap: wrap; align-items: flex-start; }
 }

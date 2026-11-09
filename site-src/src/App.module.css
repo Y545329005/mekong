@@ -7,17 +7,26 @@
 .background { position:absolute;inset:0;z-index:-1;overflow:hidden;background:#050c13; }
 .background img,.background video { position:absolute;left:var(--motion-left,0);top:var(--motion-top,0);display:block;width:var(--motion-width,100%);height:var(--motion-height,100%);max-width:none; }
 @media (prefers-reduced-motion:reduce) { .background video { display:none; } }
-.header { position: fixed; left: 0; right: 0; top: 0; height: 78px; background: #03070b83; z-index: 10; border-bottom: 1px solid #ffffff07; transition: background .2s; }
+.header { position: fixed; left: 0; right: 0; top: 0; height: 66px; background: #03070b83; z-index: 10; border-bottom: 1px solid #ffffff07; transition: background .2s; }
 .headerInner { max-width: 1408px; margin-inline: auto; padding: 0 64px; height: 100%; display: flex; align-items: center; gap: 35px; }
 .logo { flex: 0 0 142px; display: flex; align-items: center; }.logo img { display: block; width: 142px; height: auto; }
 .navigation { display: flex; align-items: center; gap: 26px; height: 100%; }.navItem { position: relative; height: 100%; display: flex; align-items: center; }
 .navItem > button { display: flex; align-items: center; gap: 5px; white-space: nowrap; color:#fff; font-size: 13px; font-weight: 500; padding: 25px 0; background: none; border: 0; transition: color .16s; }.navItem > button > svg { color: #7b8796; }.navItem > button:hover,.navItem > button[aria-expanded=true] { color: #fff; }
 .dropdown { position: absolute; left: -18px; top: 65px; min-width: 198px; padding: 10px; border: 1px solid #ffffff20; border-radius: 8px; background: #07131ff5; box-shadow: 0 18px 45px #0006; }.dropdown button { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 13px 11px; background: transparent; border: 0; width: 100%; color: #d3e0e8; font-size: 12px; text-align: left; border-radius: 4px; white-space: nowrap; }.dropdown button:hover { color: #6c97cb; background: #ffffff08; }
 .headerActions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
-.accountBox { display: inline-flex; align-items: center; gap: 8px; max-width: 230px; }
-.accountEmail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #a9c2dc; font-size: 11.5px; }
-.accountSignOut { border: 0; background: none; padding: 6px 2px; color: var(--copy-secondary); font-size: 11px; white-space: nowrap; }
-.accountSignOut:hover { color: white; }.language { display: inline-flex; align-items: center; gap: 6px; padding: 10px 3px; background: none; border: 0; color:var(--copy-secondary); font-size: 11px; margin-right: 5px; }
+.language { display: inline-flex; align-items: center; gap: 6px; padding: 10px 3px; background: none; border: 0; color:var(--copy-secondary); font-size: 11px; margin-left: 2px; }
+/* 账号是唯一内容可变的实体：收进菜单并给触发区固定宽度，header 一级行的元素位置就不再随邮箱长短变化。 */
+.accountMenu { position: relative; }
+.accountTrigger { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 37px; padding: 0 11px; border: 1px solid #ffffff26; border-radius: 4px; background: transparent; color: var(--copy-secondary); font-size: 11.5px; transition: border-color .16s,color .16s; }
+.accountTrigger:hover { border-color: #ffffff52; color: #fff; }
+.accountTrigger[aria-expanded=true] { border-color: #ffffff7a; color: #fff; }
+.accountTrigger > svg { flex-shrink: 0; color: currentColor; transition: transform .16s; }
+.accountTrigger[aria-expanded=true] > svg:last-child { transform: rotate(180deg); }
+.accountPanel { position: absolute; right: 0; top: calc(100% + 9px); z-index: 20; min-width: 208px; padding: 6px; border: 1px solid #ffffff1f; border-radius: 9px; background: #0a1521f7; box-shadow: 0 18px 45px #00000073; display: grid; gap: 2px; }
+.accountPanelEmail { padding: 8px 10px 10px; margin-bottom: 4px; border-bottom: 1px solid #ffffff12; color: #7b91a4; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.accountPanelRole { padding: 6px 10px 8px; color: #62778a; font-size: 10.5px; letter-spacing: .02em; }
+.accountPanel button { display: block; width: 100%; text-align: left; border: 0; background: none; color: #c6d8e6; font-size: 12px; padding: 9px 10px; border-radius: 5px; }
+.accountPanel button:hover,.accountPanel button:focus-visible { background: #ffffff0a; color: #fff; }
 .salesButton { min-height: 37px; border-radius: 4px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: transparent; font-size: 12px; font-weight: 500; white-space: nowrap; transition: background .16s,border-color .16s,color .16s; }.salesButton { color:var(--accent); border: 1px solid #618bbe70; }.salesButton:hover { background: #618bbe0a; border-color: #7699c3aa;color:var(--accent-hover); }
 .main { display:flex;flex-direction:column;height:100%;padding-top:94px; }
 .hero { display:flex;align-items:center;flex:1;min-height:0;padding:0 0 10svh; }.heroInner { width: 100%; max-width: 1408px; margin-inline: auto; padding: 0 64px; }
@@ -56,7 +65,7 @@
 
 :global([data-language=zh]) .eyebrow { display:none; }
 
-.page[data-view=home][data-scrolled=false] .header { height:94px;background:transparent;border-bottom-color:transparent; }
+.page[data-view=home][data-scrolled=false] .header { background:transparent;border-bottom-color:transparent; }
 .page[data-view=home] .heroInner { padding-inline:clamp(40px,6.5vw,96px); }
 .marketEntry { display:inline-flex;align-items:center;gap:16px;min-height:39px;padding:0 15px;color:#d4eeeb;background:#163136;border:1px solid #6585ac8a;border-radius:4px;font:500 14px "Microsoft YaHei",Arial,sans-serif;cursor:pointer;transition:background .16s,border-color .16s; }
 .marketEntry:hover { background:#21344b;border-color:#8faed5; }.marketEntry:active { background:#102b30; }.marketEntry:focus-visible { outline:2px solid #8faed5;outline-offset:4px; }
@@ -70,8 +79,7 @@
 
 /* A slimmer homepage header and open market quotes. */
 .page[data-view=home] .header { height:66px; }
-.page[data-view=home][data-scrolled=false] .header { height:82px; }
-.page[data-view=home] .main { padding-top:82px; }
+.page[data-view=home] .main { padding-top:66px; }
 .page[data-view=home] .navItem>button { padding-block:17px; }
 .page[data-view=home] .ticker { border:0;background:none; }
 .page[data-view=home] .quote { border:0; }
@@ -86,6 +94,9 @@
 
 .salesButton { color:var(--accent);border-color:#416fa777; }
 .salesButton:hover { color:var(--accent-hover);border-color:var(--accent);background:#416fa70a; }
+/* 登录后的账号入口弱化为中性描边，不与页内主操作抢权重；未登录的「登录」保留 accent —— 它是唯一的转化入口。 */
+.funds { color:#cfe0ee;border-color:#ffffff2e; }
+.funds:hover { color:#fff;border-color:#ffffff58;background:#ffffff08; }
 .marketEntry>svg { color:var(--accent);border-color:#416fa777; }
 .marketEntry:hover>svg { border-color:var(--accent-hover);background:#182942; }
 .marketTabs,.period { background:none;border:0;padding:0;gap:9px; }
@@ -129,7 +140,7 @@
  .page:is([data-view=rent],[data-view=contact-sales]) .logo,.page:is([data-view=rent],[data-view=contact-sales]) .logo img { width:100px;flex-basis:100px; }
  .page:is([data-view=rent],[data-view=contact-sales]) .navigation { gap:12px; }
  .page:is([data-view=rent],[data-view=contact-sales]) .navItem>button { font-size:11px; }
- .page:is([data-view=rent],[data-view=contact-sales]) .navItem:nth-child(3),.page:is([data-view=rent],[data-view=contact-sales]) .language { display:none; }
+ .page:is([data-view=rent],[data-view=contact-sales]) .navItem:nth-child(3) { display:none; }
  .page:is([data-view=rent],[data-view=contact-sales]) .salesButton { font-size:11px;padding-inline:10px; }
 }
 @media(max-width:420px) {
@@ -153,4 +164,5 @@
  .page[data-view=contact-sales] footer>div>div:last-child>div { margin-left:0;flex-wrap:wrap;gap:18px; }
 }
 
-@media(max-width:760px) { .headerActions { gap:7px; }.headerActions .salesButton { padding-inline:9px;font-size:11px; }.headerActions .language { display:none; } }
+@media(max-width:760px) { .headerActions { gap:7px; }.headerActions .salesButton { padding-inline:9px;font-size:11px; }.accountTrigger { padding-inline:9px; } }
+@media(max-width:420px) { .headerActions .language { display:none; } }

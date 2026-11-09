@@ -139,10 +139,10 @@ export function HomeSections({ lang, open }: Props) {
   const stepLabels=lang==='zh'?['租户','出租方']:['Renter','Provider']
   const providerCopy=lang==='zh'?{
     eyebrow:'',title:'从注册到上架，三步完成',description:'接入 GPU 设备，自行设定报价、管理订单并获得收益',cta:'上传 GPU',
-    items:[{title:'注册并认证',body:'创建账号并完成身份认证，设置收款与结算信息。'},{title:'上传设备',body:'提交 GPU、处理器、存储与网络配置，完成设备接入与资源验证。'},{title:'发布报价',body:'设置价格和可用时段，上架设备并管理订单与收益。'}],
+    items:[{title:'注册并认证',body:'创建账号，开通 Airwallex 结算账户（身份验证由通道完成）。'},{title:'上传设备',body:'提交 GPU、处理器、存储与网络配置，完成设备接入与资源验证。'},{title:'发布报价',body:'设置价格和可用时段，上架设备并管理订单与收益。'}],
   }:{
     eyebrow:'',title:'From your GPUs to the marketplace',description:'Connect your machines, publish offers, and manage orders and earnings',cta:'Upload GPUs',
-    items:[{title:'Register and verify',body:'Create an account, verify your identity, and set up payment and settlement information.'},{title:'Upload machines',body:'Submit GPU, CPU, storage, and network specifications, then complete connection and resource verification.'},{title:'Publish offers',body:'Set prices and availability, list your machines, and manage orders and earnings.'}],
+    items:[{title:'Register and verify',body:'Create an account and open an Airwallex settlement account; the channel runs identity verification.'},{title:'Upload machines',body:'Submit GPU, CPU, storage, and network specifications, then complete connection and resource verification.'},{title:'Publish offers',body:'Set prices and availability, list your machines, and manage orders and earnings.'}],
   }
   const stepCopies=[t.steps,providerCopy]
   const stepCopy=stepCopies[stepRole]

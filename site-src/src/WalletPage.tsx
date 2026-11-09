@@ -1,95 +1,187 @@
 /* ============================================================================
-   THESIS  租户资金页只回答四件事：两个池各有多少钱、怎么充进去、最近开的
-           订单在哪取消、每笔钱怎么进出。主语是两个池，不设「账户总额」，
-           不设冻结区，不建订单中心。
-   OWN-WORLD  白底，复用算力市场白区色板：#fff 底、#17212c 标题、#34475a 正文、
-           #627386 次要、#315f90 强调、#dce2e8/#e1e6ec 描边；深色 header 由
-           App 层保留（市场页同样叠法）。等宽数字，1px 冷灰分隔线。
-   STORY  订单取消：退款只回平台余额（原扣款池），不触第三方、不产生通道退款，
-           流水说明「订单取消 · 退回余额」——与充值环节的支付异常退款（原链退回）
-           是两条链路，话术严格分开。
-   FORM  余额并列 → 充值 → 最近订单（3 条，可取消）→ 流水（时间/说明/金额/该池余额）。
+   THESIS  租户资金页回答：余额多少、怎么充、花了哪些订单、钱怎么进出。
+           一个 USD 余额；银行卡与 USDT 只是入金方式，不是两个钱包。
+   OWN-WORLD  白底，复用算力市场白区色板：#fff / #17212c / #34475a / #627386 /
+           #315f90 / #dce2e8、#e1e6ec；深色 header 由 App 层保留。
+   STORY  充值入余额 → 租卡直接从余额扣款 → 未消费部分按来源退出：
+           卡充值原路退款、USDT 充值提到链上钱包。退款按支付单算额度与截止日。
+   FORM  余额卡（金额 + 充值/退回）→ 最近订单 → 退回记录 → 资金流水。
    ========================================================================== */
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { Language } from './content'
 import type { Account } from './AuthGate'
 import { WalletLocked } from './AuthGate'
-import { CHANNEL, RAIL_LABEL, applyCancelOrder, applyTopup, money, stamp, useWallet } from './wallet/store'
-import type { LedgerRow, Rail, WalletState } from './wallet/store'
+import { applyExitAdvance, applyExitSubmit, applyTopup, cryptoWithdrawable, exitNo, money, refundable, stamp, stampFull, statusLabel, STATUS_TONES, useWallet } from './wallet/store'
+import type { OrderRow } from './wallet/store'
+import type { ExitRequest, ExitStatus, LedgerRow, WalletState } from './wallet/store'
+import { asOfAt, fmtDuration, monthComposition, rollingPending, usageBreakdown } from './wallet/usage'
 import { TopupFlow } from './wallet/Topup'
-import { Badge } from './wallet/ui'
+import { ExitModal, exitStageLabel } from './wallet/Withdraw'
+import { Badge, PageNav } from './wallet/ui'
 import u from './wallet/ui.module.css'
 import s from './WalletPage.module.css'
 
+const ORDERS_PAGE = 5
+const EXITS_PAGE = 5
+const LEDGER_PAGE = 8
+
+type LedgerFilter = 'all' | 'topup' | 'consume' | 'exit'
+
+/* 订单表的状态口径：过渡态（创建/拉镜像/连接/重启）对账单无意义，归并为「启动中」；
+   明细状态在实例页看。 */
+const TRANSITION = ['Creating', 'Loading', 'Connecting', 'Rebooting'] as const
+const orderStatus = (lang: Language, status: OrderRow['status']) =>
+  (TRANSITION as readonly string[]).includes(status)
+    ? (lang === 'zh' ? '启动中' : 'Starting')
+    : statusLabel(lang, status)
+
 const copy = {
   zh: {
-    title: '资金与结算',
-    lead: '法币走 Airwallex 托管收单，链上走 Infini 收款。两个池各自记账，充值、消费与退款都落在各自的池里，不合并计算。',
-    boundTo: '资金归属于账户',
-    pools: '余额',
-    railFiat: '法币池',
-    railCrypto: '链上池',
-    roleFiat: '托管收单 · 卡 / Apple Pay / Google Pay',
-    roleCrypto: '链上收款 · USDT-TRC20',
-    available: '可用余额',
+    title: '资金',
+    balance: 'USD 余额',
     topup: '充值',
+    refund: '退回',
     orders: '最近订单',
-    ordersLead: '仅展示最近 3 条；取消订单的退款回到原扣款池。',
     machine: '机器',
     amount: '金额',
     status: '状态',
-    cancelAction: '取消',
-    orderOpen: '开通中',
+    no: '单号',
     orderProvisioned: '已开通',
-    orderCancelled: '已取消',
     noOrders: '还没有订单',
+    exits: '退回记录',
+    noExits: '还没有退回记录',
+    methodCol: '方式',
+    methodRefund: '退回银行卡',
+    methodWithdraw: '提到钱包',
+    demoAdvance: '演示推进',
+    advanceStart: '开始处理',
+    advanceDone: '标记完成',
+    advanceFail: '标记失败',
     ledger: '资金流水',
-    ledgerLead: '金额后的余额为该笔流水所在池的余额。',
+    ledgerLead: '余额列为该笔之后的余额。',
     time: '时间',
     desc: '说明',
-    poolBalance: '该池余额',
+    poolBalance: '余额',
     noLedger: '暂无流水',
     descTopup: '充值入账',
-    descConsume: '订单扣款',
-    descRefund: '订单取消 · 退回余额',
-    toastTopup: (v: string, r: string) => `${r}入账 $${v}`,
-    toastRefund: '异常支付已按原链退回，未计入余额',
-    toastCancel: (v: string, r: string) => `订单已取消 · $${v} 已退回${r}`,
+    descConsume: '租卡扣款',
+    descPenalty: '提前取消违约金',
+    descRefund: '退回银行卡',
+    descRefundInto: '退回余额',
+    descWithdraw: '提到钱包',
+    filterAll: '全部',
+    filterTopup: '充值',
+    filterConsume: '租卡扣款',
+    filterExit: '退回',
+    total: (n: number) => `共 ${n} 条`,
+    prev: '上一页',
+    next: '下一页',
+    pageOf: (i: number, n: number) => `第 ${i} / ${n} 页`,
+    pagination: '分页',
+    toastTopup: (v: string) => `已充值 ${v}`,
+    toastRefund: '退款已提交，将原路退回',
+    toastWithdraw: '提现已提交，到账金额以通道报价为准',
+    toastFailed: '未成功，金额已解冻',
+    toastDone: (v: string) => `${v} 已处理完成`,
+    toastAbnormal: '异常支付已原链退回，未计入余额',
+    usage: '消费构成',
+    asOf: (s: string) => `用量数据截至 ${s}`,
+    rolling: (v: string) => `运行中实例含未落账 ${v}`,
+    compGpu: 'GPU 算力',
+    compBw: '带宽',
+    compStorage: '停机存储',
+    compTotal: '合计',
+    compEmpty: '暂无消费',
+    proofBtn: '用量依据',
+    proofGpu: 'GPU 费',
+    proofBw: '带宽费',
+    proofStorage: '停机存储费',
+    proofDuration: '计费时长',
+    proofBwCap: '固定带宽',
+    proofDisk: '磁盘',
+    proofSpec: '计量规格',
+    proofSegs: '最近用量段',
+    segId: '段',
+    segState: '计量',
+    segDur: '时长',
+    segBw: '带宽',
+    proofRef: '凭证',
+    stateRun: '运行',
+    stateStop: '关机',
   },
   en: {
-    title: 'Funds & settlement',
-    lead: 'Fiat runs through Airwallex hosted collection; on-chain runs through Infini. Each pool keeps its own ledger — top-ups, spending and refunds land in the pool they belong to and are never combined.',
-    boundTo: 'Funds belong to',
-    pools: 'Balances',
-    railFiat: 'Fiat pool',
-    railCrypto: 'On-chain pool',
-    roleFiat: 'Hosted collection · Card / Apple Pay / Google Pay',
-    roleCrypto: 'On-chain collection · USDT-TRC20',
-    available: 'Available',
+    title: 'Funds',
+    balance: 'USD balance',
     topup: 'Top up',
+    refund: 'Refund',
     orders: 'Recent orders',
-    ordersLead: 'The latest 3 only; cancelling an order refunds the pool it was paid from.',
     machine: 'Machine',
     amount: 'Amount',
     status: 'Status',
-    cancelAction: 'Cancel',
-    orderOpen: 'Provisioning',
+    no: 'Reference',
     orderProvisioned: 'Provisioned',
-    orderCancelled: 'Cancelled',
     noOrders: 'No orders yet',
+    exits: 'Refund & withdrawal history',
+    noExits: 'Nothing returned yet',
+    methodCol: 'Method',
+    methodRefund: 'To the card',
+    methodWithdraw: 'To a wallet',
+    demoAdvance: 'Demo controls',
+    advanceStart: 'Start',
+    advanceDone: 'Mark done',
+    advanceFail: 'Mark failed',
     ledger: 'Ledger',
-    ledgerLead: 'The balance after each entry belongs to the pool that entry touched.',
+    ledgerLead: 'The balance column is the balance after that entry.',
     time: 'Time',
     desc: 'Description',
-    poolBalance: 'Pool balance',
+    poolBalance: 'Balance',
     noLedger: 'No entries yet',
     descTopup: 'Top-up credited',
-    descConsume: 'Order charge',
-    descRefund: 'Order cancelled · refunded to balance',
-    toastTopup: (v: string, r: string) => `${r} credited $${v}`,
-    toastRefund: 'Abnormal payment refunded on chain, not credited',
-    toastCancel: (v: string, r: string) => `Order cancelled · $${v} returned to the ${r}`,
+    descConsume: 'Rental charge',
+    descPenalty: 'Early cancellation penalty',
+    descRefund: 'Refunded to card',
+    descRefundInto: 'Refunded to balance',
+    descWithdraw: 'Withdrawn to wallet',
+    filterAll: 'All',
+    filterTopup: 'Top-ups',
+    filterConsume: 'Rental charges',
+    filterExit: 'Returned',
+    total: (n: number) => `${n} entries`,
+    prev: 'Previous',
+    next: 'Next',
+    pageOf: (i: number, n: number) => `Page ${i} of ${n}`,
+    pagination: 'Pagination',
+    toastTopup: (v: string) => `${v} credited`,
+    toastRefund: 'Refund submitted; it goes back to the original card',
+    toastWithdraw: 'Withdrawal submitted; the amount received is quoted by the channel',
+    toastFailed: 'Not completed; the amount is released',
+    toastDone: (v: string) => `${v} completed`,
+    toastAbnormal: 'Abnormal payment refunded on chain, not credited',
+    usage: 'Spend breakdown',
+    asOf: (s: string) => `Usage data as of ${s}`,
+    rolling: (v: string) => `Running instances include ${v} not yet posted`,
+    compGpu: 'GPU compute',
+    compBw: 'Bandwidth',
+    compStorage: 'Idle storage',
+    compTotal: 'Total',
+    compEmpty: 'No spend yet',
+    proofBtn: 'Usage evidence',
+    proofGpu: 'GPU',
+    proofBw: 'Bandwidth',
+    proofStorage: 'Idle storage',
+    proofDuration: 'Billed duration',
+    proofBwCap: 'Fixed bandwidth',
+    proofDisk: 'Disk',
+    proofSpec: 'Metering spec',
+    proofSegs: 'Latest usage segments',
+    segId: 'Segment',
+    segState: 'Meter',
+    segDur: 'Duration',
+    segBw: 'Bandwidth',
+    proofRef: 'Evidence',
+    stateRun: 'Running',
+    stateStop: 'Stopped',
   },
 }
 
@@ -104,76 +196,178 @@ export default function WalletPage({ lang, account, onSignIn }: {
 
 function WalletAccount({ lang, email }: { lang: Language; email: string }) {
   const t = copy[lang]
-  const railText = RAIL_LABEL[lang]
   const { wallet, setWallet } = useWallet(email)
   const [toast, setToast] = useState<string | null>(null)
-  const [topupRail, setTopupRail] = useState<Rail | null>(null)
+  const [topupOpen, setTopupOpen] = useState(false)
+  const [exitOpen, setExitOpen] = useState(false)
+  const [ordersPage, setOrdersPage] = useState(1)
+  const [exitsPage, setExitsPage] = useState(1)
+  const [ledgerPage, setLedgerPage] = useState(1)
+  const [ledgerFilter, setLedgerFilter] = useState<LedgerFilter>('all')
+  const [proofOpen, setProofOpen] = useState<Set<string>>(new Set())
 
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(null), 2600); return () => clearTimeout(id) }, [toast])
   const flash = (msg: string) => setToast(msg)
 
-  const credit = (rail: Rail, amount: number) => {
-    setWallet((prev: WalletState) => applyTopup(prev, rail, amount))
-    flash(t.toastTopup(amount.toFixed(2), railText[rail]))
+  const refundTotal = refundable(wallet)
+  const withdrawTotal = cryptoWithdrawable(wallet)
+  const inFlight = wallet.exits.filter(r => r.status === 'pending' || r.status === 'processing')
+  const canExit = refundTotal + withdrawTotal > 0.004
+
+  const creditByChannel = (amount: number, channel: 'card' | 'crypto') => {
+    setWallet((prev: WalletState) => applyTopup(prev, channel, amount))
+    flash(t.toastTopup(money(amount)))
+    setTopupOpen(false)
   }
-  const cancelOrder = (id: string) => {
-    const order = wallet.orders.find(o => o.id === id)
-    if (!order || order.status !== 'open') return
-    setWallet(prev => applyCancelOrder(prev, id) ?? prev)
-    flash(t.toastCancel(order.amount.toFixed(2), railText[order.pool]))
+
+  const submitRefund = (paymentId: string, amount: number) => {
+    setWallet((prev: WalletState) => applyExitSubmit(prev, 'refund', amount, { paymentId }) ?? prev)
+    flash(t.toastRefund)
+  }
+  const submitWithdraw = (amount: number, address: string) => {
+    setWallet((prev: WalletState) => applyExitSubmit(prev, 'withdraw', amount, { address }) ?? prev)
+    flash(t.toastWithdraw)
+  }
+  const advance = (req: ExitRequest, to: ExitStatus) => {
+    setWallet((prev: WalletState) => applyExitAdvance(prev, req.id, to))
+    if (to === 'failed') flash(t.toastFailed)
+    else if (to === 'done') flash(t.toastDone(money(req.amount)))
   }
 
   const desc = (row: LedgerRow) =>
-    row.kind === 'topup' ? t.descTopup : row.kind === 'consume' ? t.descConsume : row.kind === 'refund' ? t.descRefund : ''
-  // 租户流水只含三类（收益/出金流水属宿主页口径）
-  const ledgerRows = wallet.ledger.filter(row => row.kind === 'topup' || row.kind === 'consume' || row.kind === 'refund')
+    row.kind === 'topup' ? `${t.descTopup}${row.channel ? ` · ${row.channel === 'card' ? (lang === 'zh' ? '银行卡' : 'Card') : 'USDT'}` : ''}`
+      : row.kind === 'consume' ? t.descConsume
+        : row.kind === 'penalty' ? t.descPenalty
+          : row.kind === 'refund' ? (row.into ? t.descRefundInto : t.descRefund)
+          : row.kind === 'withdraw' ? t.descWithdraw : ''
+
+  const tenantLedger = wallet.ledger
+  const ledgerRows = ledgerFilter === 'all'
+    ? tenantLedger
+    : ledgerFilter === 'exit'
+      ? tenantLedger.filter(row => row.kind === 'refund' || row.kind === 'withdraw')
+      : tenantLedger.filter(row => row.kind === ledgerFilter)
+  const orderPages = Math.max(1, Math.ceil(wallet.orders.length / ORDERS_PAGE))
+  const safeOrdersPage = Math.min(ordersPage, orderPages)
+  const visibleOrders = wallet.orders.slice((safeOrdersPage - 1) * ORDERS_PAGE, safeOrdersPage * ORDERS_PAGE)
+  const exitPages = Math.max(1, Math.ceil(wallet.exits.length / EXITS_PAGE))
+  const safeExitsPage = Math.min(exitsPage, exitPages)
+  const visibleExits = wallet.exits.slice((safeExitsPage - 1) * EXITS_PAGE, safeExitsPage * EXITS_PAGE)
+  const ledgerPages = Math.max(1, Math.ceil(ledgerRows.length / LEDGER_PAGE))
+  const safeLedgerPage = Math.min(ledgerPage, ledgerPages)
+  const visibleLedger = ledgerRows.slice((safeLedgerPage - 1) * LEDGER_PAGE, safeLedgerPage * LEDGER_PAGE)
+  const changeFilter = (next: LedgerFilter) => { setLedgerFilter(next); setLedgerPage(1) }
+  const toggleProof = (id: string) => setProofOpen(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    return next
+  })
+
+  const comp = monthComposition(wallet)
+  const rolling = rollingPending(wallet)
+  const compPct = (v: number) => comp.total > 0 ? `${Math.max(1, Math.round(v / comp.total * 100))}%` : '0%'
 
   return <div className={s.page}>
     <div className={s.shell}>
       <header className={s.head}>
         <h1>{t.title}</h1>
-        <p className={s.lead}>{t.lead}</p>
-        <p className={s.accountLine}>{t.boundTo} <b>{email}</b></p>
       </header>
 
-      <section className={s.pools} aria-label={t.pools}>
-        {(['fiat', 'crypto'] as Rail[]).map(rail => <article key={rail} className={s.pool} data-rail={rail}>
+      <section className={s.pools} aria-label={t.balance}>
+        <article className={s.pool}>
           <header className={s.poolHead}>
             <span className={s.poolMark} aria-hidden="true" />
             <div className={s.poolIdentity}>
-              <span className={s.poolVendor}>{CHANNEL[rail]}</span>
-              <span className={s.poolRole}>{rail === 'fiat' ? t.roleFiat : t.roleCrypto}</span>
+              <span className={s.poolVendor}>{t.balance}</span>
             </div>
-            <span className={s.poolTag}>{railText[rail]}</span>
           </header>
-          <div className={s.poolFigure}>
-            <span>{t.available}</span>
-            <strong>{money(wallet.balance[rail])}</strong>
+          <div className={s.poolFoot}>
+            <strong className={s.poolAmount}>{money(wallet.balance)}</strong>
+            <div className={s.poolActions}>
+              <button className={u.btnGhost} disabled={!canExit || inFlight.length > 0} onClick={() => setExitOpen(true)}>{t.refund}</button>
+              <button className={u.btnPrimary} onClick={() => setTopupOpen(true)}>{t.topup}</button>
+            </div>
           </div>
-          <button className={u.btnPrimary} onClick={() => setTopupRail(rail)}>{t.topup}</button>
-        </article>)}
+        </article>
+      </section>
+
+      <section className={s.section} aria-labelledby="wallet-usage-title">
+        <div className={s.sectionHead}>
+          <h2 id="wallet-usage-title">{t.usage}</h2>
+          <p className={s.asof}>{t.asOf(stamp(asOfAt(wallet)))}</p>
+        </div>
+        {!comp.hasRows ? <p className={s.empty}>{t.compEmpty}</p> : (
+          <div className={s.usageBody}>
+            <div className={s.usageBar} role="img" aria-label={`${t.usage} ${money(comp.total)}`}>
+              {([['gpu', comp.gpu], ['bw', comp.bw], ['storage', comp.storage]] as Array<[string, number]>).map(([k, v]) =>
+                v > 0.005 && <span key={k} data-k={k} style={{ flexGrow: v }} />)}
+            </div>
+            <ul className={s.usageLegend}>
+              <li><span className={s.dot} data-k="gpu" aria-hidden="true" />{t.compGpu}<b className={u.mono}>{money(comp.gpu)}</b><span className={s.legendPct}>{compPct(comp.gpu)}</span></li>
+              <li><span className={s.dot} data-k="bw" aria-hidden="true" />{t.compBw}<b className={u.mono}>{money(comp.bw)}</b><span className={s.legendPct}>{compPct(comp.bw)}</span></li>
+              <li><span className={s.dot} data-k="storage" aria-hidden="true" />{t.compStorage}<b className={u.mono}>{money(comp.storage)}</b><span className={s.legendPct}>{compPct(comp.storage)}</span></li>
+              <li className={s.legendTotal}>{t.compTotal}<b className={u.mono}>{money(comp.total)}</b></li>
+            </ul>
+            {rolling > 0 && <p className={s.rollingNote}>{t.rolling(money(rolling))}</p>}
+          </div>
+        )}
       </section>
 
       <section className={s.section} aria-labelledby="wallet-orders-title">
         <div className={s.sectionHead}>
           <h2 id="wallet-orders-title">{t.orders}</h2>
-          <p>{t.ordersLead}</p>
         </div>
         {wallet.orders.length === 0 ? <p className={s.empty}>{t.noOrders}</p> : (
           <div className={s.tableWrap}>
             <table className={s.table}>
-              <thead><tr><th>{t.machine}</th><th className={s.right}>{t.amount}</th><th>{t.status}</th><th aria-label={t.cancelAction} /></tr></thead>
+              <thead><tr><th>{t.machine}</th><th className={s.right}>{t.amount}</th><th>{t.status}</th></tr></thead>
               <tbody>
-                {wallet.orders.slice(0, 3).map(order => <tr key={order.id}>
+                {visibleOrders.map(order => <tr key={order.id}>
                   <td className={s.machine}>{order.machine}</td>
                   <td className={`${s.right} ${u.mono}`}>{money(order.amount)}</td>
-                  <td><Badge tone={order.status === 'provisioned' ? 'ok' : order.status === 'open' ? 'info' : 'muted'}>{order.status === 'provisioned' ? t.orderProvisioned : order.status === 'open' ? t.orderOpen : t.orderCancelled}</Badge></td>
-                  <td className={s.right}>{order.status === 'open'
-                    ? <button className={u.miniBtn} onClick={() => cancelOrder(order.id)}>{t.cancelAction}</button>
-                    : null}</td>
+                  <td><Badge tone={STATUS_TONES[order.status]}>{orderStatus(lang, order.status)}</Badge></td>
                 </tr>)}
               </tbody>
             </table>
+            <PageNav page={safeOrdersPage} pages={orderPages} count={wallet.orders.length} t={t}
+              onPage={next => setOrdersPage(Math.min(Math.max(next, 1), orderPages))} />
+          </div>
+        )}
+      </section>
+
+      <section className={s.section} aria-labelledby="wallet-exits-title">
+        <div className={s.sectionHead}>
+          <h2 id="wallet-exits-title">{t.exits}</h2>
+        </div>
+        {wallet.exits.length === 0 ? <p className={s.empty}>{t.noExits}</p> : (
+          <div className={s.tableWrap}>
+            <table className={s.table}>
+              <thead><tr>
+                <th>{t.no}</th><th>{t.time}</th><th>{t.methodCol}</th><th className={s.right}>{t.amount}</th>
+                <th>{t.status}</th><th className={s.right}>{t.demoAdvance}</th>
+              </tr></thead>
+              <tbody>
+                {visibleExits.map(req => {
+                  const stage = exitStageLabel(lang, req)
+                  const actions: Array<[string, ExitStatus]> = req.status === 'pending'
+                    ? [[t.advanceStart, 'processing'], [t.advanceFail, 'failed']]
+                    : req.status === 'processing'
+                      ? [[t.advanceDone, 'done'], [t.advanceFail, 'failed']]
+                      : []
+                  return <tr key={req.id}>
+                    <td className={u.mono}>{exitNo(req)}</td>
+                    <td className={u.mono}>{stampFull(req.at)}</td>
+                    <td>{req.method === 'refund' ? t.methodRefund : t.methodWithdraw}</td>
+                    <td className={`${s.right} ${u.mono}`}>{money(req.amount)}</td>
+                    <td><Badge tone={stage.tone}>{stage.label}</Badge></td>
+                    <td className={s.right}><div className={s.advanceRow}>{actions.length === 0 ? '—' : actions.map(([label, to]) =>
+                      <button key={to} className={u.miniBtn} onClick={() => advance(req, to)}>{label}</button>)}</div></td>
+                  </tr>
+                })}
+              </tbody>
+            </table>
+            <PageNav page={safeExitsPage} pages={exitPages} count={wallet.exits.length} t={t}
+              onPage={next => setExitsPage(Math.min(Math.max(next, 1), exitPages))} />
           </div>
         )}
       </section>
@@ -182,32 +376,78 @@ function WalletAccount({ lang, email }: { lang: Language; email: string }) {
         <div className={s.sectionHead}>
           <h2 id="wallet-ledger-title">{t.ledger}</h2>
           <p>{t.ledgerLead}</p>
+          <div className={s.filters} role="group" aria-label={t.ledger}>
+            {([['all', t.filterAll], ['topup', t.filterTopup], ['consume', t.filterConsume], ['exit', t.filterExit]] as Array<[LedgerFilter, string]>).map(([key, label]) =>
+              <button key={key} type="button" className={s.filter} data-active={ledgerFilter === key} aria-pressed={ledgerFilter === key}
+                onClick={() => changeFilter(key)}>{label}</button>)}
+          </div>
         </div>
         {ledgerRows.length === 0 ? <p className={s.empty}>{t.noLedger}</p> : (
           <div className={s.tableWrap}>
             <table className={s.table}>
               <thead><tr><th>{t.time}</th><th>{t.desc}</th><th className={s.right}>{t.amount}</th><th className={s.right}>{t.poolBalance}</th></tr></thead>
-              <tbody>{ledgerRows.map(row => <tr key={row.id}>
-                <td className={u.mono}>{stamp(row.at)}</td>
-                <td>
-                  <span className={s.descWrap}>
-                    <span className={s.poolChip} data-rail={row.rail}>{railText[row.rail]}</span>
-                    {desc(row)}{row.label && <span className={s.descLabel}>{row.label}</span>}
-                  </span>
-                </td>
-                <td className={`${s.right} ${u.mono}`}>{row.kind === 'consume' ? '-' : '+'}{money(row.amount)}</td>
-                <td className={`${s.right} ${u.mono}`}>{row.balAfter === undefined ? '—' : money(row.balAfter)}</td>
-              </tr>)}</tbody>
+              <tbody>{visibleLedger.map(row => {
+                const bd = row.kind === 'consume' ? usageBreakdown(row) : null
+                const open = proofOpen.has(row.id)
+                return <Fragment key={row.id}>
+                  <tr>
+                    <td className={u.mono}>{stampFull(row.at)}</td>
+                    <td><span className={s.descWrap}>{desc(row)}{row.label && <span className={s.descLabel}>{row.label}</span>}
+                      {bd && <button type="button" className={s.proofBtn} aria-expanded={open}
+                        aria-controls={`proof-${row.id}`} onClick={() => toggleProof(row.id)}>{t.proofBtn}</button>}
+                    </span></td>
+                    <td className={`${s.right} ${u.mono}`}>{row.kind === 'topup' || row.into ? '+' : '-'}{money(row.amount)}</td>
+                    <td className={`${s.right} ${u.mono}`}>{row.balAfter === undefined ? '—' : money(row.balAfter)}</td>
+                  </tr>
+                  {open && bd && <tr id={`proof-${row.id}`} className={s.proofRow}>
+                    <td colSpan={4}>
+                      <div className={s.proofPanel}>
+                        <div className={s.proofGrid}>
+                          {bd.kind === 'gpu' ? <>
+                            <span><span className={s.proofLabel}>{t.proofGpu}</span><b>{money(bd.gpuFee)}</b></span>
+                            <span><span className={s.proofLabel}>{t.proofBw}</span><b>{money(bd.bwFee)}</b></span>
+                          </> : <>
+                            <span><span className={s.proofLabel}>{t.proofStorage}</span><b>{money(bd.storageFee)}</b></span>
+                            <span><span className={s.proofLabel}>{t.proofDisk}</span><b>{bd.diskGb} GB</b></span>
+                          </>}
+                          <span><span className={s.proofLabel}>{t.proofDuration}</span><b>{fmtDuration(bd.seconds)}</b></span>
+                          <span><span className={s.proofLabel}>{t.proofBwCap}</span><b>{bd.bwMbps} Mbps</b></span>
+                          <span><span className={s.proofLabel}>{t.proofSpec}</span><b>{bd.spec}</b></span>
+                        </div>
+                        <div>
+                          <p className={s.proofSegsTitle}>{t.proofSegs}</p>
+                          <table className={s.segTable}>
+                            <thead><tr><th>{t.segId}</th><th>{t.segState}</th><th className={s.right}>{t.segDur}</th><th className={s.right}>{t.segBw}</th></tr></thead>
+                            <tbody>{bd.segments.map(seg => <tr key={seg.id}>
+                              <td>{seg.id}</td>
+                              <td><span className={s.segPill} data-run={seg.state === 'running'}>{seg.state === 'running' ? t.stateRun : t.stateStop}</span></td>
+                              <td className={s.right}>{fmtDuration(seg.durationSeconds)}</td>
+                              <td className={s.right}>{seg.bandwidthMbps} Mbps</td>
+                            </tr>)}</tbody>
+                          </table>
+                        </div>
+                        <p className={s.proofRef}>{t.proofRef}: Nexus meter · segments {bd.segments[0].id}–{bd.segments[bd.segments.length - 1].id} · {bd.requestId}</p>
+                      </div>
+                    </td>
+                  </tr>}
+                </Fragment>
+              })}</tbody>
             </table>
+            <PageNav page={safeLedgerPage} pages={ledgerPages} count={ledgerRows.length} t={t}
+              onPage={next => setLedgerPage(Math.min(Math.max(next, 1), ledgerPages))} />
           </div>
         )}
       </section>
     </div>
 
-    {topupRail !== null && <TopupFlow lang={lang} rail={topupRail}
-      onClose={() => setTopupRail(null)}
-      onCredit={(rail, amount) => { credit(rail, amount); setTopupRail(null) }}
-      onRefund={() => { flash(t.toastRefund); setTopupRail(null) }} />}
+    {topupOpen && <TopupFlow lang={lang} onClose={() => setTopupOpen(false)}
+      onCredit={(amount, channel) => creditByChannel(amount, channel)}
+      onRefund={() => { flash(t.toastAbnormal); setTopupOpen(false) }} />}
+
+    {exitOpen && <ExitModal lang={lang} wallet={wallet}
+      onClose={() => setExitOpen(false)}
+      onRefund={submitRefund}
+      onWithdraw={submitWithdraw} />}
 
     {toast && <div className={u.toast} role="status">{toast}</div>}
   </div>

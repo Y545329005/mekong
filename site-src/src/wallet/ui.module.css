@@ -14,31 +14,48 @@
 .foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; padding: 20px 30px 26px; border-top: 1px solid #e1e6ec; margin-top: 20px; }
 
 .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 16px; border: 1px solid #dce2e8; border-radius: 8px; }
-.tab { display: inline-flex; align-items: baseline; justify-content: center; gap: 7px; min-height: 34px; border: 0; border-radius: 5px; background: transparent; color: #627386; font-size: 12.5px; }
+.tab { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 34px; border: 0; border-radius: 5px; background: transparent; color: #627386; font-size: 12.5px; line-height: 1; }
 .tab[data-active=true] { background: #eef3f8; color: #17212c; font-weight: 500; }
-.tabPool { font-size: 10.5px; color: #315f90; }
+
+/* 入金方式 / 退出目的地：两张可选卡（非 tab，选中的是「去哪」不是「哪个通道」） */
+.methodGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 9px; }
+.method { display: grid; gap: 4px; justify-items: start; text-align: left; padding: 12px 14px; border: 1px solid #dce2e8; border-radius: 10px; background: #fff; color: #34475a; font-size: 12px; cursor: pointer; }
+.method b { font-weight: 500; color: #17212c; font-size: 12.5px; }
+.method span { color: #627386; font-size: 11px; }
+.method em { font-style: normal; color: #627386; font-size: 10.5px; }
+.method:hover:not(:disabled) { border-color: #315f90; }
+.method[data-active=true] { border-color: #315f90; background: #eef3f8; }
+.method:disabled { opacity: .55; cursor: not-allowed; }
+
+.tabPool { font-size: 10.5px; line-height: 1; color: #315f90; }
 
 .presets { display: flex; flex-wrap: wrap; gap: 8px; }
 .preset { flex: 1 1 64px; min-height: 40px; border: 1px solid #dce2e8; border-radius: 8px; background: #fff; color: #34475a; font: 500 14px "SF Mono", Menlo, Consolas, monospace; }
 .preset:hover { border-color: #315f90; }
 .preset[data-active=true] { border-color: #315f90; background: #eef3f8; color: #17212c; }
-.presets .input { flex: 1 1 90px; width: 90px; }
+
+/* 自定义金额：与预设按钮分开一行，带标签与 $ 前缀，明确是输入框而非预设 */
+.customRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.customLabel { color: #627386; font-size: 11.5px; }
+.customField { display: inline-flex; align-items: center; gap: 4px; width: 148px; min-height: 42px; padding: 0 4px 0 12px; border: 1px solid #dce2e8; border-radius: 8px; background: #fff; }
+.customField:focus-within { border-color: #315f90; outline: 2px solid rgba(49, 95, 144, .35); outline-offset: 1px; }
+.customField em { flex: 0 0 auto; color: #627386; font-style: normal; font-size: 13.5px; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.customField .input { width: 100%; min-height: 40px; padding: 0 8px 0 2px; border: 0; background: transparent; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.customField .input:focus { outline: none; }
 
 .input { width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #dce2e8; border-radius: 8px; background: #fff; color: #17212c; font-size: 14px; color-scheme: light; }
 .input::placeholder { color: #627386; }
 .input:focus { outline: 2px solid rgba(49, 95, 144, .35); outline-offset: 1px; border-color: #315f90; }
 
 .fieldLabel { display: block; margin: 18px 0 8px; color: #17212c; font-size: 12.5px; }
-.methodGrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-.method { min-height: 40px; border: 1px solid #dce2e8; border-radius: 8px; background: #fff; color: #34475a; font-size: 12.5px; text-align: left; padding: 0 12px; }
-.method[data-active=true] { border-color: #315f90; background: #eef3f8; color: #17212c; }
 .note { margin: 10px 0 0; color: #627386; font-size: 11.5px; line-height: 1.8; }
 .warn { margin: 10px 0 0; color: #a83a32; font-size: 11.5px; line-height: 1.8; }
 
 .amountRow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 14px; margin-bottom: 6px; border: 1px solid #dce2e8; border-radius: 10px; background: #f7f9fa; font-size: 12.5px; color: #627386; }
 .amountRow strong { color: #17212c; font-size: 18px; font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
-.amountInput { display: flex; gap: 8px; }
-.amountInput .input { flex: 1; }
+.amountInput { display: flex; align-items: center; gap: 8px; }
+.amountInput .input { width: 168px; flex: 0 0 auto; text-align: right; font-variant-numeric: tabular-nums; }
+.limit { float: right; font-style: normal; color: #627386; font-size: 11.5px; }
 .cryptoBox { display: flex; gap: 14px; margin-top: 14px; padding: 14px; border: 1px solid #dce2e8; border-radius: 10px; background: #f7f9fa; }
 .cryptoBox strong { display: block; font-size: 12.5px; margin-bottom: 6px; color: #17212c; }
 .cryptoBox p { margin: 0 0 4px; color: #627386; font-size: 11px; line-height: 1.75; word-break: break-all; }
@@ -74,6 +91,15 @@
 .badge[data-tone=muted] { border-color: #e1e6ec; color: #627386; background: #f7f9fa; }
 
 .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+/* 页码工具条：钉在表格底部，页面高度恒定 */
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 18px; border-top: 1px solid #e9edf1; }
+.pagerCount { color: #627386; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.pagerNav { display: inline-flex; align-items: center; gap: 8px; }
+.pagerBtn { min-height: 28px; padding: 0 10px; border: 1px solid #dce2e8; border-radius: 6px; background: #fff; color: #34475a; font-size: 11.5px; cursor: pointer; }
+.pagerBtn:hover:not(:disabled) { border-color: #315f90; color: #17212c; }
+.pagerBtn:disabled { opacity: .45; cursor: default; }
+.pagerPos { color: #627386; font-size: 11.5px; font-variant-numeric: tabular-nums; }
 
 .toast { position: fixed; left: 50%; bottom: 34px; z-index: 60; transform: translateX(-50%); padding: 11px 18px; border-radius: 8px; background: #17212c; color: #fff; font-size: 12.5px; box-shadow: 0 10px 30px rgba(23, 33, 44, .28); }
 

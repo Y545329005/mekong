@@ -6,7 +6,7 @@ import styles from './AuthGate.module.css'
 
 /* ============================================================================
    站内账号层（演示态）
-   · 资金属账号：余额/收益/出金按邮箱隔离，未登录不展示任何金额
+   · 资金属账号：余额/收益/提现按邮箱隔离，未登录不展示任何金额
    · 演示登录：邮箱 + 任意 6 位数字，不发真实邮件；会话存本机 localStorage
    · 只做「谁能看到资金」这一层，不做真实鉴权（真实产品接后端会话）
    ========================================================================== */
@@ -57,14 +57,16 @@ export function useSession() {
     writeSession({ email: normalized, name: normalized.split('@')[0], since: Date.now(), role: normalized === DEMO_EMAIL ? 'host' : 'tenant' })
   }
   const signOut = () => writeSession(null)
-  return { account, signIn, signOut }
+  // 角色是「这次要看哪个账本」，不是账号的固有属性：同一账号既可能租用也可能出租。
+  const switchRole = (role: AccountRole) => { if (account) writeSession({ ...account, role }) }
+  return { account, signIn, signOut, switchRole }
 }
 
 const copy = {
   zh: {
     login: '登录',
     loginTitle: '登录 Mekong 账户',
-    loginLead: '资金随账户走：登录后才能查看余额、充值记录、收益与出金申请。',
+    loginLead: '资金随账户走：登录后才能查看余额、充值记录、收益与退回申请。',
     emailLabel: '邮箱',
     emailPlaceholder: 'you@company.com',
     sendCode: '发送验证码',
@@ -80,18 +82,18 @@ const copy = {
     signedIn: '已登录为',
     signOut: '退出登录',
     gateTitle: '登录后查看账户资金',
-    gateLead: '资金绑定在账户上：余额、收益与出金记录都属于当前登录的账户，未登录时不展示任何金额。',
+    gateLead: '资金绑定在账户上：余额、收益与退回记录都属于当前登录的账户，未登录时不展示任何金额。',
     gatePoints: [
       '同一浏览器换账号登录，看到的是另一套余额与流水',
-      '法币池与链上池各自记账，出金原路不交叉',
-      '演示账号 demo@demo.dev 预置了演示资金与出金记录',
+      '一个 USD 余额，银行卡与 USDT 只是入金方式',
+      '演示账号 demo@demo.dev 预置了演示资金与退回记录',
     ],
     demoAccount: '用演示账号登录',
   },
   en: {
     login: 'Sign in',
     loginTitle: 'Sign in to Mekong',
-    loginLead: 'Funds belong to an account: sign in to see your balance, top-ups, earnings and payouts.',
+    loginLead: 'Funds belong to an account: sign in to see your balance, top-ups, earnings and withdrawals.',
     emailLabel: 'Email',
     emailPlaceholder: 'you@company.com',
     sendCode: 'Send code',
@@ -107,11 +109,11 @@ const copy = {
     signedIn: 'Signed in as',
     signOut: 'Sign out',
     gateTitle: 'Sign in to see your funds',
-    gateLead: 'Funds are bound to accounts: balances, earnings and payouts belong to the signed-in account. No amounts are shown otherwise.',
+    gateLead: 'Funds are bound to accounts: balances, earnings and withdrawals belong to the signed-in account. No amounts are shown otherwise.',
     gatePoints: [
       'Signing in with another account shows a different set of balances and records',
-      'Fiat and on-chain pools are kept apart; payouts follow the asset back out',
-      'The demo account demo@demo.dev comes with prefilled funds and payouts',
+      'Fiat and crypto balances are kept apart; withdrawals never cross assets',
+      'The demo account demo@demo.dev comes with prefilled funds and withdrawals',
     ],
     demoAccount: 'Use the demo account',
   },

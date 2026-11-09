@@ -4,7 +4,7 @@
 .friendlyConfig { padding:26px 29px 24px; }.configIntro { display:block;font-size:14px;color:#c4dedf;margin-bottom:21px; }.friendlyConfig>div { display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 0;border-top:1px solid #7a9aa51d;font-size:12px; }.friendlyConfig>div>span { color:#6c93a5; }.friendlyConfig strong { color:#adc0d7;font-weight:400; }
 .container { width: 100%; max-width: 1408px; padding-inline: 64px; margin-inline: auto; }
 .narrowContainer { max-width: 1020px; padding-inline: 64px; margin-inline: auto; }
-.section { padding-block: 102px; scroll-margin-top: 78px; outline: none; }
+.section { padding-block: 102px; scroll-margin-top: 66px; outline: none; }
 .sectionHeading { max-width: 920px; margin: 0 auto 46px; text-align: center; }
 .eyebrow { display: block; color:var(--copy-secondary); font-size: 10px; letter-spacing: .17em; font-weight: 500; margin-bottom: 17px; }
 .sectionHeading h2 { font-size: 40px; line-height: 1.4; letter-spacing: -.035em; font-weight: 500; margin: 0 0 16px; white-space: pre-line; }
