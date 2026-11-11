@@ -5,15 +5,14 @@
            #315f90 / #dce2e8、#e1e6ec；深色 header 由 App 层保留。
    STORY  充值入余额 → 租卡直接从余额扣款 → 未消费部分按来源退出：
            卡充值原路退款、USDT 充值提到链上钱包。退款按支付单算额度与截止日。
-   FORM  余额卡（金额 + 充值/退回）→ 最近订单 → 退回记录 → 资金流水。
+   FORM  余额卡（金额 + 充值/退回）→ 消费构成 → 退回记录 → 资金流水。
    ========================================================================== */
 
 import { Fragment, useEffect, useState } from 'react'
 import type { Language } from './content'
 import type { Account } from './AuthGate'
 import { WalletLocked } from './AuthGate'
-import { applyExitAdvance, applyExitSubmit, applyTopup, cryptoWithdrawable, exitNo, money, refundable, stamp, stampFull, statusLabel, STATUS_TONES, useWallet } from './wallet/store'
-import type { OrderRow } from './wallet/store'
+import { applyExitAdvance, applyExitSubmit, applyTopup, cryptoWithdrawable, exitNo, money, refundable, stamp, stampFull, usdt, useWallet } from './wallet/store'
 import type { ExitRequest, ExitStatus, LedgerRow, WalletState } from './wallet/store'
 import { asOfAt, fmtDuration, monthComposition, rollingPending, usageBreakdown } from './wallet/usage'
 import { TopupFlow } from './wallet/Topup'
@@ -22,19 +21,14 @@ import { Badge, PageNav } from './wallet/ui'
 import u from './wallet/ui.module.css'
 import s from './WalletPage.module.css'
 
-const ORDERS_PAGE = 5
 const EXITS_PAGE = 5
 const LEDGER_PAGE = 8
 
 type LedgerFilter = 'all' | 'topup' | 'consume' | 'exit'
 
-/* 订单表的状态口径：过渡态（创建/拉镜像/连接/重启）对账单无意义，归并为「启动中」；
-   明细状态在实例页看。 */
-const TRANSITION = ['Creating', 'Loading', 'Connecting', 'Rebooting'] as const
-const orderStatus = (lang: Language, status: OrderRow['status']) =>
-  (TRANSITION as readonly string[]).includes(status)
-    ? (lang === 'zh' ? '启动中' : 'Starting')
-    : statusLabel(lang, status)
+/* 链上地址截断展示（头 6 尾 6）；完整地址进 title。 */
+const shortAddr = (a?: string) =>
+  a ? (a.length > 16 ? `${a.slice(0, 6)}…${a.slice(-6)}` : a) : '—'
 
 const copy = {
   zh: {
@@ -42,18 +36,15 @@ const copy = {
     balance: 'USD 余额',
     topup: '充值',
     refund: '退回',
-    orders: '最近订单',
-    machine: '机器',
     amount: '金额',
     status: '状态',
     no: '单号',
-    orderProvisioned: '已开通',
-    noOrders: '还没有订单',
     exits: '退回记录',
     noExits: '还没有退回记录',
     methodCol: '方式',
     methodRefund: '退回银行卡',
     methodWithdraw: '提到钱包',
+    payRef: '支付单',
     demoAdvance: '演示推进',
     advanceStart: '开始处理',
     advanceDone: '标记完成',
@@ -61,6 +52,7 @@ const copy = {
     ledger: '资金流水',
     ledgerLead: '余额列为该笔之后的余额。',
     time: '时间',
+    requestedAt: '申请时间',
     desc: '说明',
     poolBalance: '余额',
     noLedger: '暂无流水',
@@ -70,6 +62,8 @@ const copy = {
     descRefund: '退回银行卡',
     descRefundInto: '退回余额',
     descWithdraw: '提到钱包',
+    coinIn: (v: string) => `实付 ${v}`,
+    coinOut: (v: string, f: string) => `到账 ${v} · 费 ${f}`,
     filterAll: '全部',
     filterTopup: '充值',
     filterConsume: '租卡扣款',
@@ -100,13 +94,11 @@ const copy = {
     proofDuration: '计费时长',
     proofBwCap: '固定带宽',
     proofDisk: '磁盘',
-    proofSpec: '计量规格',
     proofSegs: '最近用量段',
     segId: '段',
     segState: '计量',
     segDur: '时长',
     segBw: '带宽',
-    proofRef: '凭证',
     stateRun: '运行',
     stateStop: '关机',
   },
@@ -115,18 +107,15 @@ const copy = {
     balance: 'USD balance',
     topup: 'Top up',
     refund: 'Refund',
-    orders: 'Recent orders',
-    machine: 'Machine',
     amount: 'Amount',
     status: 'Status',
     no: 'Reference',
-    orderProvisioned: 'Provisioned',
-    noOrders: 'No orders yet',
     exits: 'Refund & withdrawal history',
     noExits: 'Nothing returned yet',
     methodCol: 'Method',
     methodRefund: 'To the card',
     methodWithdraw: 'To a wallet',
+    payRef: 'Payment',
     demoAdvance: 'Demo controls',
     advanceStart: 'Start',
     advanceDone: 'Mark done',
@@ -134,6 +123,7 @@ const copy = {
     ledger: 'Ledger',
     ledgerLead: 'The balance column is the balance after that entry.',
     time: 'Time',
+    requestedAt: 'Requested',
     desc: 'Description',
     poolBalance: 'Balance',
     noLedger: 'No entries yet',
@@ -143,6 +133,8 @@ const copy = {
     descRefund: 'Refunded to card',
     descRefundInto: 'Refunded to balance',
     descWithdraw: 'Withdrawn to wallet',
+    coinIn: (v: string) => `Paid ${v}`,
+    coinOut: (v: string, f: string) => `Received ${v} · fee ${f}`,
     filterAll: 'All',
     filterTopup: 'Top-ups',
     filterConsume: 'Rental charges',
@@ -173,13 +165,11 @@ const copy = {
     proofDuration: 'Billed duration',
     proofBwCap: 'Fixed bandwidth',
     proofDisk: 'Disk',
-    proofSpec: 'Metering spec',
     proofSegs: 'Latest usage segments',
     segId: 'Segment',
     segState: 'Meter',
     segDur: 'Duration',
     segBw: 'Bandwidth',
-    proofRef: 'Evidence',
     stateRun: 'Running',
     stateStop: 'Stopped',
   },
@@ -200,7 +190,6 @@ function WalletAccount({ lang, email }: { lang: Language; email: string }) {
   const [toast, setToast] = useState<string | null>(null)
   const [topupOpen, setTopupOpen] = useState(false)
   const [exitOpen, setExitOpen] = useState(false)
-  const [ordersPage, setOrdersPage] = useState(1)
   const [exitsPage, setExitsPage] = useState(1)
   const [ledgerPage, setLedgerPage] = useState(1)
   const [ledgerFilter, setLedgerFilter] = useState<LedgerFilter>('all')
@@ -247,9 +236,6 @@ function WalletAccount({ lang, email }: { lang: Language; email: string }) {
     : ledgerFilter === 'exit'
       ? tenantLedger.filter(row => row.kind === 'refund' || row.kind === 'withdraw')
       : tenantLedger.filter(row => row.kind === ledgerFilter)
-  const orderPages = Math.max(1, Math.ceil(wallet.orders.length / ORDERS_PAGE))
-  const safeOrdersPage = Math.min(ordersPage, orderPages)
-  const visibleOrders = wallet.orders.slice((safeOrdersPage - 1) * ORDERS_PAGE, safeOrdersPage * ORDERS_PAGE)
   const exitPages = Math.max(1, Math.ceil(wallet.exits.length / EXITS_PAGE))
   const safeExitsPage = Math.min(exitsPage, exitPages)
   const visibleExits = wallet.exits.slice((safeExitsPage - 1) * EXITS_PAGE, safeExitsPage * EXITS_PAGE)
@@ -313,28 +299,6 @@ function WalletAccount({ lang, email }: { lang: Language; email: string }) {
         )}
       </section>
 
-      <section className={s.section} aria-labelledby="wallet-orders-title">
-        <div className={s.sectionHead}>
-          <h2 id="wallet-orders-title">{t.orders}</h2>
-        </div>
-        {wallet.orders.length === 0 ? <p className={s.empty}>{t.noOrders}</p> : (
-          <div className={s.tableWrap}>
-            <table className={s.table}>
-              <thead><tr><th>{t.machine}</th><th className={s.right}>{t.amount}</th><th>{t.status}</th></tr></thead>
-              <tbody>
-                {visibleOrders.map(order => <tr key={order.id}>
-                  <td className={s.machine}>{order.machine}</td>
-                  <td className={`${s.right} ${u.mono}`}>{money(order.amount)}</td>
-                  <td><Badge tone={STATUS_TONES[order.status]}>{orderStatus(lang, order.status)}</Badge></td>
-                </tr>)}
-              </tbody>
-            </table>
-            <PageNav page={safeOrdersPage} pages={orderPages} count={wallet.orders.length} t={t}
-              onPage={next => setOrdersPage(Math.min(Math.max(next, 1), orderPages))} />
-          </div>
-        )}
-      </section>
-
       <section className={s.section} aria-labelledby="wallet-exits-title">
         <div className={s.sectionHead}>
           <h2 id="wallet-exits-title">{t.exits}</h2>
@@ -343,7 +307,7 @@ function WalletAccount({ lang, email }: { lang: Language; email: string }) {
           <div className={s.tableWrap}>
             <table className={s.table}>
               <thead><tr>
-                <th>{t.no}</th><th>{t.time}</th><th>{t.methodCol}</th><th className={s.right}>{t.amount}</th>
+                <th>{t.no}</th><th>{t.requestedAt}</th><th>{t.methodCol}</th><th className={s.right}>{t.amount}</th>
                 <th>{t.status}</th><th className={s.right}>{t.demoAdvance}</th>
               </tr></thead>
               <tbody>
@@ -357,7 +321,14 @@ function WalletAccount({ lang, email }: { lang: Language; email: string }) {
                   return <tr key={req.id}>
                     <td className={u.mono}>{exitNo(req)}</td>
                     <td className={u.mono}>{stampFull(req.at)}</td>
-                    <td>{req.method === 'refund' ? t.methodRefund : t.methodWithdraw}</td>
+                    <td>{req.method === 'refund' ? t.methodRefund : t.methodWithdraw}
+                      {/* 收款去向：退款＝原路退回，附支付单引用；提现＝链上地址（截断） */}
+                      <span className={s.methodSub} title={req.method === 'refund' ? undefined : req.address}>
+                        {req.method === 'refund'
+                          ? `${t.payRef} ${req.allocations[0]?.paymentId ?? '—'}${req.allocations.length > 1 ? ` +${req.allocations.length - 1}` : ''}`
+                          : shortAddr(req.address)}
+                      </span>
+                    </td>
                     <td className={`${s.right} ${u.mono}`}>{money(req.amount)}</td>
                     <td><Badge tone={stage.tone}>{stage.label}</Badge></td>
                     <td className={s.right}><div className={s.advanceRow}>{actions.length === 0 ? '—' : actions.map(([label, to]) =>
@@ -392,7 +363,9 @@ function WalletAccount({ lang, email }: { lang: Language; email: string }) {
                 return <Fragment key={row.id}>
                   <tr>
                     <td className={u.mono}>{stampFull(row.at)}</td>
-                    <td><span className={s.descWrap}>{desc(row)}{row.label && <span className={s.descLabel}>{row.label}</span>}
+                    <td><span className={s.descWrap}>{desc(row)}
+                      {row.coin && <span className={s.descLabel}>{row.coin.fee !== undefined ? t.coinOut(usdt(row.coin.amount), usdt(row.coin.fee)) : t.coinIn(usdt(row.coin.amount))}</span>}
+                      {row.label && <span className={s.descLabel}>{row.label}</span>}
                       {bd && <button type="button" className={s.proofBtn} aria-expanded={open}
                         aria-controls={`proof-${row.id}`} onClick={() => toggleProof(row.id)}>{t.proofBtn}</button>}
                     </span></td>
@@ -412,7 +385,6 @@ function WalletAccount({ lang, email }: { lang: Language; email: string }) {
                           </>}
                           <span><span className={s.proofLabel}>{t.proofDuration}</span><b>{fmtDuration(bd.seconds)}</b></span>
                           <span><span className={s.proofLabel}>{t.proofBwCap}</span><b>{bd.bwMbps} Mbps</b></span>
-                          <span><span className={s.proofLabel}>{t.proofSpec}</span><b>{bd.spec}</b></span>
                         </div>
                         <div>
                           <p className={s.proofSegsTitle}>{t.proofSegs}</p>
@@ -426,7 +398,6 @@ function WalletAccount({ lang, email }: { lang: Language; email: string }) {
                             </tr>)}</tbody>
                           </table>
                         </div>
-                        <p className={s.proofRef}>{t.proofRef}: Nexus meter · segments {bd.segments[0].id}–{bd.segments[bd.segments.length - 1].id} · {bd.requestId}</p>
                       </div>
                     </td>
                   </tr>}

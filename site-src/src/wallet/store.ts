@@ -29,6 +29,8 @@ export type Payment = {
   withdrawn: number
   consumed: number
   at: number
+  /* 数币充值的实付币数额（演示 1:1 收银台报价；真实以收银台报价为准） */
+  paidCoin?: { symbol: string; amount: number }
   /* 可退截止日：卡组织窗口以内；演示用 30 天，真实按支付方式（常见 180 天） */
   refundUntil: number
 }
@@ -43,6 +45,8 @@ export type ExitRequest = {
   allocations: Array<{ paymentId: string; amount: number }>
   /* 链上提现的目标地址 */
   address?: string
+  /* 提现通道报价（提交时锁定，完成时按锁价落流水）：到账币数额与通道费 */
+  quote?: { symbol: string; amount: number; fee: number }
   /* 失败时支付单额度是否已回滚，防重复回滚 */
   restored?: boolean
 }
@@ -60,6 +64,9 @@ export type LedgerRow = {
   label?: string
   balAfter?: number
   into?: boolean
+  /* 数币侧数值（仅 crypto 通道的充值/提现行）：symbol 当前恒 USDT；
+     fee 单列，让汇损/通道费可与 USD 金额对账 */
+  coin?: { symbol: string; amount: number; fee?: number }
   gross?: number
   fee?: number
   /* 用量构成标注（仅 consume 行）：gpu=按量运行费（可拆带宽）、storage=停机存储费；
@@ -96,6 +103,7 @@ export type OrderRow = {
   port8080: number
   customPorts: number[]
   launchMode: 'ssh' | 'jupyter'
+  endUse?: string
   label?: string
   rentalEnd?: number
   phaseUntil?: number
@@ -173,6 +181,15 @@ const uid = (p: string) => `${p}-${now().toString(36)}-${Math.random().toString(
 /** 供调用方先生成订单号再落账（确认页支付用） */
 export const newId = uid
 
+/* 提现通道报价（演示口径）：费 1%、最低 0.50 USDT，到账 = 申请额 − 费。
+   真实业务按通道实时报价，故提交时锁定（ExitRequest.quote），完成时按锁价落流水。 */
+export const WITHDRAW_FEE_RATE = 0.01
+export const WITHDRAW_FEE_MIN = 0.5
+export function withdrawQuote(usd: number) {
+  const fee = round2(Math.max(WITHDRAW_FEE_MIN, usd * WITHDRAW_FEE_RATE))
+  return { symbol: 'USDT', amount: round2(Math.max(0, usd - fee)), fee }
+}
+
 /** 退出单号：客诉按单号查证 */
 export const exitNo = (req: ExitRequest) => {
   const d = new Date(req.at)
@@ -186,7 +203,7 @@ const walletKey = (email: string) => `mk-site-wallet:${email}`
 
 /* seed 版本：实例状态机上线（订单行扩为实例全生命周期）时 +1 → 旧存档整体重播种。
    注意：重播种会清掉本机演示期间的充值/下单记录（演示账号口径，可接受）。 */
-export const SEED_VERSION = 8
+export const SEED_VERSION = 9
 
 /* 实例状态的展示口径（两页共用：实例卡 pill + 资金页订单表） */
 export const STATUS_TONES: Record<InstanceStatus, 'ok' | 'info' | 'warn' | 'bad' | 'muted'> = {
@@ -442,10 +459,13 @@ export function applyTopup(s: WalletState, channel: Channel, amount: number): Wa
 
 function applyTopupAt(s: WalletState, channel: Channel, amount: number, at: number, id = uid('p')): WalletState {
   const balance = round2(s.balance + amount)
+  /* 数币充值的实付币数额：演示按收银台 1:1 报价；真实接入后取收银台报价值 */
+  const paidCoin = channel === 'crypto' ? { symbol: 'USDT', amount } : undefined
   const payment: Payment = {
     id,
     channel,
     amount,
+    paidCoin,
     refunded: 0,
     withdrawn: 0,
     consumed: 0,
@@ -454,7 +474,7 @@ function applyTopupAt(s: WalletState, channel: Channel, amount: number, at: numb
   }
   return withLedger(
     { ...s, balance, payments: [payment, ...s.payments] },
-    { id: uid('l'), kind: 'topup', amount, at, channel, balAfter: balance },
+    { id: uid('l'), kind: 'topup', amount, at, channel, coin: paidCoin, balAfter: balance },
   )
 }
 
@@ -490,6 +510,8 @@ export type NewInstance = {
   diskGb?: number
   imageTag?: string
   launchMode?: 'ssh' | 'jupyter'
+  /* end-use 声明：订单级留痕（training/inference/research/other） */
+  endUse?: string
   ip?: string
   port22?: number
   port8080?: number
@@ -523,6 +545,7 @@ function newInstanceRow(m: NewInstance, amount: number, id: string, at: number):
     port8080: m.port8080 ?? randPort(),
     customPorts: [],
     launchMode: m.launchMode ?? 'ssh',
+    endUse: m.endUse,
     status: 'Creating',
     phaseUntil: at + 15000,
     rentalEnd: m.hours ? at + m.hours * 3600000 : undefined,
@@ -621,6 +644,8 @@ function applyExitSubmitAt(s: WalletState, method: ExitMethod, amount: number, o
     at,
     allocations,
     address: opts.address,
+    /* 提现报价提交时锁定：真实通道报价会变，完成时按锁价落账 */
+    quote: method === 'withdraw' ? withdrawQuote(amount) : undefined,
   }
   return { ...s, payments, exits: [request, ...s.exits] }
 }
@@ -640,7 +665,7 @@ function applyExitAdvanceAt(s: WalletState, id: string, to: ExitStatus, at: numb
     const balance = round2(s.balance - req.amount)
     next = withLedger(
       { ...s, balance, exits: s.exits.map(r => r.id === id ? { ...r, status: to } : r) },
-      { id: uid('l'), kind: req.method === 'refund' ? 'refund' : 'withdraw', amount: req.amount, at, balAfter: balance },
+      { id: uid('l'), kind: req.method === 'refund' ? 'refund' : 'withdraw', amount: req.amount, at, coin: req.quote, balAfter: balance },
     )
   } else if (to === 'failed') {
     /* 回滚占用的支付单额度；只回滚一次 */

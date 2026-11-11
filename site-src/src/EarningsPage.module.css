@@ -5,7 +5,6 @@
 
 /* —— 页头 —— */
 .head h1 { margin: 0; font-size: 40px; line-height: 1.25; font-weight: 500; letter-spacing: -.035em; color: #17212c; }
-.lead { margin: 16px 0 0; max-width: 74ch; color: #34475a; font-size: 13.5px; line-height: 1.95; }
 
 /* —— 收益卡（与资金页同构：金额左、动作右） —— */
 .pools { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 34px; }
@@ -27,12 +26,6 @@
 .demoBtn { min-height: 32px; padding: 0 12px; border: 1px dashed #b9c6d4; border-radius: 5px; background: transparent; color: #627386; font-size: 11px; white-space: nowrap; }
 .demoBtn:hover { border-color: #315f90; color: #315f90; }
 
-/* —— 结算方式：通道未开通时的占位卡 —— */
-.settleCard { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 16px 22px; border: 1px solid #e1e6ec; border-radius: 14px; background: #fff; }
-.settleCard > div { display: grid; gap: 6px; min-width: 0; }
-.settleCard b { font-weight: 500; color: #17212c; font-size: 13px; }
-.settleCard span { color: #627386; font-size: 11.5px; line-height: 1.7; }
-
 /* —— 区块与表格 —— */
 .section { margin-top: 44px; }
 .sectionHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px; margin-bottom: 12px; }
@@ -47,7 +40,13 @@
 .table td { padding: 12px 18px; border-bottom: 1px solid #e9edf1; vertical-align: middle; color: #34475a; }
 /* 提特异性：.table th 自带 text-align:left（0,1,1），单类 .right（0,1,0）压不过它 */
 .table .right { text-align: right; }
-.sumRow td { border-bottom: 0; border-top: 1px solid #dce2e8; background: #f7f9fa; color: #17212c; font-weight: 500; }
+/* —— 30 天汇总：独立统计块（不占明细行） —— */
+.summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 28px; margin-bottom: 14px; padding: 13px 20px; border: 1px solid #e1e6ec; border-radius: 12px; background: #fbfcfd; }
+.summaryLabel { color: #627386; font-size: 11.5px; letter-spacing: .02em; }
+.summaryStats { display: flex; flex-wrap: wrap; gap: 10px 36px; }
+.summaryStats > span { display: flex; align-items: baseline; gap: 7px; }
+.summaryStats small { color: #627386; font-size: 10.5px; }
+.summaryStats b { font-size: 13px; font-weight: 500; color: #17212c; }
 .empty { margin: 0; padding: 24px; border: 1px dashed #dce2e8; border-radius: 12px; color: #627386; font-size: 12.5px; text-align: center; }
 
 @media (max-width: 1279px) {
@@ -55,6 +54,5 @@
   .head h1 { font-size: 34px; }
 }
 @media (max-width: 900px) {
-  .lead { font-size: 13px; }
   .poolFoot { flex-wrap: wrap; align-items: flex-start; }
 }

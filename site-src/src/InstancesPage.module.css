@@ -61,8 +61,8 @@
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 24px; margin-top: 16px; }
 .statsQuiet { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; margin-top: 16px; }
 .statSub { margin-top: 2px; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: #627386; }
-.statLabel { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #627386; }
-.statValue { margin-top: 4px; font-family: "SF Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 500; color: #17212c; }
+.statLabel { font-size: 10px; color: #627386; }
+.statValue { margin-top: 4px; font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 500; color: #17212c; }
 .statValue[data-tone=ok] { color: #17683e; }
 /* 完整时间戳（带年份）比金额长，降一档字号避免挤压右侧 */
 .statValue[data-dense] { font-size: 13px; }
@@ -84,7 +84,7 @@
 
 /* —— 操作行 —— */
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
-.actBtn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border: 1px solid #dce2e8; border-radius: 6px; background: #fff; color: #34475a; font-size: 12px; text-decoration: none; cursor: pointer; }
+.actBtn { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border: 1px solid #dce2e8; border-radius: 6px; background: #fff; color: #34475a; font-size: 11px; text-decoration: none; cursor: pointer; }
 .actBtn:hover:not(:disabled) { border-color: #315f90; color: #17212c; }
 .actBtn:focus-visible { outline: 2px solid #315f90; outline-offset: 1px; }
 .actBtn:disabled { opacity: .45; cursor: not-allowed; }

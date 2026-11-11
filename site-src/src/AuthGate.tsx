@@ -85,7 +85,7 @@ const copy = {
     gateLead: '资金绑定在账户上：余额、收益与退回记录都属于当前登录的账户，未登录时不展示任何金额。',
     gatePoints: [
       '同一浏览器换账号登录，看到的是另一套余额与流水',
-      '一个 USD 余额，银行卡与 USDT 只是入金方式',
+      '一个 USD 余额，银行卡与稳定币只是入金方式',
       '演示账号 demo@demo.dev 预置了演示资金与退回记录',
     ],
     demoAccount: '用演示账号登录',
@@ -112,7 +112,7 @@ const copy = {
     gateLead: 'Funds are bound to accounts: balances, earnings and withdrawals belong to the signed-in account. No amounts are shown otherwise.',
     gatePoints: [
       'Signing in with another account shows a different set of balances and records',
-      'Fiat and crypto balances are kept apart; withdrawals never cross assets',
+      'One USD balance; card and stablecoin are just ways to fund it',
       'The demo account demo@demo.dev comes with prefilled funds and withdrawals',
     ],
     demoAccount: 'Use the demo account',

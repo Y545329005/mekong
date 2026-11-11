@@ -1,0 +1,137 @@
+/* ============================================================================
+   我的机器 · 宿主供给控制台
+   外壳与「实例」页一致：白底 `.page/.shell` 复用 WalletPage.module.css，
+   页头一行吸顶（标题 + 等宽摘要 + 状态筛选 + 上架入口）。
+   卡片沿用算力市场的盘口语法（身份行 / 数据行 / 价格列），
+   色板：#fff / #17212c / #34475a / #627386 / #315f90 / #dce2e8、#e1e6ec。
+   ========================================================================== */
+
+/* —— 吸顶页头：与实例页同形制（top 66 贴住站 header） —— */
+.headRow { position:sticky;top:66px;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;
+  margin:0 0 20px;padding:16px 0 12px;background:#fff;border-bottom:1px solid #edf0f4; }
+.title { margin:0;font-size:28px;font-weight:500;letter-spacing:-.02em;color:#17212c; }
+.summary { margin:0;font-family:"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-size:12px;color:#627386; }
+.toolbar { display:flex;align-items:center;gap:14px;margin-left:auto; }
+.filters { display:inline-flex;flex-wrap:wrap;gap:4px; }
+.chip { min-height:30px;padding:0 11px;border:1px solid #dce2e8;border-radius:6px;background:#fff;color:#627386;font-size:11.5px;white-space:nowrap; }
+.chip:hover { border-color:#315f90;color:#17212c; }
+.chip[data-active=true] { border-color:#315f90;background:#eef3f8;color:#17212c;font-weight:500; }
+.chip:focus-visible,.act:focus-visible { outline:2px solid #315f90;outline-offset:1px; }
+
+/* 操作反馈：视觉由「最近操作置顶」承担（见页面逻辑），此处仅读屏可见 */
+.srOnly { position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap; }
+/* 计费口径说明：整机一口价、带宽归平台 */
+.scopeNote { margin:10px 0 0;font-size:10px;line-height:1.7;color:#627386; }
+
+/* —— 卡片：白底卡身，未挂牌压暗一档（与实例页「已销毁」同一手法） —— */
+.cards { display:grid;gap:16px;font-variant-numeric:tabular-nums; }
+.card { min-width:0;border:1px solid #d3dbe4;border-radius:14px;padding:22px 26px 20px;background:#fff;transition:border-color .18s ease; }
+.card:hover { border-color:#9bafc3; }
+.card[data-state=running] { border-color:#c3d5e8; }
+.card[data-state=off] { border-color:#e1e6ec;background:#fbfcfd; }
+.empty { margin:0;padding:34px;border:1px dashed #dce2e8;border-radius:14px;color:#627386;font-size:12.5px;text-align:center; }
+
+.identity { display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px; }
+.identityItems { display:flex;align-items:center;flex-wrap:wrap;gap:7px 18px;min-width:0; }
+.identityItem { display:flex;align-items:center;gap:6px;min-width:0;font-size:11px; }
+.identityItem>span { color:#627386;font-size:10px; }
+.identityItem code { font:10px Consolas,monospace;color:#17212c;white-space:nowrap; }
+.identityItem strong { color:#17212c;font-size:11px;font-weight:400; }
+.regionEn { color:#627386;font-size:10px;line-height:1.6; }
+.rowActions { display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;flex-shrink:0; }
+
+.status { display:inline-flex;align-items:center;flex-shrink:0;gap:6px;padding:3px 10px;border:1px solid #e1e6ec;border-radius:999px;background:#f7f9fa;color:#627386;font-size:11.5px;font-weight:500;white-space:nowrap; }
+.status[data-tone=ok] { border-color:#bfe0cf;background:#f2faf5;color:#17683e; }
+.pulse { width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:currentColor;animation:machinePulse 1.6s ease-in-out infinite; }
+@keyframes machinePulse { 0%,100% { opacity:1 } 50% { opacity:.3 } }
+@media (prefers-reduced-motion:reduce) { .pulse { animation:none; } }
+
+.dataRow { display:grid;grid-template-columns:1.2fr .8fr .95fr 1fr 1.05fr;gap:22px;align-items:start;grid-template-areas:'gpu cpu disk lease price'; }
+/* 未登记配置的机器：不排空列，栅格收成 GPU / 租赁 / 价格 三列 */
+.dataRow[data-specs=false] { grid-template-columns:1.4fr 1fr 1.1fr;grid-template-areas:'gpu lease price'; }
+.dataRow>div { min-width:0; }
+.gpuCell { grid-area:gpu; }
+.cpuCell { grid-area:cpu; }
+.diskCell { grid-area:disk; }
+.leaseCell { grid-area:lease; }
+.priceCell { grid-area:price;border-left:1px solid #eef1f5;padding-left:20px; }
+.dataRow h2 { margin:0 0 6px;color:#17212c;font-size:18px;font-weight:600;line-height:1.35;overflow-wrap:anywhere; }
+.gpuMemory { margin:0 0 10px;color:#17212c;font-size:18px;font-weight:500;line-height:1.4; }
+.gpuMemory small { font-size:10px;font-weight:400;color:#627386; }
+.cellLabel { display:block;margin-bottom:8px;font-size:10px;color:#627386;font-weight:400; }
+.specBlock+.specBlock { margin-top:14px; }
+.specTitle { margin:0 0 3px;font-size:10px;font-weight:600;letter-spacing:.02em;color:#627386; }
+.specValue { color:#17212c;font-size:12px;line-height:1.5;overflow-wrap:anywhere; }
+.leaseMain { margin:0;color:#17212c;font-size:12px;line-height:1.55; }
+.leaseMain b { font:500 15px "SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;letter-spacing:-.01em; }
+.cellMuted { color:#627386;font-size:10px;line-height:1.85; }
+
+.priceCell>strong { display:block;color:#315f90;font-size:26px;font-weight:500;line-height:1.15;letter-spacing:-.025em;white-space:nowrap; }
+.priceCell .priceUnit { margin-left:4px;font-size:10px;font-weight:400;color:#627386;letter-spacing:0; }
+.priceMeta { margin-top:5px;font-size:10px;line-height:1.7;color:#627386; }
+.priceMeta b { font-weight:500;color:#34475a;font-variant-numeric:tabular-nums; }
+.priceDelta { margin-top:1px;font-size:10px;line-height:1.7;color:#34475a; }
+
+/* 下架确认条：跟随 header 里的「下架」按钮就近展开（不再落卡片底部） */
+.confirmInline { display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;flex:1 1 100%;padding:8px 12px;border:1px solid #e8c4bf;border-radius:8px;background:#fcf2f0;color:#a83a32;font-size:11.5px;line-height:1.6; }
+.confirmInline span { flex:1 1 220px; }
+.confirmInline button { flex:0 0 auto;min-height:28px;padding:0 12px;border:1px solid #dce2e8;border-radius:5px;background:#fff;color:#34475a;font-size:11.5px; }
+.confirmInline button[data-kind=danger] { border-color:#a83a32;background:#a83a32;color:#fff;font-weight:500; }
+.confirmInline button:hover { border-color:#315f90; }
+.confirmInline button[data-kind=danger]:hover { border-color:#8f2f28; }
+.act { display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:0 12px;border:1px solid #dce2e8;border-radius:6px;background:#fff;color:#34475a;font-size:11px;white-space:nowrap;transition:border-color .15s,color .15s,background .15s; }
+.act:hover:not(:disabled) { border-color:#315f90;color:#17212c; }
+.act:disabled { opacity:.45;cursor:not-allowed; }
+.act[data-primary] { border-color:#315f90;background:#315f90;color:#fff; }
+.act[data-primary]:hover:not(:disabled) { border-color:#27507c;background:#27507c;color:#fff; }
+.act[data-kind=danger] { border-color:#e8c4bf;color:#a83a32; }
+.act[data-kind=danger]:hover:not(:disabled) { border-color:#a83a32;background:#fcf2f0;color:#a83a32; }
+.act[data-kind=start] { border-color:#bfe0cf;background:#f2faf5;color:#17683e; }
+.act[data-kind=start]:hover:not(:disabled) { border-color:#17683e;color:#17683e; }
+
+/* —— 演示说明：一行，不混入数据区 —— */
+.demoRow { display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:26px;padding-top:16px;border-top:1px solid #edf0f4; }
+.demoLabel { color:#627386;font-size:9.5px;letter-spacing:.04em;text-transform:uppercase; }
+.demoNote { flex:1 1 240px;color:#627386;font-size:10.5px;line-height:1.6; }
+
+/* —— 弹窗内容（外壳复用 wallet/ui 的 Overlay） —— */
+/* —— 已核验配置：登记配置只读展示（平台核验背书），框式与行情框同款 —— */
+.verifiedBox { display:grid;gap:8px;margin:16px 0 0;padding:14px 16px;border:1px solid #e1e6ec;border-radius:10px;background:#fbfcfd; }
+.verifiedHead { display:flex;align-items:center;gap:7px;color:#17212c; }
+.verifiedHead b { font-size:11.5px;font-weight:600;letter-spacing:.02em; }
+.marketBox { display:grid;gap:8px;margin:16px 0 20px;padding:14px 16px;border:1px solid #e1e6ec;border-radius:10px;background:#fbfcfd; }
+.marketRow { display:flex;align-items:baseline;justify-content:space-between;gap:14px;font-size:11.5px;color:#627386; }
+.marketRow b { font-family:"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-weight:500;color:#17212c;text-align:right; }
+.priceField { display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:1px solid #dce2e8;border-radius:8px;background:#fff; }
+.priceField:focus-within { border-color:#315f90;outline:2px solid rgba(49,95,144,.35);outline-offset:1px; }
+.priceField em { flex:0 0 auto;font-style:normal;font-family:"SF Mono",Menlo,Consolas,monospace;color:#627386;font-size:13px; }
+.priceField input { width:100%;min-height:42px;padding:0;border:0;background:transparent;outline:none;color:#17212c;font:500 16px "SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums; }
+.preview { margin:10px 0 0;font-size:11.5px;line-height:1.8;color:#34475a; }
+.preview[data-invalid=true] { color:#a83a32; }
+
+/* 上架机器选择：下拉切换，只列名下未挂牌的机器 */
+.picker { display:grid;gap:8px;margin:2px 0 0; }
+.picker select { width:100%;min-height:44px;padding:10px 12px;border:1px solid #dce2e8;border-radius:8px;background:#fff;color:#17212c;font-size:13px;font-family:inherit; }
+
+/* —— 断点：与实例 / 收益页同为桌面优先，窄屏只收卡片栅格 —— */
+@media (max-width:1100px) {
+  .dataRow { grid-template-areas:'gpu gpu' 'lease lease' 'price price' 'cpu disk';gap:20px 22px; }
+  .dataRow[data-specs=false] { grid-template-columns:1fr;grid-template-areas:'gpu' 'lease' 'price'; }
+  .priceCell { display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;border-left:0;border-top:1px solid #eef1f5;padding:14px 0 0;text-align:left; }
+  .priceCell .cellLabel { flex-basis:100%;margin-bottom:2px; }
+  .priceCell>strong { font-size:24px; }
+  .priceMeta { flex:1 1 auto;text-align:right;margin-top:0; }
+  .priceDelta { margin-top:0; }
+}
+@media (max-width:760px) {
+  .headRow { position:static; }
+  .toolbar { width:100%;margin-left:0;justify-content:space-between; }
+  .card { padding:20px 18px 18px; }
+  .identity { flex-wrap:wrap;gap:10px;margin-bottom:18px; }
+  .dataRow { gap:18px 16px; }
+  .priceCell>strong { font-size:22px; }
+  .confirmInline span { flex-basis:100%; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .card,.act,.chip { transition:none!important; }
+}

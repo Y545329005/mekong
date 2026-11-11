@@ -45,8 +45,14 @@
 /* 提特异性：.table th 自带 text-align:left（0,1,1），单类 .right（0,1,0）压不过它 */
 .table .right { text-align: right; }
 .machine { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11.5px; color: #17212c; }
+/* 机器名跳转实例页：下边框当链接下划线，不破坏等宽排版 */
+.machineLink { color: inherit; text-decoration: none; border-bottom: 1px solid #c3ced9; }
+.machineLink:hover { color: #315f90; border-bottom-color: #315f90; }
+.machineLink:focus-visible { outline: 2px solid #315f90; outline-offset: 2px; }
 .descWrap { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .descLabel { color: #627386; font-size: 11px; font-family: "SF Mono", Menlo, Consolas, monospace; }
+/* 退回记录方式列的次要信息：退款＝支付单引用，提现＝链上地址 */
+.methodSub { display: block; margin-top: 3px; color: #627386; font-size: 10.5px; font-family: "SF Mono", Menlo, Consolas, monospace; overflow-wrap: anywhere; }
 .advanceRow { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
 
 /* —— 消费构成（近 30 天 · 段结算口径）—— */
@@ -85,7 +91,6 @@
 .segPill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-family: inherit; font-size: 10.5px; }
 .segPill[data-run="true"] { background: #eef3f8; color: #315f90; }
 .segPill[data-run="false"] { background: #eceff2; color: #627386; }
-.proofRef { margin: 0; color: #627386; font-size: 10.5px; font-family: "SF Mono", Menlo, Consolas, monospace; overflow-wrap: anywhere; }
 
 @media (max-width: 1279px) {
   .shell { padding-inline: 40px; }

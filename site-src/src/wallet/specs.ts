@@ -18,6 +18,9 @@ export const MACHINE_SPECS: Record<string, MachineSpec> = {
   'M-03011042': { dph: 2.2, bwMbps: 40, diskGb: 240, gpu: 'H200 NVL ×1', vcpu: 20, memMb: 40960 },
   'M-07730119': { dph: 0.72, bwMbps: 80, diskGb: 240, gpu: 'RTX 4090 ×4', vcpu: 32, memMb: 65536 },
   'M-06250011': { dph: 4.11, bwMbps: 100, diskGb: 240, gpu: 'GB300 ×1', vcpu: 64, memMb: 131072 },
+  /* 名下已登记、尚未挂牌的机器：上架流程只从这些机器里挑，不凭空造机器 */
+  'M-04770132': { dph: 2.36, bwMbps: 60, diskGb: 480, gpu: 'RTX 5090 ×4', vcpu: 32, memMb: 65536 },
+  'M-02933310': { dph: 4.4, bwMbps: 40, diskGb: 240, gpu: 'H200 NVL ×2', vcpu: 20, memMb: 40960 },
 }
 
 /** 未知机器（真实下单的新机）的演示兜底 */
@@ -26,10 +29,3 @@ export const FALLBACK_SPEC: MachineSpec = { dph: 2, bwMbps: 30, diskGb: 240, gpu
 const machineKey = (label?: string) => (label ?? '').split(' · ')[0] ?? ''
 
 export const specOf = (label?: string): MachineSpec => MACHINE_SPECS[machineKey(label)] ?? FALLBACK_SPEC
-
-/** spec_code：计量规格标识（对齐 Nexus meter 的 spec_code 形态，非商品 SKU） */
-export const specCode = (label?: string) => {
-  const s = specOf(label)
-  const gpuSlug = s.gpu ? s.gpu.toLowerCase().replace(/×/g, 'x').replace(/\s+/g, '') : 'gpu'
-  return `cs-${s.vcpu}c-${s.memMb}mb-${s.diskGb}gb-normal_local-${gpuSlug}`
-}

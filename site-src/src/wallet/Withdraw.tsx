@@ -8,7 +8,7 @@
 
 import { useState } from 'react'
 import type { Language } from '../content'
-import { MIN_REFUND, MIN_WITHDRAW, REFUND_COOLING_DAYS, cryptoWithdrawable, inFlightTotal, isRefundOpen, lotAvailable, money, stampFull } from './store'
+import { MIN_REFUND, MIN_WITHDRAW, REFUND_COOLING_DAYS, cryptoWithdrawable, inFlightTotal, isRefundOpen, lotAvailable, money, stampFull, usdt, withdrawQuote } from './store'
 import type { ExitRequest, Payment, WalletState } from './store'
 import { Overlay } from './ui'
 import u from './ui.module.css'
@@ -16,13 +16,14 @@ import u from './ui.module.css'
 const copy = {
   zh: {
     title: '退回',
-    lead: '卡充值原路退回银行卡；USDT 充值可提到你自己的链上钱包。',
+    lead: '卡充值原路退回银行卡；稳定币充值可提到你自己的链上钱包。',
     refundTitle: '退回原银行卡',
     refundMeta: (v: string, n: number) => `可退 ${v} · ${n} 笔充值`,
     withdrawTitle: '提到链上钱包',
     withdrawMeta: (v: string) => `可提 ${v}`,
     refundCooling: '充值满 7 天可退，随时申请，不设期限',
-    withdrawHint: '到账 USDT，按通道报价',
+    withdrawHint: '到账数额按通道报价折算',
+    withdrawEstimate: (v: string, f: string) => `预计到账 ${v} · 通道费 ${f}`,
     choosePayment: '选择要退的充值单',
     remaining: '可退',
     paid: '充值',
@@ -33,7 +34,7 @@ const copy = {
     address: '钱包地址',
     addressPlaceholder: 'T...',
     refundNote: '充值满 7 天后可申请；提交后原路退回，通常 1–3 个工作日到账，失败时金额回到余额。',
-    withdrawNote: '单笔最低 $10.00；到账 USDT 与手续费以提交后通道报价为准。',
+    withdrawNote: '单笔最低 $10.00；到账数额与手续费以提交后通道报价为准。',
     invalidRefund: '金额需在可退范围内',
     invalidWithdraw: '提现金额需 ≥ $10.00 且不超过可提金额',
     invalidAddress: '请输入有效的钱包地址',
@@ -42,16 +43,17 @@ const copy = {
     cancel: '取消',
     inFlight: '已有一笔退回在处理中，完成后再提交。',
     noRefund: '没有可退的卡充值',
-    noWithdraw: '没有可提的 USDT 充值',
+    noWithdraw: '没有可提的稳定币充值',
   },
   en: {
     title: 'Refund or withdraw',
-    lead: 'Card top-ups go back to the original card; USDT top-ups can be withdrawn to your own wallet.',
+    lead: 'Card top-ups go back to the original card; stablecoin top-ups can be withdrawn to your own wallet.',
     refundTitle: 'Refund to the card',
     refundMeta: (v: string, n: number) => `${v} refundable · ${n} payments`,
     withdrawTitle: 'Withdraw to a wallet',
     withdrawMeta: (v: string) => `${v} available`,
-    withdrawHint: 'Paid in USDT, quoted by the channel',
+    withdrawHint: 'Amount credited is quoted by the channel',
+    withdrawEstimate: (v: string, f: string) => `Estimated ${v} received · fee ${f}`,
     refundCooling: 'Refundable 7 days after the top-up, no expiry',
     choosePayment: 'Choose the top-up to refund',
     remaining: 'Refundable',
@@ -63,7 +65,7 @@ const copy = {
     address: 'Wallet address',
     addressPlaceholder: 'T...',
     refundNote: 'Available 7 days after the top-up. Refunds go back to the original card within 1–3 business days; a failed refund returns the amount to your balance.',
-    withdrawNote: 'Minimum $10.00; the USDT received and the fee are quoted by the channel after submission.',
+    withdrawNote: 'Minimum $10.00; the amount received and the fee are quoted by the channel after submission.',
     invalidRefund: 'Enter an amount within the refundable range',
     invalidWithdraw: 'Amount must be at least $10.00 and within the available balance',
     invalidAddress: 'Enter a valid wallet address',
@@ -72,7 +74,7 @@ const copy = {
     cancel: 'Cancel',
     inFlight: 'Another refund or withdrawal is still in progress.',
     noRefund: 'No card top-up can be refunded',
-    noWithdraw: 'No USDT top-up can be withdrawn',
+    noWithdraw: 'No stablecoin top-up can be withdrawn',
   },
 }
 
@@ -120,6 +122,8 @@ export function ExitModal({ lang, wallet, onClose, onRefund, onWithdraw }: {
   const refundValid = method === 'refund' && lot && Number.isFinite(value) && value >= MIN_REFUND && value <= lotMax + 1e-9
   const withdrawValid = method === 'withdraw' && Number.isFinite(value) && value >= MIN_WITHDRAW && value <= withdrawTotal + 1e-9 && address.trim().length >= 20
   const valid = !inFlight && (refundValid || withdrawValid)
+  /* 提现实到预估（与提交时锁定的报价同源）：金额有效才展示 */
+  const estimate = method === 'withdraw' && Number.isFinite(value) && value >= MIN_WITHDRAW ? withdrawQuote(value) : null
 
   const submit = () => {
     setError('')
@@ -177,6 +181,7 @@ export function ExitModal({ lang, wallet, onClose, onRefund, onWithdraw }: {
             aria-label={t.amount} onChange={event => setAmount(event.target.value)} />
           <button className={u.miniBtn} onClick={() => setAmount(withdrawTotal.toFixed(2))}>{t.all}</button>
         </div>
+        {estimate && <p className={u.note}>{t.withdrawEstimate(usdt(estimate.amount), usdt(estimate.fee))}</p>}
         <span className={u.fieldLabel}>{t.address}</span>
         <input className={u.input} value={address} placeholder={t.addressPlaceholder}
           aria-label={t.address} onChange={event => setAddress(event.target.value)} />

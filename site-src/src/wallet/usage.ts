@@ -9,9 +9,9 @@
 
 import type { LedgerRow, WalletState } from './store'
 import { STORE_PER_GB_H, now } from './store'
-import { RATE_BW_MBPS_H, specCode, specOf } from './specs'
+import { RATE_BW_MBPS_H, specOf } from './specs'
 
-export { RATE_BW_MBPS_H, specCode, specOf } from './specs'
+export { RATE_BW_MBPS_H, specOf } from './specs'
 
 /* —— 三组件拆分（金额守恒：gpuFee = amount − bwFee − storageFee） —— */
 
@@ -24,9 +24,7 @@ export type Breakdown = {
   storageFee: number
   bwMbps: number
   diskGb: number
-  spec: string
   segments: UsageSegment[]
-  requestId: string
 }
 
 export type UsageSegment = {
@@ -57,9 +55,8 @@ export function usageBreakdown(row: LedgerRow): Breakdown | null {
     return {
       kind: 'storage', seconds,
       gpuFee: 0, bwFee: 0, storageFee: row.amount,
-      bwMbps: spec.bwMbps, diskGb: spec.diskGb, spec: specCode(row.label),
+      bwMbps: spec.bwMbps, diskGb: spec.diskGb,
       segments: [{ id: 100 + seed % 900, state: 'stopped', stateZh: '关机', durationSeconds: seconds, bandwidthMbps: spec.bwMbps }],
-      requestId: `req_${seed.toString(16).padStart(12, '0')}`,
     }
   }
 
@@ -82,9 +79,8 @@ export function usageBreakdown(row: LedgerRow): Breakdown | null {
   ]
   return {
     kind: 'gpu', seconds, gpuFee, bwFee, storageFee: 0,
-    bwMbps: spec.bwMbps, diskGb: spec.diskGb, spec: specCode(row.label),
+    bwMbps: spec.bwMbps, diskGb: spec.diskGb,
     segments,
-    requestId: `req_${seed.toString(16).padStart(12, '0')}`,
   }
 }
 

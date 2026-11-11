@@ -1,4 +1,4 @@
-type Props = { name: 'arrow' | 'diagonal' | 'chevron' | 'globe' | 'chip' | 'bolt' | 'calendar' | 'layers' | 'close' | 'menu' | 'check' | 'user' | 'term' | 'trash' | 'refresh' | 'stop' | 'play' | 'port'; size?: number }
+type Props = { name: 'arrow' | 'diagonal' | 'chevron' | 'globe' | 'chip' | 'bolt' | 'calendar' | 'layers' | 'close' | 'menu' | 'check' | 'user' | 'term' | 'trash' | 'refresh' | 'stop' | 'play' | 'port' | 'plus'; size?: number }
 export default function Icon({ name, size = 18 }: Props) {
   const paths = {
     arrow: <><path d="M4 12h15M13 5l7 7-7 7" /></>,
@@ -19,6 +19,7 @@ export default function Icon({ name, size = 18 }: Props) {
     stop: <><rect x="6.5" y="6.5" width="11" height="11" rx="1" /></>,
     play: <path d="M7 4.5v15l13-7.5z" />,
     port: <><path d="M5 12h14M12 5v14" /><path d="m8.5 8.5-3.5 3.5 3.5 3.5M15.5 8.5 19 12l-3.5 3.5" /></>,
+    plus: <path d="M12 5v14M5 12h14" />,
   }
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }

@@ -5,7 +5,7 @@
            #315f90/#dce2e8、#e1e6ec）；深色 header 由 App 层保留。等宽数字。
    STORY  收益先进待结算（结算 + 争议窗口），到期转可结算；结算通道尚未开通，
            因此入口占位、不产生结算记录。企业宿主走线下，不进入本页。
-   FORM  收益卡（可结算 + 待结算）→ 结算方式 → 收益明细（分页 + 30 天汇总）。
+   FORM  收益卡（规则并入卡内）→ 收益明细（30 天汇总块 + 分页）→ 演示层。
    ========================================================================== */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -23,24 +23,20 @@ const EARN_PAGE = 8
 const copy = {
   zh: {
     title: '收益',
-    lead: '出租收益先进入待结算，窗口结束后转为可结算。',
     balance: '可结算',
     balanceRole: '收益会累计到这里',
+    holdRule: '出租收益先进入待结算，窗口结束后转为可结算；结算通道开通中。',
     holding: '待结算',
     unlockIn: '后可结算',
-    settle: '结算到 Airwallex 账户',
+    settle: '结算',
     settlePending: '结算通道开通中',
-    settlement: '结算方式',
-    settlementName: 'Airwallex 账户',
-    settlementStatus: '通道开通中',
-    settlementNote: '通道开通后，收益可结算到你自己的 Airwallex 账户；在此之前收益继续累计，不影响计费。',
-    simulate: '模拟收益 $20（抽成 $2）',
+    simulate: '模拟收益 $20（平台费用 $2）',
     demoLabel: '演示',
     demoNote: '演示控制只用于走查状态；真实结算由通道完成。',
     detail: '收益明细',
     time: '时间',
-    gross: '毛收入',
-    fee: '平台抽成',
+    gross: '订单金额',
+    fee: '平台费用',
     net: '净入账',
     status: '状态',
     ready: '可结算',
@@ -56,23 +52,19 @@ const copy = {
   },
   en: {
     title: 'Earnings',
-    lead: 'Rental revenue enters pending first, then becomes settleable once the window ends.',
     balance: 'Settleable',
     balanceRole: 'Earnings accumulate here',
+    holdRule: 'Rental revenue enters pending first, then becomes settleable once the window ends; the settlement channel is being enabled.',
     holding: 'Pending',
     unlockIn: 'until settleable',
-    settle: 'Settle to Airwallex',
+    settle: 'Settle',
     settlePending: 'Settlement channel is being enabled',
-    settlement: 'Settlement method',
-    settlementName: 'Airwallex account',
-    settlementStatus: 'Being enabled',
-    settlementNote: 'Once the channel is enabled you can settle to your own Airwallex account; earnings keep accruing in the meantime.',
-    simulate: 'Simulate $20 earnings ($2 fee)',
+    simulate: 'Simulate $20 earnings ($2 platform fee)',
     demoLabel: 'Demo',
     demoNote: 'Demo controls only walk the status; the channel performs the real settlement.',
     detail: 'Earnings detail',
     time: 'Time',
-    gross: 'Gross',
+    gross: 'Order amount',
     fee: 'Platform fee',
     net: 'Net credited',
     status: 'Status',
@@ -144,7 +136,6 @@ function EarningsAccount({ lang, email }: { lang: Language; email: string }) {
     <div className={s.shell}>
       <header className={s.head}>
         <h1>{t.title}</h1>
-        <p className={s.lead}>{t.lead}</p>
       </header>
 
       <section className={s.pools} aria-label={t.balance}>
@@ -161,35 +152,23 @@ function EarningsAccount({ lang, email }: { lang: Language; email: string }) {
             <strong className={s.poolAmount}>{money(settleable(wallet))}</strong>
             <button className={u.btnPrimary} disabled title={t.settlePending}>{t.settle}</button>
           </div>
-          <p className={s.poolNote}>{t.settlePending}</p>
+          <p className={s.poolNote}>{t.holdRule}</p>
         </article>
       </section>
-
-      <section className={s.section} aria-labelledby="earnings-settlement-title">
-        <div className={s.sectionHead}>
-          <h2 id="earnings-settlement-title">{t.settlement}</h2>
-        </div>
-        <div className={s.settleCard}>
-          <div>
-            <b>{t.settlementName}</b>
-            <span>{t.settlementNote}</span>
-          </div>
-          <Badge tone="warn">{t.settlementStatus}</Badge>
-        </div>
-      </section>
-
-      {/* 演示层：统一虚线框，不混入数据区 */}
-      <div className={s.demoRow}>
-        <span className={s.demoLabel}>{t.demoLabel}</span>
-        <button className={s.demoBtn} onClick={accrueDemo}>{t.simulate}</button>
-        <span className={s.demoNote}>{t.demoNote}</span>
-      </div>
 
       <section className={s.section} aria-labelledby="earnings-detail-title">
         <div className={s.sectionHead}>
           <h2 id="earnings-detail-title">{t.detail}</h2>
         </div>
-        {earningRows.length === 0 ? <p className={s.empty}>{t.emptyDetail}</p> : (
+        {earningRows.length === 0 ? <p className={s.empty}>{t.emptyDetail}</p> : (<>
+          <div className={s.summary}>
+            <span className={s.summaryLabel}>{t.sum}</span>
+            <div className={s.summaryStats}>
+              <span><small>{t.gross}</small><b className={u.mono}>{money(summary.gross)}</b></span>
+              <span><small>{t.fee}</small><b className={u.mono}>{money(summary.fee)}</b></span>
+              <span><small>{t.net}</small><b className={u.mono}>{money(summary.net)}</b></span>
+            </div>
+          </div>
           <div className={s.tableWrap}>
             <table className={s.table}>
               <thead><tr><th>{t.time}</th><th className={s.right}>{t.gross}</th><th className={s.right}>{t.fee}</th><th className={s.right}>{t.net}</th><th>{t.status}</th></tr></thead>
@@ -203,20 +182,20 @@ function EarningsAccount({ lang, email }: { lang: Language; email: string }) {
                     {row.holdUntil && row.holdUntil > Date.now() ? t.holding : t.ready}
                   </Badge></td>
                 </tr>)}
-                <tr className={s.sumRow}>
-                  <td>{t.sum}</td>
-                  <td className={`${s.right} ${u.mono}`}>{money(summary.gross)}</td>
-                  <td className={`${s.right} ${u.mono}`}>{money(summary.fee)}</td>
-                  <td className={`${s.right} ${u.mono}`}>{money(summary.net)}</td>
-                  <td />
-                </tr>
               </tbody>
             </table>
             <PageNav page={safeEarnPage} pages={earnPages} count={earningRows.length} t={t}
               onPage={next => setEarnPage(Math.min(Math.max(next, 1), earnPages))} />
           </div>
-        )}
+        </>)}
       </section>
+
+      {/* 演示层：统一虚线框，不混入数据区；置于明细下方，对版面影响最小 */}
+      <div className={s.demoRow}>
+        <span className={s.demoLabel}>{t.demoLabel}</span>
+        <button className={s.demoBtn} onClick={accrueDemo}>{t.simulate}</button>
+        <span className={s.demoNote}>{t.demoNote}</span>
+      </div>
     </div>
 
     {toast && <div className={u.toast} role="status">{toast}</div>}

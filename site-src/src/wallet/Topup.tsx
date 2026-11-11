@@ -16,7 +16,7 @@ import u from './ui.module.css'
 const copy = {
   zh: {
     title: '充值',
-    lead: '充值进入同一个 USD 余额；银行卡与 USDT 只是入金方式不同。',
+    lead: '充值进入同一个 USD 余额；银行卡与稳定币只是入金方式不同。',
     method: '入金方式',
     methodCard: '银行卡',
     methodCardHint: '卡 / Apple Pay / Google Pay',
@@ -41,7 +41,7 @@ const copy = {
   },
   en: {
     title: 'Top up',
-    lead: 'Both methods credit the same USD balance; card and USDT are just ways to pay.',
+    lead: 'Both methods credit the same USD balance; card and stablecoin are just ways to pay.',
     method: 'Funding method',
     methodCard: 'Bank card',
     methodCardHint: 'Card / Apple Pay / Google Pay',
