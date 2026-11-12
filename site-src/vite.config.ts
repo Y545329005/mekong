@@ -7,6 +7,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: './',
-  build: { outDir: '../site', emptyOutDir: true },
+  build: {
+    outDir: '../site',
+    emptyOutDir: true,
+    // 双入口：对客官网（index.html）+ 运营后台（admin.html，独立壳与 IA）
+    rollupOptions: { input: { main: 'index.html', admin: 'admin.html' } },
+  },
   server: { port: 8790, host: '127.0.0.1' },
 })

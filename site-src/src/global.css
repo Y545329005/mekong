@@ -24,7 +24,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
-body:has([data-view=home]),body:has([data-view=rent]),body:has([data-view=contact-sales]) { min-width:0; }
+body[data-view=admin],body:has([data-view=home]),body:has([data-view=rent]),body:has([data-view=contact-sales]),body:has([data-view=admin]) { min-width:0; }
 
 :root {
   --surface-space:radial-gradient(ellipse at 12% 4%,#868b9326,transparent 58%),radial-gradient(ellipse at 92% 110%,#69717b1c,transparent 60%),linear-gradient(135deg,#101319,#090d12);

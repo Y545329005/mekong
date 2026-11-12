@@ -1,0 +1,270 @@
+/* 运营后台 · 独立应用壳：深色侧边栏 + 白底主区（色板：#fff/#17212c/#34475a/#627386/#315f90/#dce2e8/#e1e6ec） */
+
+/* —— 闸页：全屏居中，未登录 / 非运营账号只见说明卡 —— */
+.gatePage { min-height: 100svh; display: grid; place-items: center; padding: 24px; background: #fbfcfd; color: #34475a; color-scheme: light; }
+.gateCard { width: min(460px, 100%); }
+.gateBrand { display: grid; gap: 2px; margin-bottom: 18px; font-size: 12px; color: #627386; }
+.gateBrand span { font-size: 16px; font-weight: 600; letter-spacing: -.01em; color: #17212c; }
+
+/* —— 后台壳：208px 深色侧边栏 + 主区（顶栏 + 内容） —— */
+.admin { display: grid; grid-template-columns: 208px minmax(0, 1fr); min-height: 100svh; background: #fbfcfd; color: #34475a; color-scheme: light; }
+/* —— skip link：壳层第一个可聚焦元素，聚焦才移入视口；蓝底白字为固定值
+   （载体 #315f90 不随主题翻，其上文字按「载体不翻→字固定」规则固定白） —— */
+.skipLink { position: fixed; left: 16px; top: 14px; z-index: 70; padding: 8px 14px; border: 0; border-radius: 6px; background: #315f90; color: #fff; font-size: 12px; text-decoration: none; clip: rect(0 0 0 0); }
+.skipLink:focus-visible { clip: auto; outline: 2px solid #17212c; outline-offset: 2px; }
+.adminSide { display: flex; flex-direction: column; gap: 20px; padding: 18px 12px 16px; background: #17212c; /* min-width:0 断开 nav intrinsic 宽度向 grid 轨道的传播（窄屏 1fr = minmax(auto,1fr) 会被撑破） */ min-width: 0; }
+.adminBrand { display: grid; gap: 2px; padding: 4px 10px 0; font-size: 11.5px; color: rgba(255, 255, 255, .55); }
+.adminBrand span { font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: #fff; }
+.adminNav { display: grid; gap: 14px; }
+.adminGroup { display: grid; gap: 2px; }
+.adminGroupLabel { padding: 0 10px 4px; color: rgba(255, 255, 255, .55); font-size: 10.5px; font-weight: 500; letter-spacing: .04em; }
+.adminNavBtn { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 7px; background: transparent; color: rgba(255, 255, 255, .62); font-size: 12.5px; text-align: left; cursor: pointer; }
+.adminNavBtn:hover { color: #fff; background: rgba(255, 255, 255, .07); }
+.adminNavBtn[data-active] { background: #315f90; color: #fff; }
+.adminNavBtn:focus-visible { outline: 2px solid #9fc2e8; outline-offset: 1px; }
+.adminSideFoot { display: grid; gap: 8px; margin-top: auto; padding: 12px 10px 0; border-top: 1px solid rgba(255, 255, 255, .12); }
+.adminEmail { overflow: hidden; color: rgba(255, 255, 255, .55); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.adminSignOut { justify-self: start; padding: 0; border: 0; background: none; color: rgba(255, 255, 255, .62); font-size: 11.5px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.adminSignOut:hover { color: #fff; }
+.adminBody { display: flex; flex-direction: column; min-width: 0; }
+.adminTop { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 32px; border-bottom: 1px solid #e1e6ec; background: #fff; }
+.adminTop h1 { margin: 0; font-size: 19px; font-weight: 500; letter-spacing: -.01em; color: #17212c; }
+.adminLang { padding: 6px 12px; border: 1px solid #dce2e8; border-radius: 6px; background: #fff; color: #34475a; font-size: 11.5px; cursor: pointer; }
+.adminLang:hover { border-color: #b8c4cf; }
+.adminMain { padding: 26px 32px 48px; }
+.adminMain .section { margin-top: 0; }
+/* 顶栏 h1 已承载分区名，面板内的 h2 与其同文本——srOnly 视觉隐藏（display:none 会让
+   aria-labelledby 取不到 accessible name），note 说明行保留可见 */
+.adminMain .sectionHead { margin-bottom: 18px; }
+.srOnly { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+@media (max-width: 860px) {
+  /* 单列下 100svh 的 min-height 会把 aside 行拉伸出空深色区——行高按内容走 */
+  .admin { grid-template-columns: 1fr; align-content: start; }
+  .adminSide { flex-direction: column; gap: 10px; padding: 14px 16px 12px; }
+  .adminBrand { padding: 0; grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 8px; }
+  /* 组标签只服务宽屏扫读；窄屏按钮平铺横向滚动 */
+  .adminGroup { display: contents; }
+  .adminGroupLabel { display: none; }
+  .adminNav { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+  .adminNavBtn { white-space: nowrap; }
+  .adminSideFoot { display: flex; align-items: center; gap: 12px; margin-top: 0; padding: 10px 0 0; border-top: 1px solid rgba(255, 255, 255, .12); }
+  .adminTop, .adminMain { padding-inline: 18px; }
+  .table th, .table td { padding-inline: 12px; }
+}
+
+/* —— 身份闸：未登录 / 非运营账号，只说明不渲染任何数据 —— */
+.gate { padding: 40px 44px; border: 1px solid #dce2e8; border-radius: 14px; background: #fff; }
+.gate h2 { margin: 0 0 10px; font-size: 21px; font-weight: 500; color: #17212c; }
+.gate p { margin: 0 0 26px; color: #627386; font-size: 12.5px; line-height: 1.8; }
+
+/* —— 区块与表格：口径与收益页一致 —— */
+.section { margin-top: 44px; }
+.sectionHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px; margin-bottom: 12px; }
+.sectionHead h2 { margin: 0; font-size: 17px; font-weight: 500; letter-spacing: -.01em; color: #17212c; }
+.sectionNote { color: #627386; font-size: 11.5px; }
+
+.tableWrap { overflow-x: auto; border: 1px solid #e1e6ec; border-radius: 12px; background: #fff; }
+.tableWrap::-webkit-scrollbar { height: 8px; }
+.tableWrap::-webkit-scrollbar-thumb { background: #c3ced9; border-radius: 4px; }
+.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.table th { padding: 13px 18px; color: #627386; font-size: 10.5px; font-weight: 400; text-align: left; white-space: nowrap; border-bottom: 1px solid #e1e6ec; }
+.table td { padding: 12px 18px; border-bottom: 1px solid #e9edf1; vertical-align: middle; color: #34475a; }
+/* 提特异性：.table th 自带 text-align:left（0,1,1），单类 .right（0,1,0）压不过它 */
+.table .right { text-align: right; }
+.table .center { text-align: center; }
+.nowrap { white-space: nowrap; }
+/* 管理员与角色矩阵：表头带角色职责，「当前生效」徽标标今天真实存在的唯一角色；
+   三态权限格用手绘线性图标（勾/眼/横线），不可见态中性灰提到 ≈3:1 非文本对比 */
+.roleTh { display: grid; justify-items: center; gap: 3px; }
+.roleThName { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #34475a; white-space: nowrap; }
+.roleThDesc { max-width: 132px; font-size: 10.5px; font-weight: 400; line-height: 1.45; color: #627386; white-space: normal; }
+.roleNow { padding: 1px 7px; border: 1px solid rgba(4, 120, 87, .35); border-radius: 999px; color: #047857; font-size: 10px; font-weight: 400; white-space: nowrap; }
+.matrixGroup td { padding: 16px 18px 5px; border-bottom: 0; color: #627386; font-size: 10.5px; font-weight: 500; letter-spacing: .04em; }
+.permIcon { display: inline-block; vertical-align: -2px; }
+.permYes { color: #047857; }
+.permRo { color: #627386; }
+.permNo { color: #87919d; }
+/* 图例：紧跟表格，与矩阵图标同源同色 */
+.legendItem { display: inline-flex; align-items: center; gap: 5px; }
+.matrixLegend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; color: #627386; font-size: 11px; }
+/* 通用二级块头（系统配置固定参数 / 角色页管理员账户共用） */
+.blockHead { margin: 22px 0 6px; font-size: 13px; font-weight: 500; color: #17212c; }
+.blockLead { margin: 0 0 12px; font-size: 11.5px; color: #627386; }
+/* 管理员账户：表单行沿用流水筛选控件；侧栏角色标签 */
+.acctForm { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 12px; }
+.adminRoleTag { justify-self: start; padding: 1px 8px; border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px; color: rgba(255, 255, 255, .75); font-size: 10px; }
+.specCard { padding: 4px 26px 18px; border: 1px solid #e1e6ec; border-radius: 12px; background: #fff; }
+.specGroupLabel { margin: 18px 0 4px; color: #17212c; font-size: 12px; font-weight: 500; }
+.specList { margin: 0; }
+.specRow { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid #e9edf1; }
+.specRow:last-child { border-bottom: 0; }
+.specName { color: #34475a; font-size: 12.5px; }
+.specVal { margin: 0; color: #17212c; font-size: 12.5px; text-align: right; }
+.table.dense td { padding: 9px 18px; }
+.table.dense th { padding: 11px 18px; }
+.empty { margin: 0; padding: 24px; border: 1px dashed #dce2e8; border-radius: 12px; color: #627386; font-size: 12.5px; text-align: center; }
+.cellSub { display: block; margin-top: 3px; color: #627386; font-size: 10.5px; }
+.descCell { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* —— 大盘卡：主行 4 大卡（运营者三问）+ 次行 6 小卡（资金细节降权），窄屏折行 —— */
+.cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.cardsPrimary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+.card { display: grid; gap: 6px; align-content: start; padding: 18px 20px; border: 1px solid #dce2e8; border-radius: 12px; background: #fff; }
+.cardsPrimary .card { padding: 20px 22px; }
+.cardsPrimary .cardValue { font-size: 30px; }
+.cardsPrimary .cardLabel { font-size: 12px; color: #4a5e72; }
+/* 待审结算卡是行动项：整卡可点击直跳审批 */
+button.card { text-align: left; font: inherit; cursor: pointer; }
+.cardAction:hover { border-color: #315f90; box-shadow: 0 1px 6px rgba(23, 33, 44, .08); }
+.cardAction:focus-visible { outline: 2px solid #315f90; outline-offset: 2px; }
+.card[data-tone="ok"] { border-color: rgba(56, 122, 88, .4); }
+.card[data-tone="warn"] { border-color: rgba(168, 122, 42, .4); }
+.cardLabel { color: #627386; font-size: 11px; white-space: nowrap; }
+.cardValue { font-size: 21px; font-weight: 500; letter-spacing: -.01em; color: #17212c; }
+.cardNote { color: #627386; font-size: 10.5px; }
+@media (max-width: 1180px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cardsPrimary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* —— 对账面板：租客/宿主两张公式卡 —— */
+.reconGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.reconCard { padding: 22px 26px; border: 1px solid #dce2e8; border-radius: 12px; background: #fbfcfd; }
+.reconCard h3 { margin: 0 0 6px; font-size: 14px; font-weight: 500; color: #17212c; }
+.reconFormula { margin: 0 0 14px; color: #627386; font-size: 11px; line-height: 1.7; }
+.reconRow { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 7px 0; font-size: 12.5px; color: #627386; }
+.reconRow b { font-weight: 500; color: #17212c; }
+.reconFoot { margin-top: 10px; }
+.reconNote { margin: 12px 0 0; color: #627386; font-size: 11px; line-height: 1.7; }
+@media (max-width: 900px) { .reconGrid { grid-template-columns: 1fr; } }
+
+/* —— 账务页：顶部守恒状态条 + 流水/对账明细双视图切换 —— */
+.viewBar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 18px; margin: 0 0 16px; }
+.financeBar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 22px; color: #627386; font-size: 12px; }
+.financeItem { display: inline-flex; align-items: center; gap: 8px; }
+.financeItem > span:first-child { color: #34475a; }
+.seg { display: inline-flex; gap: 4px; padding: 3px; border: 1px solid #dce2e8; border-radius: 9px; background: #fff; }
+.segBtn { padding: 6px 16px; border: 0; border-radius: 6px; background: transparent; color: #627386; font-size: 12px; cursor: pointer; }
+.segBtn:hover { color: #17212c; }
+.segBtn[aria-pressed="true"] { background: #315f90; color: #fff; }
+.segBtn:focus-visible { outline: 2px solid #315f90; outline-offset: 1px; }
+.viewNote { margin: 0 0 12px; color: #627386; font-size: 11.5px; }
+
+
+/* —— 大盘：资金面 / 运营面分组小标题 —— */
+.cardGroupLabel { margin: 22px 0 8px; color: #627386; font-size: 11px; font-weight: 500; letter-spacing: .04em; }
+.cardGroupLabel:first-of-type { margin-top: 0; }
+
+/* —— 对账明细：按账号双侧表 + 合计行 + 导出 —— */
+.reconBlock { margin-bottom: 26px; }
+.reconBlockHead { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; }
+.reconBlockHead h3 { margin: 0; font-size: 13.5px; font-weight: 500; color: #17212c; }
+.reconBlockHead .reconFormula { margin: 0; flex: 1 1 260px; }
+.reconBlock .table tfoot td { border-top: 1px solid #dce2e8; border-bottom: 0; color: #17212c; font-weight: 500; }
+.reconBlock .tableWrap { margin-bottom: 0; }
+
+/* —— 流水：单号列、右侧详情抽屉、分页 —— */
+.ticketCell { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.linkBtn { padding: 0; border: 0; background: none; color: #315f90; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.linkBtn:hover { color: #27507c; }
+.linkBtn:focus-visible { outline: 2px solid #315f90; outline-offset: 2px; border-radius: 3px; }
+.drawerMask { position: fixed; inset: 0; z-index: 50; background: rgba(23, 33, 44, .28); }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 51; display: flex; flex-direction: column; width: min(420px, 94vw); border-left: 1px solid #dce2e8; background: #fff; box-shadow: -10px 0 28px rgba(23, 33, 44, .14); }
+.drawerHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #e1e6ec; }
+.drawerHead h3 { margin: 0; font-size: 15px; font-weight: 500; color: #17212c; }
+.drawerClose { width: 30px; height: 30px; border: 1px solid #dce2e8; border-radius: 6px; background: #fff; color: #627386; font-size: 13px; cursor: pointer; }
+.drawerClose:hover { border-color: #b8c4cf; color: #17212c; }
+.drawerClose:focus-visible { outline: 2px solid #315f90; outline-offset: 1px; }
+.drawerGrid { display: grid; gap: 16px; margin: 0; padding: 20px; overflow-y: auto; }
+.drawerGrid div { display: grid; gap: 4px; }
+.drawerGrid dt { color: #627386; font-size: 10.5px; }
+.drawerGrid dd { margin: 0; color: #17212c; font-size: 12.5px; word-break: break-all; }
+
+/* 用户详情抽屉：加宽 + 分节（档案/资金/机器/流水） */
+.drawerWide { width: min(640px, 94vw); }
+.drawerBody { display: grid; gap: 14px; padding: 20px; overflow-y: auto; }
+.drawerCols { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 0; }
+.drawerCols div { display: grid; gap: 4px; }
+.drawerCols dt { color: #627386; font-size: 10.5px; }
+.drawerCols dd { margin: 0; color: #17212c; font-size: 12.5px; word-break: break-all; }
+.drawerH4 { margin: 4px 0 0; font-size: 10.5px; font-weight: 600; color: #627386; }
+.drawerTableWrap { overflow-x: auto; }
+.drawerTable { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.drawerTable th { padding: 6px 8px; border-bottom: 1px solid #e1e6ec; color: #627386; font-weight: 500; text-align: left; white-space: nowrap; }
+.drawerTable td { padding: 6px 8px; border-bottom: 1px solid #eef2f5; color: #17212c; }
+.drawerTable .right { text-align: right; }
+.drawerEmpty { margin: 0; color: #627386; font-size: 12px; }
+.rowClick { cursor: pointer; }
+.rowClick:hover { background: #f6f9fb; }
+
+/* 详情抽屉身份 tab：双身份切换（单身份不渲染 tab 条），下边框指示当前侧 */
+.drawerTabs { display: flex; gap: 4px; border-bottom: 1px solid #e1e6ec; }
+.drawerTab { padding: 7px 14px; border: none; background: none; color: #627386; font-size: 12px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.drawerTab:hover { color: #17212c; }
+.drawerTab:focus-visible { outline: 2px solid #315f90; outline-offset: -2px; border-radius: 4px; }
+.drawerTabOn { color: #17212c; font-weight: 500; border-bottom-color: #315f90; }
+/* 机器列表展开/收起：紧凑文字按钮，贴表格下方 */
+.drawerMore { margin-top: 6px; padding: 4px 0; border: none; background: none; color: #315f90; font-size: 11.5px; cursor: pointer; }
+.drawerMore:hover { text-decoration: underline; }
+.drawerMore:focus-visible { outline: 2px solid #315f90; outline-offset: 1px; border-radius: 4px; }
+/* 模块头行：标题 + 模块级动作（查看完整流水）两端对齐 */
+.drawerH4Row { display: flex; justify-content: space-between; align-items: baseline; margin: 14px 0 6px; }
+.drawerH4Row:first-child { margin-top: 0; }
+.drawerLink { border: none; background: none; color: #315f90; font-size: 11.5px; cursor: pointer; padding: 2px 0; }
+.drawerLink:hover { text-decoration: underline; }
+.drawerLink:focus-visible { outline: 2px solid #315f90; outline-offset: 1px; border-radius: 4px; }
+.pager { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 12px; color: #627386; font-size: 11.5px; }
+.pagerBtns { display: flex; gap: 8px; }
+.pagerBtns button:disabled { opacity: .4; cursor: default; }
+
+/* —— 表格空态（保留表头，说明行跨列） —— */
+.emptyCell { padding: 22px 18px; color: #627386; font-size: 12.5px; text-align: center; }
+
+/* —— 流水筛选条：搜索 + 类型 + 账本 + 计数 —— */
+.ledgerFilters { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 12px; }
+.filterInput { width: 180px; padding: 7px 10px; border: 1px solid #dce2e8; border-radius: 6px; background: #fff; color: #17212c; font-size: 12px; }
+.filterInput:focus-visible, .filterSelect:focus-visible { outline: 2px solid #315f90; outline-offset: 1px; }
+.filterSelect { padding: 7px 8px; border: 1px solid #dce2e8; border-radius: 6px; background: #fff; color: #34475a; font-size: 12px; }
+@media (max-width: 700px) { .filterInput { width: 100%; } }
+
+/* —— 守恒差异告警条（仅差异非 0 时出现） —— */
+.diffAlert { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin: -6px 0 16px; padding: 10px 14px; border: 1px solid rgba(168, 58, 50, .35); border-radius: 9px; background: #fdf5f4; color: #a83a32; font-size: 12px; }
+
+/* —— 系统配置：抽成主角卡（信息区 + 大号输入 + 上次调整留痕行） —— */
+.rateCard { padding: 20px 26px 14px; border: 1px solid #dce2e8; border-radius: 12px; background: #fff; }
+.rateMain { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
+.rateInfo { display: grid; gap: 5px; min-width: 220px; }
+.rateName { font-size: 14px; font-weight: 500; color: #17212c; }
+.rateDesc { font-size: 11.5px; color: #627386; }
+.rateControl { display: grid; gap: 5px; justify-items: end; }
+.rateField { display: inline-flex; align-items: baseline; gap: 5px; }
+.rateInput { width: 88px; padding: 8px 10px; border: 1px solid #dce2e8; border-radius: 8px; background: #fff; color: #17212c; font-size: 20px; font-weight: 600; text-align: right; }
+.rateInput:focus-visible { outline: 2px solid #315f90; outline-offset: 1px; }
+.rateInput[aria-invalid] { border-color: #a83a32; }
+.rateUnit { color: #627386; font-size: 14px; }
+.rateRange { color: #627386; font-size: 11px; }
+.rateErr { color: #a83a32; font-size: 11px; }
+.rateLast { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #e9edf1; color: #627386; font-size: 11.5px; }
+
+/* —— 结算审批台：操作列多按钮排布 —— */
+/* td 保持 table-cell（行高与分隔线归表格行同步），flex 排布由内层承担——
+   直接 display:flex 在 td 上会脱离行布局：按钮把该 td 撑到 65px 而同行其余 57px，行分隔线断层 */
+.actRow { display: flex; gap: 8px; flex-wrap: wrap; }
+.waiting { color: #627386; font-size: 11.5px; }
+.actRow .btnGhostDanger, .actRow .btnDanger { min-height: 30px; padding: 0 12px; font-size: 11.5px; }
+
+/* —— 强停动作：武装态实心红、待武装描边红；武装 3s 未确认自动复位 —— */
+.btnGhostDanger { min-height: 34px; padding: 0 14px; border: 1px solid rgba(168, 58, 50, .45); border-radius: 5px; background: #fff; color: #a83a32; font-size: 12px; }
+.btnGhostDanger:hover { border-color: #a83a32; }
+.btnDanger { min-height: 34px; padding: 0 14px; border: 1px solid #a83a32; border-radius: 5px; background: #a83a32; color: #fff; font-size: 12px; }
+.btnDanger:hover { background: #8f2f28; }
+.btnDanger:focus-visible, .btnGhostDanger:focus-visible { outline: 2px solid #a83a32; outline-offset: 1px; }
+
+/* —— 操作反馈 toast：右下浮层，语义色点承载状态；200ms 入场即唯一的动效时刻 —— */
+.toastStack { position: fixed; right: 24px; bottom: 24px; z-index: 60; display: grid; gap: 8px; justify-items: end; }
+.toast { display: flex; align-items: center; gap: 9px; padding: 11px 16px 11px 13px; border: 1px solid #dce2e8; border-radius: 9px; background: #fff; box-shadow: 0 6px 20px rgba(23, 33, 44, .13); color: #17212c; font-size: 12.5px; animation: toast-in .2s ease-out; }
+.toast::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #387a58; }
+.toast[data-tone="bad"]::before { background: #a83a32; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+
+/* —— 窄屏侧栏横向滚动条与主区滚动条统一 —— */
+.adminNav::-webkit-scrollbar { height: 6px; }
+.adminNav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .18); border-radius: 3px; }

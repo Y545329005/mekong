@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 import type { Language } from './content'
 import Icon from './Icons'
+import { saveLead } from './adminStore'
 import styles from './SalesPage.module.css'
 
 const countryCodes = 'AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' ')
@@ -130,7 +131,7 @@ export default function SalesPage({lang}:{lang:Language}) {
   const update=<K extends keyof Draft>(key:K,value:Draft[K])=>setDraft(current=>({...current,[key]:value}))
   const gpuLabel=(value:string)=>value==='other'?t.other:value
   const quantityLabel=(value:string)=>value==='unsure'?t.unsure:`${value} ${t.cards}`
-  const submit=(event:FormEvent)=>{event.preventDefault();setComplete(true);requestAnimationFrame(()=>title.current?.focus())}
+  const submit=(event:FormEvent)=>{event.preventDefault();saveLead({purpose:draft.purpose.map(value=>t.purposes[purposeOptions.indexOf(value)]),gpu:draft.gpu.map(gpuLabel),quantity:quantityLabel(draft.quantity),duration:t.durations[Number(draft.duration)]??draft.duration,usageCountry:draft.usageCountry.map(countryLabel),company:draft.company,companyCountry:countryLabel(draft.companyCountry),contact:draft.contact,email:draft.email,requirements:draft.requirements});setComplete(true);requestAnimationFrame(()=>title.current?.focus())}
   const countryLabel=(code:string)=>countries(lang).find(item=>item.code===code)?.label||''
   const summary=[draft.purpose.map(value=>t.purposes[purposeOptions.indexOf(value)]).join('、'),draft.gpu.map(gpuLabel).join('、'),quantityLabel(draft.quantity),t.durations[Number(draft.duration)],draft.usageCountry.map(countryLabel).join('、'),draft.company,countryLabel(draft.companyCountry),draft.contact,draft.email,draft.requirements||t.noDetails]
   return <div className={styles.salesPage}><div className={styles.container}><div className={styles.breadcrumb}><a href="#main">{t.home}</a><span>/</span><span>{t.breadcrumb}</span></div><header className={styles.introduction}><h1>{t.title}</h1><p>{t.intro}</p></header>

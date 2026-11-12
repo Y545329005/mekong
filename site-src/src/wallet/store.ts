@@ -19,6 +19,18 @@ export type ExitMethod = 'refund' | 'withdraw'
 /* 对外 4 态：待处理 / 处理中 / 已完成 / 失败（完成文案按 method 区分） */
 export type ExitStatus = 'pending' | 'processing' | 'done' | 'failed'
 
+/* 宿主结算（v3.10 · 规格 P0-2 出金六态）：
+   pending 待审 → approved 平台放行（只冻结，不动钱）→ processing 发起出款（此时才扣减收益）
+   → sent 已出款 → paid 到账 / failed 出款失败（钱退回收益池）；pending 亦可 rejected 驳回（不动钱）。
+   终态 paid / failed / rejected 不可再推进，推进函数按当前态拒绝越级。 */
+export type SettleStatus = 'pending' | 'approved' | 'processing' | 'sent' | 'paid' | 'failed' | 'rejected'
+export type SettleRequest = {
+  id: string
+  amount: number
+  status: SettleStatus
+  at: number
+}
+
 export type Payment = {
   id: string
   channel: Channel
@@ -130,6 +142,8 @@ export type WalletState = {
   earnings: number
   held: number
   holdQueue: HoldEntry[]
+  /* 宿主结算申请（六态推进，见 SettleStatus 注） */
+  settleReqs: SettleRequest[]
   /* 租户流水（充值 / 租卡扣款 / 退款 / 提现） */
   ledger: LedgerRow[]
   /* 宿主流水（收益入账），与租户流水分账本 */
@@ -139,6 +153,8 @@ export type WalletState = {
   orders: OrderRow[]
   /* 上次实例引擎推进时刻：离开实例页期间不追溯计费，回来最多补 1 分钟 */
   tickAt?: number
+  /* 账号注册时刻：演示口径由种子造数；真实业务来自 auth 系统 */
+  createdAt?: number
 }
 
 export const DEMO_EMAIL = 'demo@demo.dev'
@@ -201,9 +217,9 @@ export const exitNo = (req: ExitRequest) => {
 
 const walletKey = (email: string) => `mk-site-wallet:${email}`
 
-/* seed 版本：实例状态机上线（订单行扩为实例全生命周期）时 +1 → 旧存档整体重播种。
+/* seed 版本：后台 IA/结算种子调整时 +1 → 旧存档整体重播种。
    注意：重播种会清掉本机演示期间的充值/下单记录（演示账号口径，可接受）。 */
-export const SEED_VERSION = 9
+export const SEED_VERSION = 13
 
 /* 实例状态的展示口径（两页共用：实例卡 pill + 资金页订单表） */
 export const STATUS_TONES: Record<InstanceStatus, 'ok' | 'info' | 'warn' | 'bad' | 'muted'> = {
@@ -258,8 +274,23 @@ export const inFlightTotal = (s: WalletState) =>
 /** 可消费余额 = 余额 − 在途退出 */
 export const spendable = (s: WalletState) => Math.max(0, round2(s.balance - inFlightTotal(s)))
 
-/** 可结算 = 收益 − 待结算 */
-export const settleable = (s: WalletState) => Math.max(0, round2(s.earnings - s.held))
+/** 可结算 = 收益 − 待结算 − 放行冻结（approved 单占用；processing 后钱已出池不再占用） */
+export const IN_SETTLE_STATUSES = ['approved'] as const
+export const settleable = (s: WalletState) =>
+  Math.max(0, round2(s.earnings - s.held - s.settleReqs.filter(r => (IN_SETTLE_STATUSES as readonly string[]).includes(r.status)).reduce((sum, r) => sum + r.amount, 0)))
+
+/** 是否有在审结算单（同账号同时仅一笔在途：pending/approved/processing/sent） */
+export const settleInFlight = (s: WalletState) =>
+  s.settleReqs.some(r => ['pending', 'approved', 'processing', 'sent'].includes(r.status))
+
+/** 结算单号：对账凭证（SR-YYMMDD-尾号） */
+export const settleNo = (req: SettleRequest) => {
+  const d = new Date(req.at)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const day = `${String(d.getFullYear()).slice(2)}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
+  const tail = req.id.replace(/[^0-9a-z]/gi, '').toUpperCase().slice(-4).padStart(4, '0')
+  return `SR-${day}-${tail}`
+}
 
 /* ------------------------------------------------------------------ 种子 */
 
@@ -269,9 +300,11 @@ function emptyState(): WalletState {
   return {
     seedVersion: SEED_VERSION,
     balance: 0,
+
     earnings: 0,
     held: 0,
     holdQueue: [],
+    settleReqs: [],
     ledger: [],
     earningLedger: [],
     payments: [],
@@ -287,6 +320,7 @@ function seedDemoWallet(): WalletState {
   const h = 3600000
   const d = 86400000
   const m = 60000
+  const createdAt = now() - 40 * d
   const events: SeedEvent[] = [
     { ago: 40 * d, kind: 'topup', channel: 'card', amount: 300 },
     { ago: 38 * d + 2 * h, kind: 'consume', channel: 'card', amount: 32, machine: 'M-08820041 · B200 ×1' },
@@ -331,49 +365,54 @@ function seedDemoWallet(): WalletState {
      故全部 ondemand：无预付、可停止、按秒计费。状态覆盖：运行/排队/加载/
      已停止/欠费停机/宿主断连/已销毁（历史记录保留）。 */
   const t = now()
-  const inst = (p: Partial<OrderRow> & Pick<OrderRow, 'id' | 'machine' | 'gpu' | 'amount' | 'contractType' | 'dph' | 'status' | 'at'>): OrderRow => ({
-    diskGb: 240, imageTag: 'pytorch:2.4-cuda12.4', ip: '45.77.132.51', port22: 51820, port8080: 50810,
-    customPorts: [], launchMode: 'ssh', escrowHold: 0, amortized: 0, spentTotal: 0, acc: 0, ...p,
-  })
+  const inst = seedInst
   const seedInstances: OrderRow[] = [
     inst({ id: 'o-seed-b200', machine: 'M-08820041 · B200 ×1', gpu: 'B200 ×1', amount: 0, contractType: 'ondemand',
-      dph: 2.49, status: 'Running', at: t - 2 * h, spentTotal: 5.7,
+      dph: 2.49, status: 'Running', at: t - 2 * h, spentTotal: 5.7, endUse: 'training',
       diskGb: 360, imageTag: 'pytorch:2.5-cuda12.4', ip: '45.77.132.51', port22: 51820, port8080: 50810, customPorts: [31245] }),
     inst({ id: 'o-seed-l40s', machine: 'M-01822301 · L40S ×1', gpu: 'L40S ×1', amount: 0, contractType: 'ondemand',
-      dph: 1.85, status: 'Running', at: t - 8 * h, spentTotal: 17.13,
+      dph: 1.85, status: 'Running', at: t - 8 * h, spentTotal: 17.13, endUse: 'research',
       imageTag: 'pytorch:2.4-cuda12.4', ip: '45.77.132.52', port22: 51821, port8080: 50811 }),
     inst({ id: 'o-seed-5090', machine: 'M-05904012 · RTX 5090 ×2', gpu: 'RTX 5090 ×2', amount: 0, contractType: 'ondemand',
-      dph: 2.16, status: 'Running', at: t - 2 * m, spentTotal: 3.04,
+      dph: 2.16, status: 'Running', at: t - 2 * m, spentTotal: 3.04, endUse: 'inference',
       imageTag: 'nvidia:cuda-12.4-runtime', ip: '45.77.132.53', port22: 51822, port8080: 50812 }),
     inst({ id: 'o-seed-h200l', machine: 'M-05111209 · H200 NVL ×1', gpu: 'H200 NVL ×1', amount: 0, contractType: 'ondemand',
-      dph: 2.2, status: 'Loading', at: t - 12_000, phaseUntil: t + 10_000, launchMode: 'jupyter', spentTotal: 3.09,
+      dph: 2.2, status: 'Loading', at: t - 12_000, phaseUntil: t + 10_000, launchMode: 'jupyter', spentTotal: 3.09, endUse: 'training',
       imageTag: 'pytorch:2.5-cuda12.6', ip: '45.77.132.54', port22: 51823, port8080: 50813 }),
     inst({ id: 'o-seed-a100', machine: 'M-01114008 · A100 ×4', gpu: 'A100 ×4', amount: 0, contractType: 'ondemand',
-      dph: 3.7, status: 'Inactive', at: t - 26 * h, spentTotal: 88.8,
+      dph: 3.7, status: 'Inactive', at: t - 26 * h, spentTotal: 88.8, endUse: 'training',
       imageTag: 'tensorflow:2.17-cuda12.3', ip: '45.77.132.55', port22: 51824, port8080: 50814 }),
     inst({ id: 'o-seed-h200s', machine: 'M-03011042 · H200 NVL ×1', gpu: 'H200 NVL ×1', amount: 0, contractType: 'ondemand',
-      dph: 2.2, status: 'Inactive', at: t - 5 * h, spentTotal: 5.2,
+      dph: 2.2, status: 'Inactive', at: t - 5 * h, spentTotal: 5.2, endUse: 'research',
       imageTag: 'pytorch:2.4-cuda12.4', ip: '45.77.132.56', port22: 51825, port8080: 50815 }),
     inst({ id: 'o-seed-gb300', machine: 'M-06250011 · GB300 ×1', gpu: 'GB300 ×1', amount: 0, contractType: 'ondemand',
-      dph: 4.11, status: 'Offline', at: t - 20 * m, offlineAt: t - 2 * m, spentTotal: 1.37,
+      dph: 4.11, status: 'Offline', at: t - 20 * m, offlineAt: t - 2 * m, spentTotal: 1.37, endUse: 'inference',
       imageTag: 'nvidia:nim-llm:latest', ip: '45.77.132.58', port22: 51827, port8080: 50817 }),
     inst({ id: 'o-seed-4090', machine: 'M-07730119 · RTX 4090 ×4', gpu: 'RTX 4090 ×4', amount: 0, contractType: 'ondemand',
-      dph: 0.72, status: 'Destroyed', at: t - 80 * h, destroyedAt: t - 8 * h, spentTotal: 51.84,
+      dph: 0.72, status: 'Destroyed', at: t - 80 * h, destroyedAt: t - 8 * h, spentTotal: 51.84, endUse: 'other',
       imageTag: 'pytorch:2.3-cuda12.1', ip: '45.77.132.57', port22: 51826, port8080: 50816 }),
   ]
   state = { ...state, orders: [...seedInstances, ...state.orders] }
 
-  /* 宿主收益：净额先进待结算（演示窗口 20 秒，早已解锁） */
+  /* 宿主收益：净额先进待结算（演示窗口 20 秒，早已解锁）。
+     结算历史与 earnings 自洽：入账 net 240 − paid 60 − paid 40（发起出款时已扣）= 140；
+     paid 单为终态、pending 单不动钱（审批依据侧的收益池即 140）。 */
   const earningAt = now() - 3 * d
   state = {
     ...state,
-    earnings: 240,
+    earnings: 140,
     held: 0,
     holdQueue: [],
     /* 头部最新：2 天前在前、3 天前在后 */
     earningLedger: [
       { id: 'l-seed-e2', kind: 'earning', amount: 60, gross: 64, fee: 4, at: now() - 2 * d, balAfter: 240, holdUntil: now() - 2 * d + 20000 },
       { id: 'l-seed-e1', kind: 'earning', amount: 180, gross: 200, fee: 20, at: earningAt, balAfter: 240, holdUntil: earningAt + 20000 },
+    ],
+    /* 同账号同时仅一笔在途：sr-seed-3 pending，其余均已终态 */
+    settleReqs: [
+      { id: 'sr-seed-3', amount: 50, status: 'pending', at: now() - 6 * h },
+      { id: 'sr-seed-2', amount: 40, status: 'paid', at: now() - 2 * d },
+      { id: 'sr-seed-1', amount: 60, status: 'paid', at: earningAt + 60000 },
     ],
   }
 
@@ -392,34 +431,119 @@ function seedDemoWallet(): WalletState {
     if (submitted) state = applyExitAdvanceAt(submitted, submitted.exits[0].id, 'done', at + 30000)
   }
 
-  return state
+  return { ...state, createdAt }
+}
+
+/* 种子订单工厂：与真实下单流程同形（对外站只开放按需租用，全部 ondemand）。
+   demo 桶与演示账号桶共用，各桶自选机器/状态/用途。 */
+const seedInst = (p: Partial<OrderRow> & Pick<OrderRow, 'id' | 'machine' | 'gpu' | 'amount' | 'contractType' | 'dph' | 'status' | 'at'>): OrderRow => ({
+  diskGb: 240, imageTag: 'pytorch:2.4-cuda12.4', ip: '45.77.132.51', port22: 51820, port8080: 50810,
+  customPorts: [], launchMode: 'ssh', escrowHold: 0, amortized: 0, spentTotal: 0, acc: 0, ...p,
+})
+
+/* —— 演示账号桶（后台「用户管理」的种子主体）：事件走与 demo 桶同一摊账管道
+   （applyTopupAt / applySeedConsume），租客守恒由摊账引擎保证闭合；host 桶无租客
+   支付、只有宿主收益（Σgross = Σnet + Σfee 逐行固化），对账页仅出现宿主侧。
+   首次派生时播种落盘，之后随存档走。函数形态：at/holdUntil 取播种时刻，
+   不随模块加载固化。 —— */
+type SeedAccountSpec = { createdAt: number; events: SeedEvent[]; orders: OrderRow[]; host?: Pick<WalletState, 'earnings' | 'held' | 'holdQueue' | 'earningLedger' | 'settleReqs'> }
+const SD = { h: 3600000, d: 86400000, m: 60000 }
+
+function seedAccountSpec(email: string): SeedAccountSpec | undefined {
+  const t = now()
+  if (email === 'wei@demo.dev') return {
+    createdAt: t - 10 * SD.d,
+    events: [
+      { ago: 10 * SD.d, kind: 'topup', channel: 'card', amount: 80 },
+      { ago: 6 * SD.d, kind: 'consume', channel: 'card', amount: 18.4, machine: 'M-01822301 · L40S ×1' },
+      { ago: 2 * SD.d, kind: 'consume', channel: 'card', amount: 9.6, machine: 'M-05111209 · H200 NVL ×1' },
+    ],
+    orders: [
+      seedInst({ id: 'o-wei-l40s', machine: 'M-01822301 · L40S ×1', gpu: 'L40S ×1', amount: 0, contractType: 'ondemand',
+        dph: 1.85, status: 'Inactive', at: t - 6 * SD.d, spentTotal: 18.4, endUse: 'research',
+        ip: '45.77.132.61', port22: 51831, port8080: 50821 }),
+    ],
+  }
+  if (email === 'corp@demo.dev') return {
+    createdAt: t - 15 * SD.d,
+    events: [
+      { ago: 15 * SD.d, kind: 'topup', channel: 'crypto', amount: 400 },
+      { ago: 12 * SD.d, kind: 'consume', channel: 'crypto', amount: 48, machine: 'M-01114008 · A100 ×4' },
+      { ago: 9 * SD.d, kind: 'consume', channel: 'crypto', amount: 36, machine: 'M-08820041 · B200 ×1' },
+      { ago: 4 * SD.d, kind: 'topup', channel: 'card', amount: 200 },
+      { ago: 5 * SD.h, kind: 'consume', channel: 'card', amount: 22.4, machine: 'M-06250011 · GB300 ×1' },
+      { ago: 3 * SD.h, kind: 'consume', channel: 'card', amount: 36.8, machine: 'M-08820041 · B200 ×1' },
+      { ago: 30 * SD.m, kind: 'consume', channel: 'card', amount: 90, machine: 'M-01114008 · A100 ×4' },
+      { ago: 12 * SD.m, kind: 'consume', channel: 'card', amount: 76.8, machine: 'M-05111209 · H200 NVL ×1' },
+    ],
+    orders: [
+      seedInst({ id: 'o-corp-h200', machine: 'M-05111209 · H200 NVL ×1', gpu: 'H200 NVL ×1', amount: 0, contractType: 'ondemand',
+        dph: 2.2, status: 'Running', at: t - 20 * SD.h, spentTotal: 76.8, endUse: 'training',
+        imageTag: 'pytorch:2.5-cuda12.6', ip: '45.77.132.62', port22: 51832, port8080: 50822 }),
+      seedInst({ id: 'o-corp-gb300', machine: 'M-06250011 · GB300 ×1', gpu: 'GB300 ×1', amount: 0, contractType: 'ondemand',
+        dph: 4.11, status: 'Offline', at: t - 9 * SD.h, offlineAt: t - 40 * SD.m, spentTotal: 22.4, endUse: 'inference',
+        imageTag: 'nvidia:nim-llm:latest', ip: '45.77.132.63', port22: 51833, port8080: 50823 }),
+    ],
+  }
+  if (email === 'host@demo.dev') return {
+    createdAt: t - 45 * SD.d,
+    events: [], orders: [],
+    /* 结算自洽：Σnet 135 − paid 45 = earnings 90；pending 单不动钱 */
+    host: {
+      earnings: 90, held: 0, holdQueue: [],
+      earningLedger: [
+        { id: 'l-host-e2', kind: 'earning', amount: 45, gross: 50, fee: 5, at: t - 1 * SD.d, balAfter: 135, holdUntil: t - 1 * SD.d + 20000 },
+        { id: 'l-host-e1', kind: 'earning', amount: 90, gross: 100, fee: 10, at: t - 3 * SD.d, balAfter: 90, holdUntil: t - 3 * SD.d + 20000 },
+      ],
+      settleReqs: [
+        { id: 'sr-host-3', amount: 30, status: 'pending', at: t - 6 * SD.h },
+        { id: 'sr-host-2', amount: 45, status: 'paid', at: t - 1 * SD.d },
+      ],
+    },
+  }
+  return undefined
+}
+
+function seedAccountWallet(email: string, spec: SeedAccountSpec): WalletState {
+  let state = emptyState()
+  spec.events.forEach((event, index) => {
+    const at = now() - event.ago
+    if (event.kind === 'topup') state = applyTopupAt(state, event.channel, event.amount, at, `p-${email.split('@')[0]}-${index + 1}`)
+    else if (event.machine) state = applySeedConsume(state, event.machine, event.amount, at, event.billType)
+  })
+  return { ...state, orders: spec.orders, createdAt: spec.createdAt, ...(spec.host ?? {}) }
 }
 
 function seedWallet(email: string): WalletState {
-  if (email !== DEMO_EMAIL) return emptyState()
-  return seedDemoWallet()
+  if (email === DEMO_EMAIL) return seedDemoWallet()
+  const spec = seedAccountSpec(email)
+  return spec ? seedAccountWallet(email, spec) : emptyState()
 }
 
 export function loadWallet(email: string): WalletState {
   const base = seedWallet(email)
   try {
     const raw = localStorage.getItem(walletKey(email))
-    if (!raw) return base
+    if (!raw) { saveWallet(email, base); return base }
     const saved = JSON.parse(raw) as Partial<WalletState>
-    /* 旧版 seed 的存档直接丢弃重播种：单 USD 模型与双币存档无法无损映射 */
-    if (saved.seedVersion !== SEED_VERSION) return base
+    /* 旧版 seed 的存档直接丢弃重播种：单 USD 模型与双币存档无法无损映射。
+       重播种结果立刻落盘——否则只读的消费方（运营后台）每次加载都拿到新 uid，
+       流水单号/订单 id 跨刷新漂移，「按单号对账」就不成立 */
+    if (saved.seedVersion !== SEED_VERSION) { saveWallet(email, base); return base }
     return {
       seedVersion: SEED_VERSION,
       balance: Number(saved.balance) || 0,
       earnings: Number(saved.earnings) || 0,
       held: Number(saved.held) || 0,
       holdQueue: Array.isArray(saved.holdQueue) ? saved.holdQueue : base.holdQueue,
+      settleReqs: Array.isArray(saved.settleReqs) ? saved.settleReqs : base.settleReqs,
       ledger: Array.isArray(saved.ledger) ? saved.ledger : base.ledger,
       earningLedger: Array.isArray(saved.earningLedger) ? saved.earningLedger : base.earningLedger,
       payments: Array.isArray(saved.payments) ? saved.payments : base.payments,
       exits: Array.isArray(saved.exits) ? saved.exits : base.exits,
       orders: (Array.isArray(saved.orders) ? saved.orders : base.orders).filter(o => o && o.id && o.status),
       tickAt: Number(saved.tickAt) || undefined,
+      createdAt: Number(saved.createdAt) || undefined,
     }
   } catch {
     return base
@@ -685,6 +809,35 @@ function applyExitAdvanceAt(s: WalletState, id: string, to: ExitStatus, at: numb
     next = { ...s, exits: s.exits.map(r => r.id === id ? { ...r, status: to } : r) }
   }
   return next
+}
+
+/* —— 宿主结算（规格 P0-2 出金六态）—— */
+
+/** 提交结算申请：申请全部可结算额；同账号同时仅一笔在途，超额/有在途返回 null */
+export function applySettleSubmit(s: WalletState, amount: number, at = now()): WalletState | null {
+  if (!(amount > 0) || settleInFlight(s)) return null
+  if (amount > settleable(s) + 1e-9) return null
+  const req: SettleRequest = { id: uid('sr'), amount: round2(amount), status: 'pending', at }
+  return { ...s, settleReqs: [req, ...s.settleReqs] }
+}
+
+/** 平台推进：pending→approved（放行冻结）/rejected（驳回）；approved→processing（扣减收益）；
+    processing→sent；sent→paid 到账 / failed 失败退回（收益回池）。终态与越级一律原样返回。 */
+export function applySettleAdvance(s: WalletState, id: string, to: SettleStatus): WalletState {
+  const req = s.settleReqs.find(r => r.id === id)
+  if (!req || req.status === to) return s
+  const allowed: Record<SettleStatus, SettleStatus[]> = {
+    pending: ['approved', 'rejected'],
+    approved: ['processing'],
+    processing: ['sent'],
+    sent: ['paid', 'failed'],
+    paid: [], failed: [], rejected: [],
+  }
+  if (!allowed[req.status].includes(to)) return s
+  let earnings = s.earnings
+  if (to === 'processing') earnings = round2(Math.max(0, earnings - req.amount))
+  if (to === 'failed') earnings = round2(earnings + req.amount)
+  return { ...s, earnings, settleReqs: s.settleReqs.map(r => r.id === id ? { ...r, status: to } : r) }
 }
 
 /** 近 30 天收益汇总（单币种） */
